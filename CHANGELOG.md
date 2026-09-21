@@ -4,6 +4,13 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-09-21
+
+### Changed
+
+- Refreshed generated TypeScript declarations to include the existing content
+  composition `formatVersion` field.
+
 ## [2.1.0] - 2026-09-21
 
 ### Changed

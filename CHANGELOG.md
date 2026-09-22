@@ -4,17 +4,12 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
-## [2.1.1] - 2026-09-21
+## [2.0.1] - 2026-09-22
 
 ### Changed
 
 - Refreshed generated TypeScript declarations to include the existing content
   composition `formatVersion` field.
-
-## [2.1.0] - 2026-09-21
-
-### Changed
-
 - Added opt-in tenant ownership for blocks, translations, revisions, and
   placements while keeping synchronized definitions platform-owned.
 - Added canonical owner/Media/reference composition checks and tenant-bound

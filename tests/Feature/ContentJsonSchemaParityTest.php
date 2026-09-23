@@ -249,3 +249,44 @@ it('describes required content fields as non-empty published values', function (
 
     expect($validator->validate($valid, $schemaObject)->isValid())->toBeTrue();
 });
+
+it('exports collection bounds and uniqueness for Media and reference fields', function (): void {
+    $schema = app(ContentSchemaCompiler::class)->compile([
+        'fields' => [
+            [
+                'key' => 'attachments',
+                'type' => 'media_collection',
+                'required' => true,
+                'settings' => ['max_items' => 2],
+            ],
+            [
+                'key' => 'related',
+                'type' => 'reference_list',
+                'required' => true,
+                'settings' => ['reference_type' => 'article', 'max_items' => 2],
+            ],
+        ],
+    ]);
+    $generated = app(ContentJsonSchemaBuilder::class)->definition('collections', 1, $schema);
+    $attachments = $generated['properties']['attachments'];
+    $related = $generated['properties']['related'];
+
+    expect($attachments['minItems'])->toBe(1)
+        ->and($attachments['maxItems'])->toBe(2)
+        ->and($attachments['items']['format'])->toBe('uuid')
+        ->and($attachments['uniqueItems'])->toBeTrue()
+        ->and($related['minItems'])->toBe(1)
+        ->and($related['maxItems'])->toBe(2)
+        ->and($related['items']['maxLength'])->toBe(191)
+        ->and($related['uniqueItems'])->toBeTrue();
+
+    $validator = app(Validator::class);
+    $schemaObject = json_decode(json_encode($generated, JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR);
+    $valid = json_decode('{"attachments":["2ff49e0a-c3ae-4d26-a81b-722a422241ca"],"related":["article:1"]}');
+    $duplicate = json_decode('{"attachments":["2ff49e0a-c3ae-4d26-a81b-722a422241ca","2ff49e0a-c3ae-4d26-a81b-722a422241ca"],"related":["article:1"]}');
+    $empty = json_decode('{"attachments":[],"related":[]}');
+
+    expect($validator->validate($valid, $schemaObject)->isValid())->toBeTrue()
+        ->and($validator->validate($duplicate, $schemaObject)->isValid())->toBeFalse()
+        ->and($validator->validate($empty, $schemaObject)->isValid())->toBeFalse();
+});

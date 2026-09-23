@@ -4,6 +4,13 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-09-23
+
+### Fixed
+
+- Align generated Content JSON Schemas with published-value requirements for
+  non-empty required fields and preserve field-local JSON Schema references.
+
 ## [2.0.1] - 2026-09-22
 
 ### Changed

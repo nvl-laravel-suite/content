@@ -577,6 +577,11 @@ editor catalog. Preset `field` values are typed
 with `x-content-type`, `x-content-localized`, and `x-content-preset`
 annotations. This is the canonical contract for API clients and generic form
 builders; Filament remains a consumer integration.
+The generated document describes complete, locale-resolved values for a
+publish check. Draft mutations may omit required fields; publication still
+uses the server validator for locale, Media, reference, and semantic rules.
+Local `$ref` values inside a `json` field's schema retain their field-local
+meaning in the generated document.
 
 ## Localization
 

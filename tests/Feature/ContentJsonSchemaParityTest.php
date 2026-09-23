@@ -46,6 +46,24 @@ it('keeps generated schemas aligned with runtime content constraints', function 
                 ],
             ],
             [
+                'key' => 'linkedPayload',
+                'type' => 'json',
+                'label' => 'Linked payload',
+                'settings' => [
+                    'schema' => [
+                        '$schema' => 'https://json-schema.org/draft/2020-12/schema',
+                        '$defs' => [
+                            'code' => ['type' => 'string', 'minLength' => 2],
+                        ],
+                        'type' => 'object',
+                        'properties' => [
+                            'code' => ['$ref' => '#/$defs/code'],
+                        ],
+                        'required' => ['code'],
+                    ],
+                ],
+            ],
+            [
                 'key' => 'image',
                 'preset' => 'image',
                 'label' => 'Image',
@@ -86,6 +104,8 @@ it('keeps generated schemas aligned with runtime content constraints', function 
         ->and($isValidGeneratedValue(['body' => '123456']))->toBeFalse()
         ->and($isValidGeneratedValue(['payload' => null]))->toBeTrue()
         ->and($isValidGeneratedValue(['payload' => ['enabled' => true]]))->toBeTrue()
+        ->and($isValidGeneratedValue(['linkedPayload' => ['code' => 'ok']]))->toBeTrue()
+        ->and($isValidGeneratedValue(['linkedPayload' => ['code' => 'x']]))->toBeFalse()
         ->and($isValidGeneratedValue([
             'image' => [
                 'media' => '2ff49e0a-c3ae-4d26-a81b-722a422241ca',
@@ -121,7 +141,11 @@ it('keeps generated schemas aligned with runtime content constraints', function 
         ->and($runtimeValues(['payload' => null])->values['payload'])
         ->toBeNull()
         ->and($runtimeValues(['payload' => ['enabled' => true]])->values['payload'])
-        ->toBe(['enabled' => true]);
+        ->toBe(['enabled' => true])
+        ->and($runtimeValues(['linkedPayload' => ['code' => 'ok']])->values['linkedPayload'])
+        ->toBe(['code' => 'ok'])
+        ->and(fn () => $runtimeValues(['linkedPayload' => ['code' => 'x']]))
+        ->toThrow(InvalidArgumentException::class);
 
     $image = $schema->get('image');
 
@@ -157,4 +181,71 @@ it('keeps generated schemas aligned with runtime content constraints', function 
         $image,
         $publishingContext,
     ))->toThrow(InvalidArgumentException::class);
+});
+
+it('keeps local JSON references scoped to each nested content field', function (): void {
+    $schema = app(ContentSchemaCompiler::class)->compile([
+        'fields' => array_map(
+            static fn (array $field): array => [
+                'key' => $field['key'],
+                'type' => 'object',
+                'fields' => [[
+                    'key' => 'payload',
+                    'type' => 'json',
+                    'settings' => [
+                        'schema' => [
+                            '$schema' => 'https://json-schema.org/draft/2020-12/schema',
+                            '$defs' => [
+                                'code' => ['type' => 'string', 'minLength' => $field['minimum']],
+                            ],
+                            '$ref' => '#/$defs/code',
+                        ],
+                    ],
+                ]],
+            ],
+            [
+                ['key' => 'left', 'minimum' => 2],
+                ['key' => 'right', 'minimum' => 4],
+            ],
+        ),
+    ]);
+    $generated = app(ContentJsonSchemaBuilder::class)->definition('nested-json', 1, $schema);
+    $validator = app(Validator::class);
+    $schemaObject = json_decode(json_encode($generated, JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR);
+
+    $valid = json_decode('{"left":{"payload":"ab"},"right":{"payload":"abcd"}}');
+    $invalid = json_decode('{"left":{"payload":"ab"},"right":{"payload":"abc"}}');
+
+    expect($validator->validate($valid, $schemaObject)->isValid())->toBeTrue()
+        ->and($validator->validate($invalid, $schemaObject)->isValid())->toBeFalse();
+});
+
+it('describes required content fields as non-empty published values', function (): void {
+    $schema = app(ContentSchemaCompiler::class)->compile([
+        'fields' => [
+            ['key' => 'title', 'type' => 'text', 'required' => true],
+            ['key' => 'items', 'type' => 'list', 'required' => true, 'item' => ['type' => 'text']],
+            ['key' => 'details', 'type' => 'object', 'required' => true, 'fields' => [
+                ['key' => 'note', 'type' => 'text'],
+            ]],
+        ],
+    ]);
+    $generated = app(ContentJsonSchemaBuilder::class)->definition('required-values', 1, $schema);
+    $schemaObject = json_decode(json_encode($generated, JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR);
+    $validator = app(Validator::class);
+
+    foreach ([
+        ['title' => '', 'items' => ['one'], 'details' => ['note' => 'ok']],
+        ['title' => '   ', 'items' => ['one'], 'details' => ['note' => 'ok']],
+        ['title' => 'ok', 'items' => [], 'details' => ['note' => 'ok']],
+        ['title' => 'ok', 'items' => ['one'], 'details' => []],
+    ] as $values) {
+        $value = json_decode(json_encode($values, JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR);
+
+        expect($validator->validate($value, $schemaObject)->isValid())->toBeFalse();
+    }
+
+    $valid = json_decode('{"title":"ok","items":["one"],"details":{"note":"ok"}}');
+
+    expect($validator->validate($valid, $schemaObject)->isValid())->toBeTrue();
 });

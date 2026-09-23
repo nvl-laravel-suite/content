@@ -30,7 +30,7 @@ final class ContentJsonSchemaBuilder
         return [
             '$schema' => 'https://json-schema.org/draft/2020-12/schema',
             '$id' => "urn:nvl:content:{$definition}:v{$version}",
-            ...$this->object($schema->fields),
+            ...$this->object($schema->fields, ''),
         ];
     }
 
@@ -41,20 +41,28 @@ final class ContentJsonSchemaBuilder
      */
     public function field(ContentFieldDefinition $field): array
     {
+        return $this->fieldAtPath($field, $field->key);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function fieldAtPath(ContentFieldDefinition $field, string $path): array
+    {
         $schema = match ($field->type) {
             'boolean' => ['type' => $this->type($field, 'boolean')],
             'integer' => $this->numeric($field, 'integer'),
             'number' => $this->numeric($field, 'number'),
-            'object' => $this->objectField($field),
+            'object' => $this->objectField($field, $path),
             'repeater', 'table' => [
                 'type' => $this->type($field, 'array'),
-                'items' => $this->row($field),
+                'items' => $this->row($field, $path),
                 ...$this->itemBounds($field),
             ],
             'list' => [
                 'type' => $this->type($field, 'array'),
                 'items' => $field->item !== null
-                    ? $this->field($field->item)
+                    ? $this->fieldAtPath($field->item, $path.'/item')
                     : new stdClass,
                 ...$this->itemBounds($field),
             ],
@@ -81,7 +89,7 @@ final class ContentJsonSchemaBuilder
             ],
             'media' => ['type' => $this->type($field, 'string'), 'format' => 'uuid'],
             'reference' => ['type' => $this->type($field, 'string'), 'maxLength' => 191],
-            'json' => $this->json($field),
+            'json' => $this->json($field, $path),
             default => $this->string($field),
         };
 
@@ -106,13 +114,13 @@ final class ContentJsonSchemaBuilder
      * @param  list<ContentFieldDefinition>  $fields
      * @return array<string, mixed>
      */
-    private function object(array $fields): array
+    private function object(array $fields, string $path): array
     {
         $properties = [];
         $required = [];
 
         foreach ($fields as $field) {
-            $properties[$field->key] = $this->field($field);
+            $properties[$field->key] = $this->fieldAtPath($field, $path.'/'.$field->key);
 
             if ($field->required) {
                 $required[] = $field->key;
@@ -135,20 +143,21 @@ final class ContentJsonSchemaBuilder
     /**
      * @return array<string, mixed>
      */
-    private function objectField(ContentFieldDefinition $field): array
+    private function objectField(ContentFieldDefinition $field, string $path): array
     {
         return [
-            ...$this->object($field->fields),
+            ...$this->object($field->fields, $path),
             'type' => $this->type($field, 'object'),
+            ...($field->required ? ['minProperties' => 1] : []),
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function row(ContentFieldDefinition $field): array
+    private function row(ContentFieldDefinition $field, string $path): array
     {
-        $schema = $this->object($field->fields);
+        $schema = $this->object($field->fields, $path.'/items');
 
         if ($field->type === 'repeater') {
             $properties = $schema['properties'];
@@ -188,8 +197,12 @@ final class ContentJsonSchemaBuilder
             $defaultMaximum,
         );
 
-        if (is_int($minimum)) {
-            $schema['minLength'] = $minimum;
+        if (is_int($minimum) || $field->required) {
+            $schema['minLength'] = max(is_int($minimum) ? $minimum : 0, $field->required ? 1 : 0);
+        }
+
+        if ($field->required) {
+            $schema['pattern'] = '\\S';
         }
 
         if (is_int($maximum)) {
@@ -271,8 +284,8 @@ final class ContentJsonSchemaBuilder
             ),
         );
 
-        if (is_int($minimum)) {
-            $bounds['minItems'] = $minimum;
+        if (is_int($minimum) || $field->required) {
+            $bounds['minItems'] = max(is_int($minimum) ? $minimum : 0, $field->required ? 1 : 0);
         }
 
         if (is_int($maximum)) {
@@ -301,7 +314,7 @@ final class ContentJsonSchemaBuilder
     /**
      * @return array<string, mixed>
      */
-    private function json(ContentFieldDefinition $field): array
+    private function json(ContentFieldDefinition $field, string $path): array
     {
         $schema = $field->setting('schema');
 
@@ -313,6 +326,13 @@ final class ContentJsonSchemaBuilder
             $schema,
             "content JSON field {$field->key} schema",
         );
+
+        if (! isset($schema['$id'])) {
+            $schema['$id'] = 'urn:nvl:content:json:'.hash(
+                'sha256',
+                json_encode([$path, $schema], JSON_THROW_ON_ERROR),
+            );
+        }
 
         return $field->required
             ? $schema

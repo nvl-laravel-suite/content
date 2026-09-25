@@ -1,12 +1,12 @@
 # NVL Content — API and usage
 
-[← NVL Laravel Suite](../../../README.md)
+[← NVL Laravel Suite](https://github.com/nvl-laravel-suite)
 
 ## Quick reference
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^2.0` |
+| Installed through | `composer require nvl/content:^2.0` |
 | Module identifier | `nvl/content` |
 | PHP namespace | `Nvl\Content` |
 | Service provider | `Nvl\Content\Providers\ContentServiceProvider` |
@@ -94,7 +94,7 @@ Composer installs these declared dependencies automatically.
 ## Installation
 
 ```bash
-composer require nvl/laravel-suite:^2.0
+composer require nvl/content:^2.0
 php artisan migrate
 php artisan nvl:content:definitions:sync --dry-run
 php artisan nvl:content:definitions:sync
@@ -1080,7 +1080,7 @@ compatibility.
 
 ## Generated PHP and TypeScript contracts
 
-`nvl/data` is the sole DTO and PHP-to-TypeScript boundary. The Content service
+Core's Data component is the DTO and PHP-to-TypeScript boundary. The Content service
 provider registers its source directory automatically. Generate and verify the
 application-wide declarations with:
 

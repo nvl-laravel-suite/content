@@ -1,5 +1,7 @@
 # Security
 
+Submit reports through [this package's private vulnerability reporting form](https://github.com/nvl-laravel-suite/content/security/advisories/new).
+
 Report vulnerabilities privately to the package maintainers. Do not open a
 public issue until a fix is available.
 

@@ -50,7 +50,7 @@ composition snapshots.
   editors. Keep Filament and other UI-specific components consumer-owned.
 - Keep raw `ContentDefinitionSource` values internal. Public definitions,
   preset fields, and snapshot blocks must expose the compiled recursive Data
-  contracts used by `nvl/data` TypeScript generation.
+  contracts used by Core's Data TypeScript generation.
 - Validate preset partition shape in `normalize()`, final locale-resolved
   invariants in `validate()`, and mirror semantic editor constraints through
   `jsonSchema()`. Non-decorative published images require resolved alt text.

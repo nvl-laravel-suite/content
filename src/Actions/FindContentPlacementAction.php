@@ -22,6 +22,8 @@ use Nvl\Content\Services\ContentOwnerRegistry;
 
 /**
  * Finds one unambiguous placement inside an authorized owner composition.
+ *
+ * @api
  */
 final readonly class FindContentPlacementAction
 {

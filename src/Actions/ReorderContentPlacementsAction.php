@@ -33,6 +33,8 @@ use Nvl\Content\Support\ContentConfiguration;
  *
  * Delegation to GetOwnerContentEditorAction is deliberate orchestration so the
  * committed mutation returns the same authorized projection as every editor read.
+ *
+ * @api
  */
 final readonly class ReorderContentPlacementsAction
 {

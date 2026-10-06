@@ -17,6 +17,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Validated contract for creating a reusable draft content block.
+ *
+ * @api
  */
 #[TypeScript]
 final class CreateContentBlockData extends Data

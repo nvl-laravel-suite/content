@@ -16,6 +16,8 @@ use Nvl\Content\Services\ContentIdentityGuard;
 
 /**
  * Finds one unambiguous editable block by its exact portable key.
+ *
+ * @api
  */
 final readonly class FindContentBlockByKeyAction
 {

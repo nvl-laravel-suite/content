@@ -9,6 +9,8 @@ use Nvl\Content\Support\ContentArrays;
 
 /**
  * Immutable recursive field definition shared by source definitions and model casts.
+ *
+ * @api
  */
 final readonly class ContentFieldDefinition
 {

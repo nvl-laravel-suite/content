@@ -14,6 +14,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Privileged editable placement representation for headless management.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentPlacementData extends Data
@@ -41,6 +43,11 @@ final class ContentPlacementData extends Data
         public readonly ?ContentBlockData $block = null,
     ) {}
 
+    /**
+     * Build the package projection from its internal storage state.
+     *
+     * @internal
+     */
     public static function fromModel(ContentPlacement $placement): self
     {
         $relatedBlock = $placement->relationLoaded('block')

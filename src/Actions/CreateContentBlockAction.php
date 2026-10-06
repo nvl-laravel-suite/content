@@ -29,6 +29,8 @@ use Nvl\Translatable\Services\TranslationWriter;
 
 /**
  * Creates a draft block and all localized/media state atomically.
+ *
+ * @api
  */
 final readonly class CreateContentBlockAction
 {

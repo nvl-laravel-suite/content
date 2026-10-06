@@ -16,6 +16,8 @@ use Nvl\Filterable\Services\EloquentFilterApplier;
 
 /**
  * Lists blocks through authorization and an allowlisted filter schema.
+ *
+ * @api
  */
 final readonly class ListContentBlocksAction
 {

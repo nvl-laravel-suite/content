@@ -12,6 +12,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Immutable JSON-safe composition source used by versioning consumers.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentCompositionSnapshotData extends Data

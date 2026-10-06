@@ -60,6 +60,8 @@ use Nvl\Filterable\Data\FilterSet;
  * @method static ContentCompositionSnapshotData adoptSnapshot(ContentCompositionSnapshotData $snapshot)
  *
  * @see ContentEngine
+ *
+ * @api
  */
 final class Content extends Facade
 {

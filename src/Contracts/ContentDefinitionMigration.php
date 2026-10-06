@@ -9,6 +9,8 @@ use Nvl\Content\Data\ContentDefinitionMigrationValuesData;
 
 /**
  * Deterministically upgrades one definition through one sequential version step.
+ *
+ * @api
  */
 interface ContentDefinitionMigration
 {

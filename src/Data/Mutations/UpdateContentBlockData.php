@@ -18,6 +18,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Revision-safe patch or explicit replacement contract for editable content.
+ *
+ * @api
  */
 #[TypeScript]
 final class UpdateContentBlockData extends Data

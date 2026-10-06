@@ -19,6 +19,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Lists bounded placement summaries for an authorized collection of Content owners.
+ *
+ * @api
  */
 final readonly class ListOwnerContentPlacementSummariesAction
 {

@@ -11,6 +11,8 @@ use Nvl\Content\Models\ContentBlock;
 
 /**
  * Consumer-owned policy boundary for every content capability.
+ *
+ * @api
  */
 interface ContentAuthorization
 {

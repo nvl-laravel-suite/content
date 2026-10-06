@@ -13,6 +13,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Validated contract for placing a reusable block on one registered owner.
+ *
+ * @api
  */
 #[TypeScript]
 final class PlaceContentBlockData extends Data

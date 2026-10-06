@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Deterministic definition synchronization plan and execution result.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentDefinitionSyncPlanData extends Data

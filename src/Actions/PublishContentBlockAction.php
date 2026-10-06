@@ -25,6 +25,8 @@ use Nvl\Content\Validation\ContentValueValidator;
 
 /**
  * Validates every required locale and publishes one exact revision.
+ *
+ * @api
  */
 final readonly class PublishContentBlockAction
 {

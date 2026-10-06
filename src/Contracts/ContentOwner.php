@@ -9,6 +9,8 @@ use Nvl\Content\Models\ContentPlacement;
 
 /**
  * Marks an Eloquent model as a registered owner of grouped Content compositions.
+ *
+ * @api
  */
 interface ContentOwner
 {
@@ -23,6 +25,8 @@ interface ContentOwner
      * Return every Content placement directly associated with this owner.
      *
      * @return MorphMany<ContentPlacement, *>
+     *
+     * @internal
      */
     public function contentPlacements(): MorphMany;
 }

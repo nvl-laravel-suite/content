@@ -8,6 +8,8 @@ use Nvl\Content\Validation\ContentValidationContext;
 
 /**
  * Validates and displays one allowlisted reference field target.
+ *
+ * @api
  */
 interface ContentReferenceResolver
 {

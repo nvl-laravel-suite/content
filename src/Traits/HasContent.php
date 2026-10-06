@@ -16,6 +16,10 @@ use Nvl\Content\Support\ContentOwnerDeletionBridge;
  * Adds the direct polymorphic Content relationship and owner lifecycle cleanup.
  *
  * @mixin Model
+ *
+ * @api
+ *
+ * @nvl-consumer-relation contentPlacements
  */
 trait HasContent
 {
@@ -95,6 +99,8 @@ trait HasContent
      * Return every Content placement directly associated with this owner.
      *
      * @return MorphMany<ContentPlacement, $this>
+     *
+     * @internal
      */
     public function contentPlacements(): MorphMany
     {

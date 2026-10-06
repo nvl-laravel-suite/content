@@ -13,6 +13,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Revision-safe contract for moving, ordering, hiding, or overriding a placement.
+ *
+ * @api
  */
 #[TypeScript]
 final class UpdateContentPlacementData extends Data

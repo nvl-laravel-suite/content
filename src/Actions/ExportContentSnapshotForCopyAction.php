@@ -12,6 +12,11 @@ use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Support\Tenancy\Contracts\TenantContext;
 use RuntimeException;
 
+/**
+ * Export an admitted catalog owner snapshot for copying into the active tenant.
+ *
+ * @api
+ */
 final readonly class ExportContentSnapshotForCopyAction
 {
     public function __construct(private ContentCatalogCopyRegistry $copies, private ContentOwnerRegistry $owners, private ContentMediaReferences $media, private TenantContext $context) {}

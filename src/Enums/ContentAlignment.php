@@ -8,6 +8,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Direction-aware semantic alignment for adaptable rich content sections.
+ *
+ * @api
  */
 #[TypeScript]
 enum ContentAlignment: string

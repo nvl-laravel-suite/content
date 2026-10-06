@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Revision-safe block target in a definition migration plan.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentDefinitionMigrationPlanItemData extends Data

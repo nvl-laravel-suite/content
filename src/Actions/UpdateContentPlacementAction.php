@@ -22,6 +22,8 @@ use Nvl\Content\Services\ContentPlacementValidator;
 
 /**
  * Reparents, reorders, and overrides one placement with cycle and revision checks.
+ *
+ * @api
  */
 final readonly class UpdateContentPlacementAction
 {

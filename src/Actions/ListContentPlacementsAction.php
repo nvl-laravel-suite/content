@@ -19,6 +19,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Lists every placement fact for one authorized headless editor owner.
+ *
+ * @api
  */
 final readonly class ListContentPlacementsAction
 {

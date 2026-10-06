@@ -22,6 +22,8 @@ use Nvl\Content\Services\ContentPlatformCatalogGuard;
 
 /**
  * Synchronizes the queryable definition mirror without deleting application data.
+ *
+ * @api
  */
 final readonly class SyncContentDefinitionsAction
 {

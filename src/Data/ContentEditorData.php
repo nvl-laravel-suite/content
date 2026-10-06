@@ -13,6 +13,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Complete typed bootstrap contract for a consumer-owned content editor.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentEditorData extends Data

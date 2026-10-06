@@ -8,6 +8,8 @@ use Nvl\Content\Schema\ContentFieldDefinition;
 
 /**
  * Optional boot-time validation hook for field-type-specific schema settings.
+ *
+ * @api
  */
 interface ContentFieldDefinitionValidator
 {

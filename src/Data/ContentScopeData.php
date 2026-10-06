@@ -9,6 +9,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * One exact Content scope in caller-defined fallback order.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentScopeData extends Data

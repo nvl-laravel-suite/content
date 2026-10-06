@@ -25,6 +25,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Places one reusable block in an allowlisted owner tree.
+ *
+ * @api
  */
 final readonly class PlaceContentBlockAction
 {

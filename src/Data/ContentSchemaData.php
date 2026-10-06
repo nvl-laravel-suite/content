@@ -12,6 +12,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Generated-client contract for a compiled Content schema.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentSchemaData extends Data

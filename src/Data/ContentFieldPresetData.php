@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Editor-facing contract for one reusable semantic field preset.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentFieldPresetData extends Data

@@ -12,6 +12,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Public-safe renderer-neutral block tree node.
+ *
+ * @api
  */
 #[TypeScript]
 final class RenderedContentBlockData extends Data

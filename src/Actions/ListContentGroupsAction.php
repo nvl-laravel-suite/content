@@ -14,6 +14,8 @@ use Nvl\Content\Services\ContentOwnerRegistry;
 
 /**
  * Lists the named composition groups currently present on one Content owner.
+ *
+ * @api
  */
 final readonly class ListContentGroupsAction
 {

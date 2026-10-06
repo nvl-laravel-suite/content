@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Data;
 
+/**
+ * Immutable source snapshot and admitted media identities for a catalog copy.
+ *
+ * @api
+ */
 final readonly class ContentSnapshotCopyData
 {
     /** @param list<string> $mediaIds */

@@ -8,6 +8,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Publication lifecycle of a reusable content block.
+ *
+ * @api
  */
 #[TypeScript]
 enum ContentStatus: string

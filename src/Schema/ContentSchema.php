@@ -11,6 +11,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Immutable root schema with deterministic recursive traversal.
+ *
+ * @api
  */
 final readonly class ContentSchema implements JsonSerializable
 {

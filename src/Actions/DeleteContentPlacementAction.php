@@ -19,6 +19,8 @@ use Nvl\Content\Services\ContentPlacementOwnerLock;
 
 /**
  * Removes a leaf placement without deleting its reusable block.
+ *
+ * @api
  */
 final readonly class DeleteContentPlacementAction
 {

@@ -15,6 +15,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Privileged editable block representation.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentBlockData extends Data
@@ -45,6 +47,11 @@ final class ContentBlockData extends Data
         public readonly ?string $publishedAt,
     ) {}
 
+    /**
+     * Build the package projection from its internal storage state.
+     *
+     * @internal
+     */
     public static function fromModel(ContentBlock $block): self
     {
         $block->loadMissing(['definition', 'translations']);

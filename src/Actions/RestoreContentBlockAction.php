@@ -20,6 +20,8 @@ use Nvl\Content\Support\ContentArrays;
 
 /**
  * Restores one deleted block as a draft and re-establishes valid Media links.
+ *
+ * @api
  */
 final readonly class RestoreContentBlockAction
 {

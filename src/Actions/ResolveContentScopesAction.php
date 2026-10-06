@@ -22,6 +22,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Resolves complete published Content scopes for non-request rendering consumers.
+ *
+ * @api
  */
 final readonly class ResolveContentScopesAction
 {

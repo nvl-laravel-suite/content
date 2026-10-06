@@ -17,6 +17,8 @@ use Nvl\Content\Services\ContentRevisionRecorder;
 
 /**
  * Removes a block from public resolution while preserving history and placements.
+ *
+ * @api
  */
 final readonly class ArchiveContentBlockAction
 {

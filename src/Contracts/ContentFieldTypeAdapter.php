@@ -9,6 +9,8 @@ use Nvl\Content\Validation\ContentValidationContext;
 
 /**
  * Pluggable field validation, normalization, and display contract.
+ *
+ * @api
  */
 interface ContentFieldTypeAdapter
 {

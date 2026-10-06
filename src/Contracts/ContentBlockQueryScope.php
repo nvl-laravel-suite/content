@@ -10,6 +10,8 @@ use Nvl\Content\Models\ContentBlock;
 
 /**
  * Optionally constrains block catalog queries through a trusted authorization adapter.
+ *
+ * @api
  */
 interface ContentBlockQueryScope
 {

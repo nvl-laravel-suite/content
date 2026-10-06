@@ -8,6 +8,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Selects non-destructive deep patching or complete replacement semantics.
+ *
+ * @api
  */
 #[TypeScript]
 enum ContentMutationMode: string

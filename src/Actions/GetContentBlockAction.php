@@ -12,6 +12,8 @@ use Nvl\Content\Models\ContentBlock;
 
 /**
  * Reads one editable block through the package authorization boundary.
+ *
+ * @api
  */
 final readonly class GetContentBlockAction
 {

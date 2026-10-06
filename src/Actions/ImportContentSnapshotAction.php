@@ -19,7 +19,11 @@ use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Contracts\TenantContext;
 use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 
-/** Reidentifies a grant-authorized snapshot beneath a canonical tenant owner. */
+/**
+ * Reidentifies a grant-authorized snapshot beneath a canonical tenant owner.
+ *
+ * @api
+ */
 final readonly class ImportContentSnapshotAction
 {
     public function __construct(

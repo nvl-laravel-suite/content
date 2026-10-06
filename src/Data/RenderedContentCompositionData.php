@@ -12,6 +12,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Complete block composition grouped into stable regions.
+ *
+ * @api
  */
 #[TypeScript]
 final class RenderedContentCompositionData extends Data

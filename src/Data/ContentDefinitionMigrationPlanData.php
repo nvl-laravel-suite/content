@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Bounded, deterministic, revision-safe definition migration plan.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentDefinitionMigrationPlanData extends Data

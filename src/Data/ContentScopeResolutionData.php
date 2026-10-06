@@ -10,6 +10,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Deterministic localized values selected through ordered scope fallback.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentScopeResolutionData extends Data

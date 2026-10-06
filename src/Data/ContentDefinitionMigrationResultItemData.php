@@ -10,6 +10,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * One successfully committed block definition upgrade.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentDefinitionMigrationResultItemData extends Data

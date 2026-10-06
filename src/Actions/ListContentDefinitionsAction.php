@@ -13,6 +13,8 @@ use Nvl\Content\Services\ContentDefinitionRegistry;
 
 /**
  * Lists the schemas available to an authorized headless content editor.
+ *
+ * @api
  */
 final readonly class ListContentDefinitionsAction
 {

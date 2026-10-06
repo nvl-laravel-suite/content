@@ -54,6 +54,8 @@ use Nvl\Filterable\Data\FilterSet;
 
 /**
  * Provides the canonical model-first application surface behind the Content facade.
+ *
+ * @api
  */
 final readonly class Content
 {

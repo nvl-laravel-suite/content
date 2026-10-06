@@ -16,6 +16,8 @@ use Nvl\Content\Support\ContentConfiguration;
  *
  * Delegation to the catalog and placement Actions is deliberate orchestration
  * so their authorization, ordering, and row-bound contracts remain canonical.
+ *
+ * @api
  */
 final readonly class GetOwnerContentEditorAction
 {

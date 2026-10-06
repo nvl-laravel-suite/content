@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Registers stable morph aliases for Eloquent Content owners.
+ *
+ * @api
  */
 interface ContentOwnerRegistrar
 {

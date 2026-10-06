@@ -10,6 +10,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Safe reason why one block cannot enter a definition migration batch.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentDefinitionMigrationProblemData extends Data

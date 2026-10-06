@@ -11,6 +11,8 @@ use Nvl\Content\Services\ContentRenderResources;
 
 /**
  * Immutable context shared by nested field adapters.
+ *
+ * @api
  */
 final readonly class ContentValidationContext
 {

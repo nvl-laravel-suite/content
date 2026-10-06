@@ -16,6 +16,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * One strongly typed immutable block record inside a composition snapshot.
+ *
+ * @api
  */
 #[MapInputName(SnakeCaseMapper::class)]
 #[MapOutputName(SnakeCaseMapper::class)]

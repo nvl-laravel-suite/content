@@ -27,6 +27,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Atomically replaces the reusable block behind one owner placement.
+ *
+ * @api
  */
 final readonly class ReplaceContentPlacementAction
 {

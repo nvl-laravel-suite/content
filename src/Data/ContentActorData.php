@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Stable actor identity for authorization, revisions, and events.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentActorData extends Data

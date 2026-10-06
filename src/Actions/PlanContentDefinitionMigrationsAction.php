@@ -23,6 +23,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Builds a bounded read-only migration plan without transforming stored values.
+ *
+ * @api
  */
 final readonly class PlanContentDefinitionMigrationsAction
 {

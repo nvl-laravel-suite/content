@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Source-controlled block definition.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentDefinitionData extends Data

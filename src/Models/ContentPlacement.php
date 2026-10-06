@@ -36,6 +36,8 @@ use Nvl\Support\Config\PackageStorage;
  * @property-read Model $owner
  * @property-read ContentPlacement|null $parent
  * @property-read Collection<int, ContentPlacement> $children
+ *
+ * @api
  */
 final class ContentPlacement extends Model implements HasMedia
 {

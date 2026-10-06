@@ -13,6 +13,8 @@ use Nvl\Content\Data\ContentCompositionSnapshotData;
  * Persists a typed immutable Content composition snapshot as deterministic JSON.
  *
  * @implements CastsAttributes<ContentCompositionSnapshotData|null, mixed>
+ *
+ * @api
  */
 final class ContentCompositionSnapshotCast implements CastsAttributes
 {

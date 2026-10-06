@@ -8,6 +8,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Delivery policy classification applied to blocks and referenced Media.
+ *
+ * @api
  */
 #[TypeScript]
 enum ContentVisibility: string

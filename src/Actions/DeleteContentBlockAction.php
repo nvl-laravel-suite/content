@@ -18,6 +18,8 @@ use Nvl\Content\Services\ContentRevisionRecorder;
 
 /**
  * Soft-deletes content after detaching references; Media binaries remain intact.
+ *
+ * @api
  */
 final readonly class DeleteContentBlockAction
 {

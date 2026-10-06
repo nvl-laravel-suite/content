@@ -60,6 +60,8 @@ use Nvl\Translatable\Translatable;
  * @property-read Collection<int, ContentBlockTranslation> $translations
  * @property-read Collection<int, ContentPlacement> $placements
  * @property-read Collection<int, ContentRevision> $revisions
+ *
+ * @api
  */
 final class ContentBlock extends Model implements HasMedia, TranslatableModel
 {

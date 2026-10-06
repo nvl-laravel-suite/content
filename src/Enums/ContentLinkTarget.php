@@ -8,6 +8,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Safe browsing-context targets supported by semantic links and buttons.
+ *
+ * @api
  */
 #[TypeScript]
 enum ContentLinkTarget: string

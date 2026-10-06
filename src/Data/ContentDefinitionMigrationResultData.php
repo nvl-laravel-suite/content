@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Atomic definition migration batch result.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentDefinitionMigrationResultData extends Data

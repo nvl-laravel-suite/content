@@ -14,6 +14,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Generated-client contract for one recursive Content schema field.
+ *
+ * @api
  */
 #[TypeScript]
 final class ContentFieldDefinitionData extends Data

@@ -82,8 +82,10 @@ composition snapshots.
   live rendering, and snapshots.
 - Pass the exact expected revision for updates and lifecycle transitions.
 - Register stable owner aliases directly to Eloquent models implementing
-  `ContentOwner`; use `HasContent` for the direct placement relationship and
-  depend on `ContentOwnerRegistrar` from provider integrations.
+  `ContentOwner`; use `HasContent` to supply its package capability and
+  depend on `ContentOwnerRegistrar` from provider integrations. Read placements
+  through `Content::placements()` or `ListOwnerContentPlacementSummariesAction`
+  with the explicit actor; `contentPlacements()` is an internal relation.
 - Declare every owner composition with the `CONTENT_GROUPS` constant, or one
   composition with the `CONTENT_GROUP` constant. Reject undeclared groups and
   return declared groups even before they contain placements.

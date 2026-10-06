@@ -9,6 +9,8 @@ use Nvl\Content\Validation\ContentValidationContext;
 
 /**
  * Defines one reusable semantic field schema and its normalized/rendered projection.
+ *
+ * @api
  */
 interface ContentFieldPreset
 {

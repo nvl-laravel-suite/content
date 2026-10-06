@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\Hidden;
 
 /**
  * Immutable server-side input supplied to one definition migration step.
+ *
+ * @api
  */
 #[Hidden]
 final class ContentDefinitionMigrationContextData extends Data

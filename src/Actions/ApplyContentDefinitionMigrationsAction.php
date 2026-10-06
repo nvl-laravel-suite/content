@@ -20,6 +20,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Atomically applies one exact revision-safe definition migration plan.
+ *
+ * @api
  */
 final readonly class ApplyContentDefinitionMigrationsAction
 {

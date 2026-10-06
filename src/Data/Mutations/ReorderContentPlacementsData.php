@@ -15,6 +15,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Complete owner-group placement tree proposal.
+ *
+ * @api
  */
 #[MapInputName(CamelCaseMapper::class)]
 #[MapOutputName(CamelCaseMapper::class)]

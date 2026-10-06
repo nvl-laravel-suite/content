@@ -17,6 +17,8 @@ use Nvl\Content\Services\ContentSchemaCompiler;
 
 /**
  * Lists the reusable semantic schemas available to an authorized headless content editor.
+ *
+ * @api
  */
 final readonly class ListContentPresetsAction
 {

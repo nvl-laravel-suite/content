@@ -31,6 +31,8 @@ use Nvl\Translatable\Services\TranslationWriter;
 
 /**
  * Replaces or patches editable block content with optimistic concurrency.
+ *
+ * @api
  */
 final readonly class UpdateContentBlockAction
 {

@@ -8,6 +8,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Semantic document-outline level for reusable heading content.
+ *
+ * @api
  */
 #[TypeScript]
 enum ContentHeadingLevel: string

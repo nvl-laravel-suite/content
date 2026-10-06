@@ -6,6 +6,8 @@ namespace Nvl\Content\Schema;
 
 /**
  * Validated internal source contract before preset expansion and schema compilation.
+ *
+ * @api
  */
 final readonly class ContentDefinitionSource
 {

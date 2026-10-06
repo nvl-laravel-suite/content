@@ -12,6 +12,8 @@ use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 
 /**
  * Per-composition model and resolver cache; never shared across requests or jobs.
+ *
+ * @api
  */
 final class ContentRenderResources
 {
@@ -26,6 +28,8 @@ final class ContentRenderResources
 
     /**
      * @param  list<string>  $identifiers
+     *
+     * @internal
      */
     public function preloadMedia(array $identifiers): void
     {
@@ -61,6 +65,8 @@ final class ContentRenderResources
     /**
      * @param  list<string>  $identifiers
      * @return Collection<string, Media>
+     *
+     * @internal
      */
     public function media(array $identifiers): Collection
     {

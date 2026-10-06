@@ -14,6 +14,7 @@ use Nvl\Content\Exceptions\ContentDefinitionMigrationException;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Validation\ContentValueValidator;
+use Nvl\Support\Events\DomainEventDispatcher;
 use Nvl\Translatable\Services\TranslationWriter;
 use Throwable;
 
@@ -35,6 +36,7 @@ final readonly class ContentBlockDefinitionMigrator
         private TranslationWriter $translationWriter,
         private ContentBlockPlacementSynchronizer $placements,
         private ContentScopeRegistry $scopes,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     public function migrate(
@@ -159,12 +161,12 @@ final readonly class ContentBlockDefinitionMigrator
         }
 
         $this->revisions->record($block, ContentRevisionEvent::Migrated, $actor);
-        ContentBlockChanged::dispatch(
+        $this->domainEvents->dispatch(new ContentBlockChanged(
             $block->id,
             ContentRevisionEvent::Migrated,
             $block->revision,
             $actor,
-        );
+        ), $block->getConnection());
 
         return $block->refresh()->load(['definition', 'translations']);
     }

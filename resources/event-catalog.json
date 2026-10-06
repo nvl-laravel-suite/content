@@ -1,0 +1,385 @@
+{
+  "schema_version": 1,
+  "package": "nvl/content",
+  "documentation": "docs/events.md",
+  "implementation_status": "implemented; executable acceptance proof pending",
+  "events": [
+    {
+      "class": "Nvl\\Content\\Events\\ContentBlockChanged",
+      "source": "packages/nvl/content/src/Events/ContentBlockChanged.php",
+      "constructor_fields": [
+        {
+          "name": "blockId",
+          "type": "string",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "event",
+          "type": "Nvl\\Content\\Enums\\ContentRevisionEvent",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "revision",
+          "type": "int",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "actor",
+          "type": "Nvl\\Content\\Data\\ContentActorData",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "visibility": "public",
+          "required": false,
+          "default_expression": "1"
+        }
+      ],
+      "public_fields": [
+        {
+          "name": "blockId",
+          "type": "string"
+        },
+        {
+          "name": "event",
+          "type": "Nvl\\Content\\Enums\\ContentRevisionEvent"
+        },
+        {
+          "name": "revision",
+          "type": "int"
+        },
+        {
+          "name": "actor",
+          "type": "Nvl\\Content\\Data\\ContentActorData"
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int"
+        }
+      ],
+      "kind": "value_object",
+      "schema_version": 1,
+      "trigger": "Content block revision/lifecycle changed.",
+      "aliases": [],
+      "producers": [
+        {
+          "path": "packages/nvl/content/src/Actions/ArchiveContentBlockAction.php",
+          "trigger": "Content block revision/lifecycle changed.",
+          "connection": "$model->getConnection()",
+          "construction_expression": "new ContentBlockChanged( $model->id, ContentRevisionEvent::Archived, $model->revision, $actor, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Actions/CreateContentBlockAction.php",
+          "trigger": "Content block revision/lifecycle changed.",
+          "connection": "$block->getConnection()",
+          "construction_expression": "new ContentBlockChanged( $block->id, ContentRevisionEvent::Created, $block->revision, $actor, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Actions/DeleteContentBlockAction.php",
+          "trigger": "Content block revision/lifecycle changed.",
+          "connection": "$model->getConnection()",
+          "construction_expression": "new ContentBlockChanged( $model->id, ContentRevisionEvent::Deleted, $model->revision, $actor, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Actions/PublishContentBlockAction.php",
+          "trigger": "Content block revision/lifecycle changed.",
+          "connection": "$model->getConnection()",
+          "construction_expression": "new ContentBlockChanged( $model->id, ContentRevisionEvent::Published, $model->revision, $actor, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Actions/RestoreContentBlockAction.php",
+          "trigger": "Content block revision/lifecycle changed.",
+          "connection": "$model->getConnection()",
+          "construction_expression": "new ContentBlockChanged( $model->id, ContentRevisionEvent::Restored, $model->revision, $actor, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Actions/UpdateContentBlockAction.php",
+          "trigger": "Content block revision/lifecycle changed.",
+          "connection": "$model->getConnection()",
+          "construction_expression": "new ContentBlockChanged( $model->id, ContentRevisionEvent::Updated, $model->revision, $actor, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Services/ContentBlockDefinitionMigrator.php",
+          "trigger": "Content block revision/lifecycle changed.",
+          "connection": "$block->getConnection()",
+          "construction_expression": "new ContentBlockChanged( $block->id, ContentRevisionEvent::Migrated, $block->revision, $actor, )"
+        }
+      ],
+      "security_notes": [
+        "Actor, block/placement identifiers, revisions, enum facts and optional owner/group references. No block content, definition schema or model. Persisted polymorphic owner identity is used."
+      ],
+      "no_op_semantics": "Existing mutation/revision guards decide publication. Caller-owned outer transactions remain the commit boundary. No extra transaction or global deduplication is invented."
+    },
+    {
+      "class": "Nvl\\Content\\Events\\ContentPlacementChanged",
+      "source": "packages/nvl/content/src/Events/ContentPlacementChanged.php",
+      "constructor_fields": [
+        {
+          "name": "placementId",
+          "type": "string",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "event",
+          "type": "Nvl\\Content\\Enums\\ContentPlacementEvent",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "revision",
+          "type": "int",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "actor",
+          "type": "Nvl\\Content\\Data\\ContentActorData",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "ownerType",
+          "type": "?string",
+          "visibility": "public",
+          "required": false,
+          "default_expression": "null"
+        },
+        {
+          "name": "ownerId",
+          "type": "?string",
+          "visibility": "public",
+          "required": false,
+          "default_expression": "null"
+        },
+        {
+          "name": "group",
+          "type": "?string",
+          "visibility": "public",
+          "required": false,
+          "default_expression": "null"
+        },
+        {
+          "name": "blockId",
+          "type": "?string",
+          "visibility": "public",
+          "required": false,
+          "default_expression": "null"
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "visibility": "public",
+          "required": false,
+          "default_expression": "1"
+        }
+      ],
+      "public_fields": [
+        {
+          "name": "placementId",
+          "type": "string"
+        },
+        {
+          "name": "event",
+          "type": "Nvl\\Content\\Enums\\ContentPlacementEvent"
+        },
+        {
+          "name": "revision",
+          "type": "int"
+        },
+        {
+          "name": "actor",
+          "type": "Nvl\\Content\\Data\\ContentActorData"
+        },
+        {
+          "name": "ownerType",
+          "type": "?string"
+        },
+        {
+          "name": "ownerId",
+          "type": "?string"
+        },
+        {
+          "name": "group",
+          "type": "?string"
+        },
+        {
+          "name": "blockId",
+          "type": "?string"
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int"
+        }
+      ],
+      "kind": "value_object",
+      "schema_version": 1,
+      "trigger": "Owner placement revision/lifecycle changed.",
+      "aliases": [],
+      "producers": [
+        {
+          "path": "packages/nvl/content/src/Actions/DeleteContentPlacementAction.php",
+          "trigger": "Owner placement revision/lifecycle changed.",
+          "connection": "$model->getConnection()",
+          "construction_expression": "new ContentPlacementChanged( $model->id, ContentPlacementEvent::Deleted, $nextRevision, $actor, $model->owner_type, $model->owner_id, $model->group, $model->content_block_id, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Actions/PlaceContentBlockAction.php",
+          "trigger": "Owner placement revision/lifecycle changed.",
+          "connection": "$placement->getConnection()",
+          "construction_expression": "new ContentPlacementChanged( $placement->id, ContentPlacementEvent::Created, $placement->revision, $actor, $ownerType, $ownerId, $group, $lockedBlock->id, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Actions/ReorderContentPlacementsAction.php",
+          "trigger": "Owner placement revision/lifecycle changed.",
+          "connection": "$placement->getConnection()",
+          "construction_expression": "new ContentPlacementChanged( $placement->id, ContentPlacementEvent::Updated, $placement->revision, $actor, $ownerType, $ownerId, $group, $placement->content_block_id, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Actions/ReplaceContentPlacementAction.php",
+          "trigger": "Owner placement revision/lifecycle changed.",
+          "connection": "$model->getConnection()",
+          "construction_expression": "new ContentPlacementChanged( $model->id, ContentPlacementEvent::Updated, $model->revision, $actor, $ownerType, $ownerId, $group, $replacement->id, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Actions/UpdateContentPlacementAction.php",
+          "trigger": "Owner placement revision/lifecycle changed.",
+          "connection": "$model->getConnection()",
+          "construction_expression": "new ContentPlacementChanged( $model->id, ContentPlacementEvent::Updated, $model->revision, $actor, $model->owner_type, $model->owner_id, $model->group, $model->content_block_id, )"
+        },
+        {
+          "path": "packages/nvl/content/src/Services/ContentBlockPlacementSynchronizer.php",
+          "trigger": "Owner placement revision/lifecycle changed.",
+          "connection": "$placement->getConnection()",
+          "construction_expression": "new ContentPlacementChanged( $placement->id, ContentPlacementEvent::Updated, $placement->revision, $actor, $placement->owner_type, $placement->owner_id, $placement->group, $block->id, )"
+        }
+      ],
+      "security_notes": [
+        "Actor, block/placement identifiers, revisions, enum facts and optional owner/group references. No block content, definition schema or model. Persisted polymorphic owner identity is used."
+      ],
+      "no_op_semantics": "Existing mutation/revision guards decide publication. Caller-owned outer transactions remain the commit boundary. No extra transaction or global deduplication is invented."
+    }
+  ],
+  "value_types": [
+    {
+      "class": "Nvl\\Content\\Data\\ContentActorData",
+      "source": "packages/nvl/content/src/Data/ContentActorData.php",
+      "constructor_fields": [
+        {
+          "name": "type",
+          "type": "?string",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "id",
+          "type": "int|string|null",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "system",
+          "type": "bool",
+          "visibility": "public",
+          "required": false,
+          "default_expression": "false"
+        }
+      ],
+      "public_fields": [
+        {
+          "name": "type",
+          "type": "?string"
+        },
+        {
+          "name": "id",
+          "type": "int|string|null"
+        },
+        {
+          "name": "system",
+          "type": "bool"
+        }
+      ],
+      "kind": "value_object"
+    },
+    {
+      "class": "Nvl\\Content\\Enums\\ContentPlacementEvent",
+      "source": "packages/nvl/content/src/Enums/ContentPlacementEvent.php",
+      "constructor_fields": [],
+      "public_fields": [],
+      "kind": "enum",
+      "backing_type": "string",
+      "cases": [
+        {
+          "name": "Created",
+          "value": "created"
+        },
+        {
+          "name": "Updated",
+          "value": "updated"
+        },
+        {
+          "name": "Deleted",
+          "value": "deleted"
+        }
+      ]
+    },
+    {
+      "class": "Nvl\\Content\\Enums\\ContentRevisionEvent",
+      "source": "packages/nvl/content/src/Enums/ContentRevisionEvent.php",
+      "constructor_fields": [],
+      "public_fields": [],
+      "kind": "enum",
+      "backing_type": "string",
+      "cases": [
+        {
+          "name": "Created",
+          "value": "created"
+        },
+        {
+          "name": "Updated",
+          "value": "updated"
+        },
+        {
+          "name": "Published",
+          "value": "published"
+        },
+        {
+          "name": "Archived",
+          "value": "archived"
+        },
+        {
+          "name": "Deleted",
+          "value": "deleted"
+        },
+        {
+          "name": "Restored",
+          "value": "restored"
+        },
+        {
+          "name": "Migrated",
+          "value": "migrated"
+        }
+      ]
+    }
+  ],
+  "aliases": [],
+  "publication": {
+    "publication": "The native host dispatcher receives the captured event after the supplied source connection outer commit, or immediately when that connection has no active transaction.",
+    "rollback": "Callbacks attach to the matching native connection and current nesting record; native outer/savepoint rollback discards the corresponding callbacks.",
+    "registration_failure": "Missing source transaction records fail before commit; Mail Notifications reports and drops unusable observations.",
+    "host_policy": "Host after-commit listeners and queue after_commit policies can add their own deferral after publication. Host transaction infrastructure and dispatcher bindings are preserved.",
+    "delivery_limit": "Local callbacks are not an outbox. Process exit between commit and callback can lose delivery; no crash durability or exactly-once delivery is promised.",
+    "cardinality": "One canonical object is dispatched per qualifying producer call. This is local publication, not cross-process deduplication or a guarantee that repeated observations are unique.",
+    "manual_producers": "Use Nvl\\Support\\Events\\DomainEventDispatcher::dispatch($event, $writerConnection). Native Event::dispatch() is immediate and has no package interception."
+  },
+  "security_notes": [
+    "Actor, block/placement identifiers, revisions, enum facts and optional owner/group references. No block content, definition schema or model. Persisted polymorphic owner identity is used."
+  ],
+  "no_op_semantics": "Existing mutation/revision guards decide publication. Caller-owned outer transactions remain the commit boundary. No extra transaction or global deduplication is invented.",
+  "notes": []
+}

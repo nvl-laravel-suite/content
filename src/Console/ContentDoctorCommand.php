@@ -33,6 +33,13 @@ final class ContentDoctorCommand extends Command
 
         $checks = $doctor->inspect();
         $healthy = $checks['healthy'];
+        if ($this->option('strict')) {
+            foreach ($checks as $check) {
+                if (is_array($check) && in_array($check['severity'] ?? null, ['error', 'warning'], true) && ($check['passed'] ?? true) === false) {
+                    $healthy = false;
+                }
+            }
+        }
 
         if ($format === 'json') {
             $this->line((string) json_encode($checks, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));

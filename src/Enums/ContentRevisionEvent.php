@@ -6,6 +6,8 @@ namespace Nvl\Content\Enums;
 
 /**
  * Immutable block-history event names persisted with revision snapshots.
+ *
+ * @api
  */
 enum ContentRevisionEvent: string
 {

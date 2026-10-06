@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentOwner;
+use Nvl\Content\Contracts\ReplaceContentPlacementContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Enums\ContentAbility;
@@ -24,13 +25,14 @@ use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentPlacementValidator;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Atomically replaces the reusable block behind one owner placement.
  *
  * @api
  */
-final readonly class ReplaceContentPlacementAction
+final readonly class ReplaceContentPlacementAction implements ReplaceContentPlacementContract
 {
     public function __construct(
         private ContentAuthorization $authorization,
@@ -38,6 +40,7 @@ final readonly class ReplaceContentPlacementAction
         private ContentPlacementValidator $validator,
         private ContentPlacementOwnerLock $ownerLocks,
         private ContentMediaSynchronizer $media,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     /**
@@ -154,7 +157,7 @@ final readonly class ReplaceContentPlacementAction
                         $actor,
                         $owner,
                     );
-                    ContentPlacementChanged::dispatch(
+                    $this->domainEvents->dispatch(new ContentPlacementChanged(
                         $model->id,
                         ContentPlacementEvent::Updated,
                         $model->revision,
@@ -163,7 +166,7 @@ final readonly class ReplaceContentPlacementAction
                         $ownerId,
                         $group,
                         $replacement->id,
-                    );
+                    ), $model->getConnection());
 
                     return ContentPlacementData::fromModel(
                         $model->refresh()->load(['block.definition', 'block.translations']),

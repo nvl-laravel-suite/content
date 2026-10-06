@@ -7,6 +7,7 @@ namespace Nvl\Content\Actions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Nvl\Content\Contracts\ContentOwner;
+use Nvl\Content\Contracts\ImportContentSnapshotContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentCompositionSnapshotBlockData;
 use Nvl\Content\Data\ContentCompositionSnapshotData;
@@ -24,7 +25,7 @@ use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
  *
  * @api
  */
-final readonly class ImportContentSnapshotAction
+final readonly class ImportContentSnapshotAction implements ImportContentSnapshotContract
 {
     public function __construct(
         private ContentCatalogCopyRegistry $copies,

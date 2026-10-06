@@ -79,4 +79,16 @@ final class ContentFieldPresetRegistry
     {
         return array_keys($this->presets);
     }
+
+    /**
+     * Identify declared presets without compiling unused schemas.
+     *
+     * @internal
+     *
+     * @return array<string, class-string<ContentFieldPreset>>
+     */
+    public function compilationIdentities(): array
+    {
+        return array_map(static fn (ContentFieldPreset $preset): string => $preset::class, $this->presets);
+    }
 }

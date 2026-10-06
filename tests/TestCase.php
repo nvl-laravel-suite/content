@@ -14,6 +14,7 @@ use Nvl\Content\Tests\Fixtures\TestReferenceResolver;
 use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Filterable\Providers\FilterableServiceProvider;
 use Nvl\Media\Providers\MediaServiceProvider;
+use Nvl\Support\Providers\LocaleServiceProvider;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -34,6 +35,7 @@ abstract class TestCase extends Orchestra
             DataServiceProvider::class,
             FilterableServiceProvider::class,
             SupportServiceProvider::class,
+            LocaleServiceProvider::class,
             TranslatableServiceProvider::class,
             MediaServiceProvider::class,
             ContentServiceProvider::class,

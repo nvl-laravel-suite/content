@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Actions;
 
+use Nvl\Content\Contracts\ExportContentSnapshotForCopyContract;
 use Nvl\Content\Data\ContentCompositionSnapshotData;
 use Nvl\Content\Data\ContentSnapshotCopyData;
 use Nvl\Content\Services\ContentCatalogCopyRegistry;
@@ -17,7 +18,7 @@ use RuntimeException;
  *
  * @api
  */
-final readonly class ExportContentSnapshotForCopyAction
+final readonly class ExportContentSnapshotForCopyAction implements ExportContentSnapshotForCopyContract
 {
     public function __construct(private ContentCatalogCopyRegistry $copies, private ContentOwnerRegistry $owners, private ContentMediaReferences $media, private TenantContext $context) {}
 

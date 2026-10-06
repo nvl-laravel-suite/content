@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Content\Actions;
 
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\GetContentBlockContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Enums\ContentAbility;
@@ -15,7 +16,7 @@ use Nvl\Content\Models\ContentBlock;
  *
  * @api
  */
-final readonly class GetContentBlockAction
+final readonly class GetContentBlockAction implements GetContentBlockContract
 {
     public function __construct(private ContentAuthorization $authorization) {}
 

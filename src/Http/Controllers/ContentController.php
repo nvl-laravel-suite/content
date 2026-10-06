@@ -11,13 +11,15 @@ use Illuminate\Routing\Controller;
 use InvalidArgumentException;
 use Nvl\Content\Exceptions\ContentException;
 use Nvl\Content\Exceptions\InvalidContentException;
-use stdClass;
+use Nvl\Support\Http\PackageExceptionPayload;
 
 /**
  * Presentation adapter for transport-neutral failures on opt-in Content routes.
  */
 abstract class ContentController extends Controller
 {
+    public function __construct(private readonly PackageExceptionPayload $payload) {}
+
     /**
      * @template TResult
      *
@@ -37,14 +39,14 @@ abstract class ContentController extends Controller
 
     private function throwResponse(ContentException $exception): never
     {
+        $payload = $this->payload->for($exception);
+
         throw new HttpResponseException(new JsonResponse([
-            'message' => $exception->getMessage(),
+            'message' => $payload['message'],
             'error' => [
-                'code' => $exception->responseCode(),
-                'context' => $exception->publicContext() === []
-                    ? new stdClass
-                    : $exception->publicContext(),
+                'code' => $payload['code'],
+                'context' => $payload['context'],
             ],
-        ], $exception->suggestedStatus()));
+        ], $exception->suggestedStatus(), $this->payload->headers($exception)));
     }
 }

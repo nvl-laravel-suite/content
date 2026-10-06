@@ -1,5 +1,28 @@
 # NVL Content — API and usage
 
+## Quickstart
+
+```sh
+composer require nvl/content:^5.0
+php artisan nvl:install content --dry-run
+php artisan nvl:install content
+```
+
+Required NVL dependencies: `nvl/core` (`^5.0`), `nvl/filterable` (`^5.0`), `nvl/media` (`^5.0`), `nvl/translatable` (`^5.0`). Register source definitions, views, owners and authorization. Supply a validated FilterSet and ContentActorData; compiled caching is optional and remains disabled until explicitly selected.
+Review the published common config, select one migration owner, and run schema preflight before existing-table upgrades. The installer does not enable features or run migrations. Follow the detailed installation and capability sections below before invoking a storage/provider operation.
+
+Inject `Nvl\Content\Contracts\ListContentBlocksContract` in a host service. After supplying the trusted inputs described above, the first public call is:
+
+```php
+use Nvl\Content\Contracts\ListContentBlocksContract;
+
+/** @var ListContentBlocksContract $capability */
+$result = $capability->execute($filters, $actor);
+```
+
+Use the [event catalog](docs/events.md) and [Testing your app](#testing-your-app) below. The suite [getting-started guide](https://github.com/nvl-laravel-suite/laravel-suite/blob/main/docs/getting-started.md) provides a complete Comments host fixture; package archives retain their own local references.
+
+
 [← NVL Laravel Suite](https://github.com/nvl-laravel-suite)
 
 For support, [open an issue](https://github.com/nvl-laravel-suite/content/issues). For vulnerabilities, use
@@ -118,6 +141,7 @@ later drop a pre-existing table.
 Optional publish tags are:
 
 ```bash
+php artisan vendor:publish --tag=nvl-content-translations
 php artisan vendor:publish --tag=nvl-content-config
 php artisan vendor:publish --tag=nvl-content-migrations
 php artisan vendor:publish --tag=nvl-content-views
@@ -556,8 +580,7 @@ choices use backed enums such as `ContentLinkTarget`, `ContentHeadingLevel`,
 and `ContentAlignment`; Media and sanitized rich text keep their existing safe
 DTO projections.
 
-Every registered preset is compiled and validated during application boot,
-including presets that no definition currently uses. Consumer presets may
+Used presets are compiled and validated with their definitions. Run `nvl:content:doctor --strict` to validate every registered preset, including unused presets, before deployment. Consumer presets may
 implement `ContentFieldPreset` or be declared under `nvl-content.presets`.
 Definition fields may override presentation metadata, defaults, and settings,
 but cannot replace a preset's `type`, `fields`, or `item` structure.
@@ -933,9 +956,9 @@ omitted base values, locale rows, and metadata after schema validation. Lists
 replace as units; objects are recursively patched. Use an exact expected
 revision for every editable persisted resource.
 
-Constructor-inject `Nvl\Content\Content` for its documented model-first
-operations. Inject a documented focused editor Action when that DTO-first
-workflow is not present on the service. `Nvl\Content\Facades\Content` is a
+Constructor-inject `Nvl\Content\Contracts\ContentContract` for its documented model-first
+operations. Inject the documented focused workflow contract when that DTO-first
+workflow is not present on the service. The concrete `Nvl\Content\Content` remains available in major 5. `Nvl\Content\Facades\Content` is a
 static proxy to the service surface for concise Laravel application code; it is
 not a second execution path. Every existing-resource transition requires the
 exact revision.
@@ -1292,15 +1315,71 @@ hydration, preset publication invariants, rendering, Blade components,
 optimistic concurrency, facade lifecycle coverage, route defaults, bounded
 definition discovery, generated contracts, and diagnostics.
 
+## Injectable workflow contracts
+
+Constructor-inject focused interfaces from `Nvl\Content\Contracts` when composing host workflows. Each interface retains the native Action’s complete `execute` parameters, defaults, return type, and documented generic/shape result. Concrete Actions remain directly usable in major 5.
+
+```php
+use Nvl\Content\Contracts\CreateContentBlockContract;
+use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Data\Mutations\CreateContentBlockData;
+use Nvl\Content\Models\ContentBlock;
+
+final readonly class CreateContentBlockWorkflow
+{
+    public function __construct(private CreateContentBlockContract $workflow) {}
+
+    public function execute(
+        CreateContentBlockData $data,
+        ContentActorData $actor,
+    ): ContentBlock
+    {
+        return $this->workflow->execute($data, $actor);
+    }
+}
+```
+
+The provider installs conditional transient defaults (`bindIf`) for the following selected workflows. A host interface binding registered before package discovery is retained; a later binding/instance replacement is used by newly resolved host services. Keep authorization, validation, query ownership, and mutation behavior inside the owning package workflow.
+
+| Contract | Native implementation |
+| --- | --- |
+| `ApplyContentDefinitionMigrationsContract` | `ApplyContentDefinitionMigrationsAction` |
+| `ArchiveContentBlockContract` | `ArchiveContentBlockAction` |
+| `CreateContentBlockContract` | `CreateContentBlockAction` |
+| `DeleteContentBlockContract` | `DeleteContentBlockAction` |
+| `DeleteContentPlacementContract` | `DeleteContentPlacementAction` |
+| `ExportContentSnapshotForCopyContract` | `ExportContentSnapshotForCopyAction` |
+| `FindContentBlockByKeyContract` | `FindContentBlockByKeyAction` |
+| `FindContentPlacementContract` | `FindContentPlacementAction` |
+| `GetContentBlockContract` | `GetContentBlockAction` |
+| `GetOwnerContentEditorContract` | `GetOwnerContentEditorAction` |
+| `ImportContentSnapshotContract` | `ImportContentSnapshotAction` |
+| `ListContentBlocksContract` | `ListContentBlocksAction` |
+| `ListContentDefinitionsContract` | `ListContentDefinitionsAction` |
+| `ListContentGroupsContract` | `ListContentGroupsAction` |
+| `ListContentPlacementsContract` | `ListContentPlacementsAction` |
+| `ListContentPresetsContract` | `ListContentPresetsAction` |
+| `ListOwnerContentPlacementSummariesContract` | `ListOwnerContentPlacementSummariesAction` |
+| `PlaceContentBlockContract` | `PlaceContentBlockAction` |
+| `PlanContentDefinitionMigrationsContract` | `PlanContentDefinitionMigrationsAction` |
+| `PublishContentBlockContract` | `PublishContentBlockAction` |
+| `ReorderContentPlacementsContract` | `ReorderContentPlacementsAction` |
+| `ReplaceContentPlacementContract` | `ReplaceContentPlacementAction` |
+| `ResolveContentScopesContract` | `ResolveContentScopesAction` |
+| `RestoreContentBlockContract` | `RestoreContentBlockAction` |
+| `SyncContentDefinitionsContract` | `SyncContentDefinitionsAction` |
+| `UpdateContentBlockContract` | `UpdateContentBlockAction` |
+| `UpdateContentPlacementContract` | `UpdateContentPlacementAction` |
+
+`Nvl\Content\Contracts\ContentContract` exposes the same 24 public instance methods as `Nvl\Content\Content`, including generic collections/pagination and the `void` delete workflows. Constructor-inject this interface for the complete application surface. The default is scoped and resolves the existing scoped concrete through the supplied container, retaining its contextual editor dependency. `Nvl\Content\Facades\Content` resolves this interface as well.
+
+For a late replacement after the facade has already resolved, bind the replacement with `$app->instance(ContentContract::class, $replacement)` and call `Content::clearResolvedInstance(ContentContract::class)` using the facade import. Clear the facade cache at application/request boundaries when exercising scoped lifecycles; the container and facade caches are separate.
+
 ## Supported PHP usage
 
 The source `@api` declarations identify supported workflows, extension contracts, and value types. Public members marked `@internal` and untagged implementation types remain package-owned. Concrete Actions retain their existing constructors, qualifiers, and `execute()` signatures.
 
 A package model returned or accepted by a public workflow is an identity/result handle. Use its declared type and `getKey()`, `getKeyName()`, `getMorphClass()`, `getRouteKey()`, `getRouteKeyName()`, `is()`, `isNot()`, and `relationLoaded()`. Read only explicitly declared in-memory `@nvl-consumer-read` fields; ordinary model PHPDocs and fillable attributes do not grant consumer reads. Obtain display projections through public reads. Persistence, additional model queries, relation access/loading, and generic model serialization are outside this contract. Host-model queries remain available, while traversal or aggregates of package capability relations require the package public reader or authorized adapter.
-
-## License
-
-NVL Content is open-sourced under the MIT License.
 
 ## Shared owner identity
 
@@ -1350,3 +1429,83 @@ Owned cache and lock identities follow `nvl:<package>:<purpose>:…`. Placement 
 ## Canonical configuration ownership
 
 Use `nvl-content` settings in `config/nvl-content.php` and canonical package environment names. Old generic roots are foreign unless an upgrading NVL host explicitly selects them in Core's default-off compatibility. Canonical false/null/empty values win; no old roots are populated or written back. Keep logical package/resource IDs unchanged. Review [Core's rename inventory and cache/worker cutover](https://github.com/nvl-laravel-suite/core/blob/main/UPGRADING.md#major-5-canonical-configuration-and-environment).
+
+## Testing your app
+
+Inject the supported contract rather than constructing its concrete Action or querying package tables. Replace `Nvl\Content\Contracts\ListContentBlocksContract` in Laravel's native container for a host-workflow test:
+
+```php
+use Nvl\Content\Contracts\ListContentBlocksContract;
+
+$double = Mockery::mock(ListContentBlocksContract::class);
+$this->app->instance(ListContentBlocksContract::class, $double);
+// Configure the exact execute arguments and documented return value for your host case.
+```
+
+The package's conditional native binding preserves host substitutions. Production uses the real contract; test doubles do not prove its storage/authorization behavior.
+
+A detached fixture for a returned identity/data handle is:
+
+```php
+use Nvl\Content\Models\ContentBlock;
+$fixture = ContentBlock::factory()->withoutParents()->make();
+```
+
+Ordinary `make()` may persist declared package parents. `withoutParents()->make()` disables parent expansion/admission for detached fixtures; use explicit persisted parents/owners and matching effective connections for a real `create()`. Factories do not authorize workflows, call Stripe, create backing Media objects or publish Template artifacts. Enabled tenancy requires explicit admitted persisted tenants/parents. Your host test installation supplies Faker; no test runner is a runtime package dependency.
+
+Use Laravel `Event::fake()`, `Queue::fake()`, `Mail::fake()` or `Storage::fake()` only for the effects the host test intends to isolate. Use real commits/listeners for timing proof. Add the optional Core consumer boundary rules to host PHPStan:
+
+```neon
+includes:
+    - vendor/nvl/core/support/consumer-audit.neon
+parameters:
+    nvlConsumer:
+        testPaths: [tests]
+        tableNames: []
+        exceptions: []
+```
+
+Rules read installed public metadata without suite boot. They flag internal symbols, package model queries/writes, capability relations and owned tables; they cannot prove dynamic code or runtime authorization. Exact exceptions require `file`, `identifier`, `symbol`, and a documented `reason`. New C3/C4/E tests, archives and guide execution remain pending until the integration phase records results.
+
+### Shipped factory states
+
+These runtime builders keep Laravel's native Factory API. The listed methods name explicit supported parent/owner/lifecycle states; follow each factory's native admission requirements. Detached examples above do not assert persistence validity.
+
+| Factory | Explicit states |
+| --- | --- |
+| [`ContentBlockFactory`](database/factories/ContentBlockFactory.php) | `forDefinition(ContentDefinition $parent)` |
+| [`ContentBlockTranslationFactory`](database/factories/ContentBlockTranslationFactory.php) | `forBlock(ContentBlock $parent)` |
+| [`ContentDefinitionFactory`](database/factories/ContentDefinitionFactory.php) | Native Factory states only |
+| [`ContentPlacementFactory`](database/factories/ContentPlacementFactory.php) | `forBlock(ContentBlock $parent)`, `forOwner(Model $owner)` |
+| [`ContentRevisionFactory`](database/factories/ContentRevisionFactory.php) | `forBlock(ContentBlock $parent)` |
+
+## Error codes and events
+
+All recognized package failures implement `Nvl\Support\Contracts\PackageException`; only `RespondableException` opts into safe response metadata. Keep native PHP programmer errors and Laravel/SDK exceptions distinct. The optional `PackageExceptionRenderer` is registered by the host in `withExceptions`; it leaves unrelated, marker-only and non-JSON handling to the host. Its JSON envelope is `{message:string, code:string, context:object}`. Request locale is host-owned; diagnostics/previous exceptions are not public copy. Event schemas and source connections are documented in [events](docs/events.md).
+
+The table lists enum discriminators, including any successful codes retained for compatibility. A code is not itself an HTTP status; the throwing exception's `suggestedStatus()` is authoritative, especially legacy/custom constructors. Empty context renders as `{}`; only documented JSON-safe context is presented.
+
+| Code | Suggested status | Public context | Translation key |
+| --- | --- | --- | --- |
+| `operation_failed` | Exception-defined; see `suggestedStatus()` | Declared safe scalar/array map; otherwise `{}` | `nvl-content::responsecode.operation_failed` |
+| `definition_cache_invalid` | 500 | Declared safe scalar/array map; otherwise `{}` | `nvl-content::responsecode.definition_cache_invalid` |
+| `invalid_content` | Exception-defined; see `suggestedStatus()` | Declared safe scalar/array map; otherwise `{}` | `nvl-content::responsecode.invalid_content` |
+| `stale_content` | Exception-defined; see `suggestedStatus()` | {resource_id:string, expected_revision:int, actual_revision:int} | `nvl-content::responsecode.stale_content` |
+| `definition_migration_required` | Exception-defined; see `suggestedStatus()` | Declared safe scalar/array map; otherwise `{}` | `nvl-content::responsecode.definition_migration_required` |
+| `definition_migration_failed` | Exception-defined; see `suggestedStatus()` | Declared safe scalar/array map; otherwise `{}` | `nvl-content::responsecode.definition_migration_failed` |
+
+
+## Compiled definition cache
+
+Compiled caching is disabled by default. Configure `nvl-content.compiled_cache.enabled`, `required`, `path`, and `version` deliberately. `NVL_CONTENT_DEFINITIONS_VERSION` supplies the configured deployment token. Build the artifact for each release after registering host extensions:
+
+```sh
+php artisan nvl:content:cache --cache-version=release-2026-10-07
+php artisan nvl:content:doctor --strict
+```
+
+`--cache-version` must match the configured token when one is present; it does not change configuration. Required mode needs an explicit nonempty token and enabled caching. Generate the cache before enabling required mode, rebuild configuration caches when changing configuration, and restart long-lived workers. Optional mode may compile source when the cache is absent or invalid; required mode fails closed. A matching warm cache avoids source discovery and execution. Run `php artisan nvl:content:clear` to remove it. The version token is a deployment identity, not the Artisan application's reserved `--version` option.
+
+## License
+
+NVL Content is open-sourced under the MIT License.

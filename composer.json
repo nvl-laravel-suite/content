@@ -13,18 +13,18 @@
         "media"
     ],
     "require": {
-        "php": "^8.3",
         "ext-filter": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
-        "laravel/framework": "^13.0",
+        "laravel/framework": "^12.0 || ^13.0",
         "nvl/core": "^5.0",
         "nvl/filterable": "^5.0",
         "nvl/media": "^5.0",
         "nvl/translatable": "^5.0",
         "opis/json-schema": "^2.6",
+        "php": "^8.4",
         "spatie/laravel-data": "^4.23",
-        "spatie/typescript-transformer": "^3.3",
+        "symfony/console": "^7.0 || ^8.0",
         "symfony/html-sanitizer": "^7.4 || ^8.0"
     },
     "require-dev": {
@@ -32,13 +32,15 @@
         "laravel/pint": "^1.27",
         "mockery/mockery": "^1.6",
         "nvl/tenancy": "^5.0",
-        "orchestra/testbench": "^11.0",
+        "orchestra/testbench": "^10.0 || ^11.0",
         "pestphp/pest": "^4.0",
-        "pestphp/pest-plugin-laravel": "^4.0"
+        "pestphp/pest-plugin-laravel": "^4.0",
+        "spatie/typescript-transformer": "^3.3"
     },
     "autoload": {
         "psr-4": {
-            "Nvl\\Content\\": "src/"
+            "Nvl\\Content\\": "src/",
+            "Nvl\\Content\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
@@ -84,15 +86,35 @@
             "/phpunit.xml.dist",
             "/tests",
             "/.DS_Store",
-            "/**/.DS_Store"
+            "/**/.DS_Store",
+            "/.gitattributes",
+            "/**/.gitattributes",
+            "/.gitignore",
+            "/**/.gitignore",
+            "/**/.gitkeep"
         ]
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
     "suggest": {
-        "nvl/tenancy": "Enables enforcing tenant ownership, scoped execution, adoption, and captured tenant queue contexts."
+        "nvl/tenancy": "Enables enforcing tenant ownership, scoped execution, adoption, and captured tenant queue contexts.",
+        "spatie/typescript-transformer": "Consume the declared TypeScript attributes and metadata (^3.3); Core retains the runtime transformation engine."
     },
     "conflict": {
         "nvl/tenancy": "<5.0 || >=6.0"
+    },
+    "homepage": "https://github.com/nvl-laravel-suite/content",
+    "authors": [
+        {
+            "name": "Nicolas Vlachos",
+            "homepage": "https://github.com/nicolasvlachos",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "source": "https://github.com/nvl-laravel-suite/content",
+        "docs": "https://github.com/nvl-laravel-suite/content#readme",
+        "issues": "https://github.com/nvl-laravel-suite/content/issues",
+        "security": "https://github.com/nvl-laravel-suite/content/security/policy"
     }
 }

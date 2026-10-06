@@ -1,17 +1,5 @@
 # Contributing
 
-This public repository is a publication mirror of private source. Open an issue
-here for a bug or proposal; include a reproduction and, if helpful, a patch.
-Maintainers apply accepted changes in source and publish a mirror release.
-Direct mirror pull requests do not update source. See the
-[organization contribution guide](https://github.com/nvl-laravel-suite/.github/blob/main/CONTRIBUTING.md).
+This repository is a read-only release mirror. Pull requests to the mirror are not accepted. Open a public issue with a reproducible example or a proposed patch. Maintainers apply reviewed changes in the private source repository and publish immutable releases from there.
 
-Use PHP 8.3 or 8.4 and test against Laravel 13. Keep the package headless,
-strictly typed, consumer-neutral, and limited to its declared dependencies.
-
-Run `composer validate --strict`, `composer format`, `composer analyse`, and
-`composer test` from this package. New field types require an adapter, boundary
-tests, deterministic normalization, documentation, and TypeScript-safe public
-DTOs. Schema or persistence changes require SQLite, PostgreSQL, MySQL, clean
-install, rollback, and adoption coverage. Public actions own transactions;
-events must dispatch after commit.
+Report vulnerabilities privately through the [security policy](https://github.com/nvl-laravel-suite/content/security/policy). Public issues must not contain undisclosed vulnerability details.

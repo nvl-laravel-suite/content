@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
 use Nvl\Content\Content as ContentEngine;
+use Nvl\Content\Contracts\ContentContract;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentBlockData;
@@ -70,6 +71,6 @@ final class Content extends Facade
      */
     protected static function getFacadeAccessor(): string
     {
-        return ContentEngine::class;
+        return ContentContract::class;
     }
 }

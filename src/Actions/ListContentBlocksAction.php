@@ -7,6 +7,7 @@ namespace Nvl\Content\Actions;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentBlockQueryScope;
+use Nvl\Content\Contracts\ListContentBlocksContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Enums\ContentAbility;
@@ -19,7 +20,7 @@ use Nvl\Filterable\Services\EloquentFilterApplier;
  *
  * @api
  */
-final readonly class ListContentBlocksAction
+final readonly class ListContentBlocksAction implements ListContentBlocksContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

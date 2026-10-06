@@ -7,6 +7,8 @@ namespace Nvl\Content\Exceptions;
 use Nvl\Content\Enums\ContentResponseCode;
 
 /**
+ * @api
+
  * Optimistic concurrency conflict.
  */
 final class StaleContentException extends ContentException

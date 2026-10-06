@@ -8,6 +8,8 @@ use InvalidArgumentException;
 use Nvl\Content\Enums\ContentResponseCode;
 
 /**
+ * @api
+
  * Safe transport-neutral representation of invalid content input.
  */
 final class InvalidContentException extends ContentException

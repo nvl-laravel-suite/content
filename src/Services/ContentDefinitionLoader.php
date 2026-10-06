@@ -89,6 +89,37 @@ final class ContentDefinitionLoader
     }
 
     /**
+     * Hash bounded source files under deterministic root-relative identities.
+     *
+     * @return array<string, string>
+     */
+    public function sourceManifest(): array
+    {
+        $roots = $this->allowedRoots();
+        $manifest = [];
+
+        foreach ($this->definitionFiles() as $file) {
+            $identity = null;
+            foreach ($roots as $index => $root) {
+                if (str_starts_with($file, $root.DIRECTORY_SEPARATOR)) {
+                    $identity = 'root-'.$index.'/'.str_replace(DIRECTORY_SEPARATOR, '/', substr($file, strlen($root) + 1));
+                    break;
+                }
+            }
+
+            $hash = hash_file('sha256', $file);
+            if ($identity === null || ! is_string($hash)) {
+                throw new InvalidArgumentException('A Content definition source cannot be identified or read.');
+            }
+            $manifest[$identity] = $hash;
+        }
+
+        ksort($manifest);
+
+        return $manifest;
+    }
+
+    /**
      * @param  array<array-key, mixed>  $loaded
      * @param  array<string, array<string, mixed>>  $definitions
      * @return array<string, array<string, mixed>>

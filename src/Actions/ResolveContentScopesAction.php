@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentBlockQueryScope;
+use Nvl\Content\Contracts\ResolveContentScopesContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentScopeData;
 use Nvl\Content\Data\ContentScopeResolutionData;
@@ -25,7 +26,7 @@ use Nvl\Content\Support\ContentConfiguration;
  *
  * @api
  */
-final readonly class ResolveContentScopesAction
+final readonly class ResolveContentScopesAction implements ResolveContentScopesContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

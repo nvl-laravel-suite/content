@@ -6,6 +6,7 @@ namespace Nvl\Content\Actions;
 
 use Illuminate\Database\Eloquent\Model;
 use Nvl\Content\Contracts\ContentOwner;
+use Nvl\Content\Contracts\GetOwnerContentEditorContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentEditorData;
 use Nvl\Content\Services\ContentOwnerRegistry;
@@ -19,7 +20,7 @@ use Nvl\Content\Support\ContentConfiguration;
  *
  * @api
  */
-final readonly class GetOwnerContentEditorAction
+final readonly class GetOwnerContentEditorAction implements GetOwnerContentEditorContract
 {
     public function __construct(
         private ListContentDefinitionsAction $listDefinitions,

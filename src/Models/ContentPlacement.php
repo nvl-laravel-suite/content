@@ -6,10 +6,12 @@ namespace Nvl\Content\Models;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Nvl\Content\Database\Factories\ContentPlacementFactory;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Media\Contracts\HasMedia;
@@ -42,6 +44,9 @@ use Nvl\Support\Config\PackageStorage;
 final class ContentPlacement extends Model implements HasMedia
 {
     use GuardsTenantOwnership;
+
+    /** @use HasFactory<ContentPlacementFactory> */
+    use HasFactory;
     use HasUuids;
     use InteractsWithMedia;
 
@@ -130,5 +135,15 @@ final class ContentPlacement extends Model implements HasMedia
         return $this->hasMany(self::class, 'parent_id')
             ->orderBy('sort_order')
             ->orderBy('id');
+    }
+
+    /**
+     * Return the package's runtime fixture factory.
+     *
+     * @internal
+     */
+    protected static function newFactory(): ContentPlacementFactory
+    {
+        return ContentPlacementFactory::new();
     }
 }

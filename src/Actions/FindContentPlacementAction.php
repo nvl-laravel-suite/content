@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentOwner;
+use Nvl\Content\Contracts\FindContentPlacementContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Enums\ContentAbility;
@@ -25,7 +26,7 @@ use Nvl\Content\Services\ContentOwnerRegistry;
  *
  * @api
  */
-final readonly class FindContentPlacementAction
+final readonly class FindContentPlacementAction implements FindContentPlacementContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

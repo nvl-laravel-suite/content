@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\SyncContentDefinitionsContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentDefinitionData;
 use Nvl\Content\Data\ContentDefinitionSyncPlanData;
@@ -25,7 +26,7 @@ use Nvl\Content\Services\ContentPlatformCatalogGuard;
  *
  * @api
  */
-final readonly class SyncContentDefinitionsAction
+final readonly class SyncContentDefinitionsAction implements SyncContentDefinitionsContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

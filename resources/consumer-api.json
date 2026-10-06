@@ -2,7 +2,8 @@
     "schema_version": 1,
     "package": "nvl/content",
     "psr4": {
-        "Nvl\\Content\\": "src"
+        "Nvl\\Content\\": "src",
+        "Nvl\\Content\\Database\\Factories\\": "database/factories"
     },
     "symbols": {
         "Nvl\\Content\\Actions\\ApplyContentDefinitionMigrationsAction": {
@@ -318,6 +319,24 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Content\\Contracts\\ApplyContentDefinitionMigrationsContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ApplyContentDefinitionMigrationsContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ArchiveContentBlockContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ArchiveContentBlockContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Content\\Contracts\\ContentAuthorization": {
             "kind": "interface",
             "file": "src/Contracts/ContentAuthorization.php",
@@ -332,6 +351,38 @@
             "file": "src/Contracts/ContentBlockQueryScope.php",
             "methods": [
                 "scopeContentBlocks"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ContentContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ContentContract.php",
+            "methods": [
+                "adoptSnapshot",
+                "applyDefinitionMigrations",
+                "archiveBlock",
+                "block",
+                "blocks",
+                "capture",
+                "createBlock",
+                "definitions",
+                "deleteBlock",
+                "deletePlacement",
+                "editor",
+                "groups",
+                "place",
+                "placements",
+                "planDefinitionMigrations",
+                "presets",
+                "publishBlock",
+                "render",
+                "renderSnapshot",
+                "resolveScopes",
+                "restoreBlock",
+                "syncDefinitions",
+                "updateBlock",
+                "updatePlacement"
             ],
             "properties": [],
             "constants": []
@@ -414,6 +465,213 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Content\\Contracts\\CreateContentBlockContract": {
+            "kind": "interface",
+            "file": "src/Contracts/CreateContentBlockContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\DeleteContentBlockContract": {
+            "kind": "interface",
+            "file": "src/Contracts/DeleteContentBlockContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\DeleteContentPlacementContract": {
+            "kind": "interface",
+            "file": "src/Contracts/DeleteContentPlacementContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ExportContentSnapshotForCopyContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ExportContentSnapshotForCopyContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\FindContentBlockByKeyContract": {
+            "kind": "interface",
+            "file": "src/Contracts/FindContentBlockByKeyContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\FindContentPlacementContract": {
+            "kind": "interface",
+            "file": "src/Contracts/FindContentPlacementContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\GetContentBlockContract": {
+            "kind": "interface",
+            "file": "src/Contracts/GetContentBlockContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\GetOwnerContentEditorContract": {
+            "kind": "interface",
+            "file": "src/Contracts/GetOwnerContentEditorContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ImportContentSnapshotContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ImportContentSnapshotContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ListContentBlocksContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ListContentBlocksContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ListContentDefinitionsContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ListContentDefinitionsContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ListContentGroupsContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ListContentGroupsContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ListContentPlacementsContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ListContentPlacementsContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ListContentPresetsContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ListContentPresetsContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ListOwnerContentPlacementSummariesContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ListOwnerContentPlacementSummariesContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\PlaceContentBlockContract": {
+            "kind": "interface",
+            "file": "src/Contracts/PlaceContentBlockContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\PlanContentDefinitionMigrationsContract": {
+            "kind": "interface",
+            "file": "src/Contracts/PlanContentDefinitionMigrationsContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\PublishContentBlockContract": {
+            "kind": "interface",
+            "file": "src/Contracts/PublishContentBlockContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ReorderContentPlacementsContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ReorderContentPlacementsContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ReplaceContentPlacementContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ReplaceContentPlacementContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ResolveContentScopesContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ResolveContentScopesContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\RestoreContentBlockContract": {
+            "kind": "interface",
+            "file": "src/Contracts/RestoreContentBlockContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\SyncContentDefinitionsContract": {
+            "kind": "interface",
+            "file": "src/Contracts/SyncContentDefinitionsContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Content\\Contracts\\TenantSafeContentReferenceResolver": {
             "kind": "interface",
             "file": "src/Contracts/TenantSafeContentReferenceResolver.php",
@@ -422,6 +680,24 @@
                 "display",
                 "exists",
                 "tenantRecord"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\UpdateContentBlockContract": {
+            "kind": "interface",
+            "file": "src/Contracts/UpdateContentBlockContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\UpdateContentPlacementContract": {
+            "kind": "interface",
+            "file": "src/Contracts/UpdateContentPlacementContract.php",
+            "methods": [
+                "execute"
             ],
             "properties": [],
             "constants": []
@@ -1095,6 +1371,56 @@
             ],
             "constants": []
         },
+        "Nvl\\Content\\Database\\Factories\\ContentBlockFactory": {
+            "kind": "class",
+            "file": "database/factories/ContentBlockFactory.php",
+            "methods": [
+                "definition",
+                "forDefinition"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Database\\Factories\\ContentBlockTranslationFactory": {
+            "kind": "class",
+            "file": "database/factories/ContentBlockTranslationFactory.php",
+            "methods": [
+                "definition",
+                "forBlock"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Database\\Factories\\ContentDefinitionFactory": {
+            "kind": "class",
+            "file": "database/factories/ContentDefinitionFactory.php",
+            "methods": [
+                "definition"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Database\\Factories\\ContentPlacementFactory": {
+            "kind": "class",
+            "file": "database/factories/ContentPlacementFactory.php",
+            "methods": [
+                "definition",
+                "forBlock",
+                "forOwner"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Database\\Factories\\ContentRevisionFactory": {
+            "kind": "class",
+            "file": "database/factories/ContentRevisionFactory.php",
+            "methods": [
+                "definition",
+                "forBlock"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Content\\Enums\\ContentAbility": {
             "kind": "enum",
             "file": "src/Enums/ContentAbility.php",
@@ -1198,6 +1524,67 @@
                 "Replace"
             ]
         },
+        "Nvl\\Content\\Enums\\ContentPlacementEvent": {
+            "kind": "enum",
+            "file": "src/Enums/ContentPlacementEvent.php",
+            "methods": [
+                "cases",
+                "from",
+                "tryFrom"
+            ],
+            "properties": [
+                "name",
+                "value"
+            ],
+            "constants": [
+                "Created",
+                "Deleted",
+                "Updated"
+            ]
+        },
+        "Nvl\\Content\\Enums\\ContentResponseCode": {
+            "kind": "enum",
+            "file": "src/Enums/ContentResponseCode.php",
+            "methods": [
+                "cases",
+                "from",
+                "tryFrom"
+            ],
+            "properties": [
+                "name",
+                "value"
+            ],
+            "constants": [
+                "DefinitionCacheInvalid",
+                "DefinitionMigrationFailed",
+                "DefinitionMigrationRequired",
+                "InvalidContent",
+                "OperationFailed",
+                "StaleContent"
+            ]
+        },
+        "Nvl\\Content\\Enums\\ContentRevisionEvent": {
+            "kind": "enum",
+            "file": "src/Enums/ContentRevisionEvent.php",
+            "methods": [
+                "cases",
+                "from",
+                "tryFrom"
+            ],
+            "properties": [
+                "name",
+                "value"
+            ],
+            "constants": [
+                "Archived",
+                "Created",
+                "Deleted",
+                "Migrated",
+                "Published",
+                "Restored",
+                "Updated"
+            ]
+        },
         "Nvl\\Content\\Enums\\ContentStatus": {
             "kind": "enum",
             "file": "src/Enums/ContentStatus.php",
@@ -1232,6 +1619,148 @@
                 "Private",
                 "Public"
             ]
+        },
+        "Nvl\\Content\\Events\\ContentBlockChanged": {
+            "kind": "class",
+            "file": "src/Events/ContentBlockChanged.php",
+            "methods": [
+                "__construct",
+                "schemaVersion"
+            ],
+            "properties": [
+                "actor",
+                "blockId",
+                "event",
+                "revision",
+                "schemaVersion"
+            ],
+            "constants": []
+        },
+        "Nvl\\Content\\Events\\ContentPlacementChanged": {
+            "kind": "class",
+            "file": "src/Events/ContentPlacementChanged.php",
+            "methods": [
+                "__construct",
+                "schemaVersion"
+            ],
+            "properties": [
+                "actor",
+                "blockId",
+                "event",
+                "group",
+                "ownerId",
+                "ownerType",
+                "placementId",
+                "revision",
+                "schemaVersion"
+            ],
+            "constants": []
+        },
+        "Nvl\\Content\\Exceptions\\ContentDefinitionMigrationException": {
+            "kind": "class",
+            "file": "src/Exceptions/ContentDefinitionMigrationException.php",
+            "methods": [
+                "__construct",
+                "context",
+                "forStep",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Exceptions\\ContentDefinitionMigrationRequiredException": {
+            "kind": "class",
+            "file": "src/Exceptions/ContentDefinitionMigrationRequiredException.php",
+            "methods": [
+                "__construct",
+                "context",
+                "forBlock",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Exceptions\\ContentException": {
+            "kind": "class",
+            "file": "src/Exceptions/ContentException.php",
+            "methods": [
+                "__construct",
+                "context",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Exceptions\\ContentScopeOverflowException": {
+            "kind": "class",
+            "file": "src/Exceptions/ContentScopeOverflowException.php",
+            "methods": [
+                "__construct",
+                "context",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Exceptions\\InvalidContentException": {
+            "kind": "class",
+            "file": "src/Exceptions/InvalidContentException.php",
+            "methods": [
+                "__construct",
+                "context",
+                "fromInvalidArgument",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Exceptions\\StaleContentException": {
+            "kind": "class",
+            "file": "src/Exceptions/StaleContentException.php",
+            "methods": [
+                "__construct",
+                "context",
+                "forRevision",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
         },
         "Nvl\\Content\\Facades\\Content": {
             "kind": "class",
@@ -1281,6 +1810,42 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Content\\Models\\ContentBlockTranslation": {
+            "kind": "class",
+            "file": "src/Models/ContentBlockTranslation.php",
+            "methods": [
+                "getKey",
+                "getKeyName",
+                "getMorphClass",
+                "getRouteKey",
+                "getRouteKeyName",
+                "is",
+                "isNot",
+                "relationLoaded"
+            ],
+            "properties": [
+                "id"
+            ],
+            "constants": []
+        },
+        "Nvl\\Content\\Models\\ContentDefinition": {
+            "kind": "class",
+            "file": "src/Models/ContentDefinition.php",
+            "methods": [
+                "getKey",
+                "getKeyName",
+                "getMorphClass",
+                "getRouteKey",
+                "getRouteKeyName",
+                "is",
+                "isNot",
+                "relationLoaded"
+            ],
+            "properties": [
+                "id"
+            ],
+            "constants": []
+        },
         "Nvl\\Content\\Models\\ContentPlacement": {
             "kind": "class",
             "file": "src/Models/ContentPlacement.php",
@@ -1295,6 +1860,24 @@
                 "relationLoaded"
             ],
             "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Models\\ContentRevision": {
+            "kind": "class",
+            "file": "src/Models/ContentRevision.php",
+            "methods": [
+                "getKey",
+                "getKeyName",
+                "getMorphClass",
+                "getRouteKey",
+                "getRouteKeyName",
+                "is",
+                "isNot",
+                "relationLoaded"
+            ],
+            "properties": [
+                "id"
+            ],
             "constants": []
         },
         "Nvl\\Content\\Schema\\ContentDefinitionSource": {
@@ -1416,8 +1999,56 @@
             ],
             "capability_relations": []
         },
+        "Nvl\\Content\\Models\\ContentBlockTranslation": {
+            "read": [
+                "id"
+            ],
+            "identity_methods": [
+                "getKey",
+                "getKeyName",
+                "getMorphClass",
+                "getRouteKey",
+                "getRouteKeyName",
+                "is",
+                "isNot",
+                "relationLoaded"
+            ],
+            "capability_relations": []
+        },
+        "Nvl\\Content\\Models\\ContentDefinition": {
+            "read": [
+                "id"
+            ],
+            "identity_methods": [
+                "getKey",
+                "getKeyName",
+                "getMorphClass",
+                "getRouteKey",
+                "getRouteKeyName",
+                "is",
+                "isNot",
+                "relationLoaded"
+            ],
+            "capability_relations": []
+        },
         "Nvl\\Content\\Models\\ContentPlacement": {
             "read": [],
+            "identity_methods": [
+                "getKey",
+                "getKeyName",
+                "getMorphClass",
+                "getRouteKey",
+                "getRouteKeyName",
+                "is",
+                "isNot",
+                "relationLoaded"
+            ],
+            "capability_relations": []
+        },
+        "Nvl\\Content\\Models\\ContentRevision": {
+            "read": [
+                "id"
+            ],
             "identity_methods": [
                 "getKey",
                 "getKeyName",

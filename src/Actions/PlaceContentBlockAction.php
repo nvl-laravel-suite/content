@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentOwner;
+use Nvl\Content\Contracts\PlaceContentBlockContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\Mutations\PlaceContentBlockData;
 use Nvl\Content\Enums\ContentAbility;
@@ -22,13 +23,14 @@ use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentPlacementValidator;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Places one reusable block in an allowlisted owner tree.
  *
  * @api
  */
-final readonly class PlaceContentBlockAction
+final readonly class PlaceContentBlockAction implements PlaceContentBlockContract
 {
     public function __construct(
         private ContentAuthorization $authorization,
@@ -37,6 +39,7 @@ final readonly class PlaceContentBlockAction
         private ContentIdentityGuard $identities,
         private ContentPlacementOwnerLock $ownerLocks,
         private ContentMediaSynchronizer $media,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     /**
@@ -137,7 +140,7 @@ final readonly class PlaceContentBlockAction
                         $actor,
                         $owner,
                     );
-                    ContentPlacementChanged::dispatch(
+                    $this->domainEvents->dispatch(new ContentPlacementChanged(
                         $placement->id,
                         ContentPlacementEvent::Created,
                         $placement->revision,
@@ -146,7 +149,7 @@ final readonly class PlaceContentBlockAction
                         $ownerId,
                         $group,
                         $lockedBlock->id,
-                    );
+                    ), $placement->getConnection());
 
                     return $placement;
                 }, 3),

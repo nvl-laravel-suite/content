@@ -6,6 +6,7 @@ namespace Nvl\Content\Actions;
 
 use Illuminate\Support\Collection;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\ListContentDefinitionsContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentDefinitionData;
 use Nvl\Content\Enums\ContentAbility;
@@ -16,7 +17,7 @@ use Nvl\Content\Services\ContentDefinitionRegistry;
  *
  * @api
  */
-final readonly class ListContentDefinitionsAction
+final readonly class ListContentDefinitionsAction implements ListContentDefinitionsContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

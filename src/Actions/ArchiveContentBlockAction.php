@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Content\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Nvl\Content\Contracts\ArchiveContentBlockContract;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Enums\ContentAbility;
@@ -14,17 +15,19 @@ use Nvl\Content\Events\ContentBlockChanged;
 use Nvl\Content\Exceptions\StaleContentException;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ContentRevisionRecorder;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Removes a block from public resolution while preserving history and placements.
  *
  * @api
  */
-final readonly class ArchiveContentBlockAction
+final readonly class ArchiveContentBlockAction implements ArchiveContentBlockContract
 {
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentRevisionRecorder $revisions,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     public function execute(
@@ -54,12 +57,12 @@ final readonly class ArchiveContentBlockAction
                     'updated_by_id' => $actor->id,
                 ])->save();
                 $this->revisions->record($model, ContentRevisionEvent::Archived, $actor);
-                ContentBlockChanged::dispatch(
+                $this->domainEvents->dispatch(new ContentBlockChanged(
                     $model->id,
                     ContentRevisionEvent::Archived,
                     $model->revision,
                     $actor,
-                );
+                ), $model->getConnection());
 
                 return $model->refresh();
             });

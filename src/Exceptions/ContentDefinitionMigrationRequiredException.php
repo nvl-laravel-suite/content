@@ -7,6 +7,8 @@ namespace Nvl\Content\Exceptions;
 use Nvl\Content\Enums\ContentResponseCode;
 
 /**
+ * @api
+
  * Signals that a block must be explicitly migrated before schema-aware mutation.
  */
 final class ContentDefinitionMigrationRequiredException extends ContentException

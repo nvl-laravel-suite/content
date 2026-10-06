@@ -10,6 +10,7 @@ use Nvl\Content\Events\ContentPlacementChanged;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Support\ContentArrays;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Revalidates dependent placements and their Media references inside a locked block mutation.
@@ -20,6 +21,7 @@ final readonly class ContentBlockPlacementSynchronizer
         private ContentOwnerRegistry $owners,
         private ContentPlacementValidator $placements,
         private ContentMediaSynchronizer $media,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     /**
@@ -64,7 +66,7 @@ final readonly class ContentBlockPlacementSynchronizer
                 'overrides' => $normalized === [] ? null : $normalized,
                 'revision' => $placement->revision + 1,
             ])->save();
-            ContentPlacementChanged::dispatch(
+            $this->domainEvents->dispatch(new ContentPlacementChanged(
                 $placement->id,
                 ContentPlacementEvent::Updated,
                 $placement->revision,
@@ -73,7 +75,7 @@ final readonly class ContentBlockPlacementSynchronizer
                 $placement->owner_id,
                 $placement->group,
                 $block->id,
-            );
+            ), $placement->getConnection());
         }
     }
 }

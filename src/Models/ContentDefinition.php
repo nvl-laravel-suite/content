@@ -6,10 +6,12 @@ namespace Nvl\Content\Models;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Nvl\Content\Casts\ContentSchemaCast;
+use Nvl\Content\Database\Factories\ContentDefinitionFactory;
 use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Support\Config\PackageStorage;
@@ -34,9 +36,16 @@ use Nvl\Support\Config\PackageStorage;
  * @property Carbon|null $synced_at
  * @property Carbon|null $orphaned_at
  * @property-read Collection<int, ContentBlock> $blocks
+ *
+ * @api
+ *
+ * @nvl-consumer-read id
  */
 final class ContentDefinition extends Model
 {
+    /** @use HasFactory<ContentDefinitionFactory> */
+    use HasFactory;
+
     use HasUuids;
 
     /** @var list<string> */
@@ -100,5 +109,15 @@ final class ContentDefinition extends Model
     public function blocks(): HasMany
     {
         return $this->hasMany(ContentBlock::class, 'definition_id');
+    }
+
+    /**
+     * Return the package's runtime fixture factory.
+     *
+     * @internal
+     */
+    protected static function newFactory(): ContentDefinitionFactory
+    {
+        return ContentDefinitionFactory::new();
     }
 }

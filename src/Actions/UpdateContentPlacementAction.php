@@ -6,6 +6,7 @@ namespace Nvl\Content\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\UpdateContentPlacementContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\Mutations\UpdateContentPlacementData;
 use Nvl\Content\Enums\ContentAbility;
@@ -19,13 +20,14 @@ use Nvl\Content\Services\ContentMediaSynchronizer;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentPlacementValidator;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Reparents, reorders, and overrides one placement with cycle and revision checks.
  *
  * @api
  */
-final readonly class UpdateContentPlacementAction
+final readonly class UpdateContentPlacementAction implements UpdateContentPlacementContract
 {
     public function __construct(
         private ContentAuthorization $authorization,
@@ -34,6 +36,7 @@ final readonly class UpdateContentPlacementAction
         private ContentIdentityGuard $identities,
         private ContentPlacementOwnerLock $ownerLocks,
         private ContentMediaSynchronizer $media,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     /**
@@ -119,7 +122,7 @@ final readonly class UpdateContentPlacementAction
                         $actor,
                         $owner,
                     );
-                    ContentPlacementChanged::dispatch(
+                    $this->domainEvents->dispatch(new ContentPlacementChanged(
                         $model->id,
                         ContentPlacementEvent::Updated,
                         $model->revision,
@@ -128,7 +131,7 @@ final readonly class UpdateContentPlacementAction
                         $model->owner_id,
                         $model->group,
                         $model->content_block_id,
-                    );
+                    ), $model->getConnection());
 
                     return $model->refresh();
                 }, 3),

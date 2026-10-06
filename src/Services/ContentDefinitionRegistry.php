@@ -10,6 +10,7 @@ use Nvl\Content\Data\ContentDefinitionData;
 use Nvl\Content\Data\ContentSchemaData;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Schema\ContentDefinitionSource;
+use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Validation\ContentSchemaValidator;
 use Nvl\Content\Validation\ContentValueValidator;
@@ -106,6 +107,97 @@ final class ContentDefinitionRegistry
     public function all(): array
     {
         return array_values($this->definitions);
+    }
+
+    /**
+     * Restore a fully validated compiled set without invoking the schema compiler.
+     *
+     * @param  array<array-key, mixed>  $definitions  Untrusted decoded cache input, validated before restoration.
+     */
+    public function restoreCompiled(array $definitions): void
+    {
+        (new ContentPayloadGuard)->json($definitions, 'Compiled Content definitions', 16_777_216, 64);
+        if (! array_is_list($definitions) || count($definitions) > 500) {
+            throw new InvalidArgumentException('Compiled Content definitions must be a bounded list.');
+        }
+
+        $restored = [];
+        foreach ($definitions as $data) {
+            if (! is_array($data) || array_is_list($data)) {
+                throw new InvalidArgumentException('Compiled Content definitions must be objects.');
+            }
+            $properties = ['key', 'name', 'description', 'category', 'version', 'view', 'schema', 'defaults', 'allowedScopes', 'allowedRegions', 'isActive', 'sortOrder', 'jsonSchema'];
+            if (array_diff(array_keys($data), $properties) !== [] || array_diff($properties, array_keys($data)) !== []) {
+                throw new InvalidArgumentException('Compiled Content definition properties are invalid.');
+            }
+            foreach (['key', 'name', 'category'] as $property) {
+                if (! is_string($data[$property])) {
+                    throw new InvalidArgumentException('Compiled Content definition text is invalid.');
+                }
+            }
+            foreach (['description', 'view'] as $property) {
+                if ($data[$property] !== null && ! is_string($data[$property])) {
+                    throw new InvalidArgumentException('Compiled Content optional metadata is invalid.');
+                }
+            }
+            foreach (['schema', 'defaults', 'allowedScopes', 'allowedRegions', 'jsonSchema'] as $property) {
+                if (! is_array($data[$property])) {
+                    throw new InvalidArgumentException('Compiled Content definition arrays are invalid.');
+                }
+            }
+            if (! is_int($data['version']) || $data['version'] < 1
+                || ! is_int($data['sortOrder']) || $data['sortOrder'] < 0
+                || ! is_bool($data['isActive'])
+                || preg_match('/^[a-z][a-z0-9_.-]{0,190}$/', $data['key']) !== 1) {
+                throw new InvalidArgumentException('Compiled Content definition identity or version is invalid.');
+            }
+            if (isset($restored[$data['key']]) || isset($this->definitions[$data['key']])) {
+                throw new InvalidArgumentException('Compiled Content definition identity is duplicated.');
+            }
+
+            $schema = ContentSchema::fromArray($data['schema']);
+            $definition = new ContentDefinitionData(
+                key: $data['key'], name: $data['name'], description: $data['description'],
+                category: $data['category'], version: $data['version'], view: $data['view'],
+                schema: ContentSchemaData::fromSchema($schema),
+                defaults: ContentArrays::stringMap($data['defaults'], 'compiled Content defaults'),
+                allowedScopes: $this->compiledAliases($data['allowedScopes']),
+                allowedRegions: $this->compiledAliases($data['allowedRegions']),
+                isActive: $data['isActive'], sortOrder: $data['sortOrder'],
+                jsonSchema: ContentArrays::stringMap($data['jsonSchema'], 'compiled Content JSON schema'),
+            );
+            $this->assertMetadata($definition);
+            $this->assertAliases($definition->allowedScopes, 'scope', $definition->key);
+            $this->assertAliases($definition->allowedRegions, 'region', $definition->key);
+            $this->scopes->assertRegistered($definition->allowedScopes);
+            $this->validator->validate($schema);
+            $this->values->assertDefaults($schema);
+            $this->values->validate($schema, $definition->defaults, [], ContentActorData::system(), ContentVisibility::Private, resolveExternal: false);
+            $restored[$definition->key] = $definition;
+        }
+
+        $this->definitions = [...$this->definitions, ...$restored];
+        ksort($this->definitions);
+    }
+
+    /**
+     * Validate the exact string-list shape before constructing a compiled DTO.
+     *
+     * @param  array<array-key, mixed>  $aliases
+     * @return list<string>
+     */
+    private function compiledAliases(array $aliases): array
+    {
+        if (! array_is_list($aliases)) {
+            throw new InvalidArgumentException('Compiled Content aliases must be lists.');
+        }
+        foreach ($aliases as $alias) {
+            if (! is_string($alias)) {
+                throw new InvalidArgumentException('Compiled Content aliases must be strings.');
+            }
+        }
+
+        return $aliases;
     }
 
     /**

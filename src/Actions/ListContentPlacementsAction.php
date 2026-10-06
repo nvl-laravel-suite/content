@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentOwner;
+use Nvl\Content\Contracts\ListContentPlacementsContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Enums\ContentAbility;
@@ -22,7 +23,7 @@ use Nvl\Content\Support\ContentConfiguration;
  *
  * @api
  */
-final readonly class ListContentPlacementsAction
+final readonly class ListContentPlacementsAction implements ListContentPlacementsContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

@@ -9,6 +9,8 @@ use Nvl\Content\Enums\ContentResponseCode;
 use Throwable;
 
 /**
+ * @api
+
  * Safe package failure for one deterministic definition migration step.
  */
 final class ContentDefinitionMigrationException extends ContentException

@@ -301,3 +301,26 @@ Drain old mutation workers and maintenance processes, then wait for their outsta
 - Generic config roots and unprefixed package environment names are foreign by default. For an upgrading NVL host only, select `nvl-core.compatibility.legacy_config` package IDs and `legacy_env` explicitly; both default off. Canonical presence wins, including false/null/empty values. Legacy inputs are read without writing back and are removed in major 6.
 - Use canonical `NVL_<PACKAGE>_*` variables only in config evaluation, then rebuild configuration caches and restart workers after cutover. Shared Laravel environment variables retain their names. Consult Core's versioned `support/resources/global-names.json` for all renames.
 - Old global aliases and legacy route families require separate explicit `global_aliases`/`legacy_routes` package selections. Preserve collisions and use Doctor diagnostics; never grant generic permissions automatically or claim signed-link compatibility without the same authorization/signature checks.
+
+## Compose host workflows through contracts
+
+- Inject focused `Nvl\Content\Contracts\*Contract` interfaces for the 27 selected public Actions listed in the README; reuse existing equivalent contracts. Preserve the exact native `execute` parameters/defaults and DTO/model/vendor results.
+- Use host interface bindings for substitution. Conditional defaults retain prebindings; late replacement reaches newly resolved host services. Keep private package constructor chains concrete and preserve package-owned authorization, queries, validation and mutation semantics.
+- Inject `ContentContract` for the complete 24-method application surface. Its scoped default resolves the existing scoped Content concrete through the supplied container, retaining contextual editor injection. The Content facade uses this same contract. Clear `ContentContract::class` with the facade’s `clearResolvedInstance` after late replacement and at scoped/application boundaries.
+
+
+## Consumer runtime and testing contracts
+
+Start with the package README Quickstart and Testing your app sections. Use `nvl:install <package>` for loaded-package common config publication; it does not enable features, run schema or refresh caches. Preserve native host owner keys/morph maps and selected auth/tenancy defaults. Read full runtime defaults and publish advanced config only deliberately.
+
+Inject the supported focused interfaces and preserve host bindings. Returned model handles do not permit package-table queries/writes outside documented capability/extension seams. Host tests may substitute contracts in Laravel's container, use shipped model factories (ordinary make may persist parents; withoutParents()->make is detached), and use Laravel effect fakes deliberately. Only Media/Stripe have dedicated provider/library fakes; do not invent a universal package fake. Settings InteractsWithSettings is definition-only. Host PHPStan may include vendor/nvl/core/support/consumer-audit.neon; no unpublished workbench command is a consumer requirement.
+
+Read docs/events.md and the package README error table. Domain events use schemaVersion=1, model-free facts and actual source-connection commit callbacks; only six declared old Event suffix aliases remain for major 5. Migrate exact listeners/fakes and suffix wildcards, drain old queued payloads, rebuild event cache and restart workers. Delivery is not a durable outbox. The Core exception renderer is opt-in, JSON-only for respondable failures, with exactly message/code/context and host-selected locale. Do not expose diagnostics or reinterpret missing bindings as authorization denial.
+
+Core package logging uses nvl/normal with CSV quiet by default, stable message keys and bounded context; incidents survive quiet. Do not mutate global logger context or log raw row/provider/content/credential payloads. Run only authorized project checks and report new acceptance as pending until actual output exists.
+
+## Compiled cache deployment
+
+- Compiled caching stays opt-in. Set `nvl-content.compiled_cache.enabled` deliberately; required mode additionally needs `required=true` and a nonempty configured `version` (`NVL_CONTENT_DEFINITIONS_VERSION`).
+- Generate with `php artisan nvl:content:cache --cache-version=release-2026-10-07`; the supplied token must match configuration and does not modify it. Never use the reserved Artisan `--version` option for this token.
+- Build before enabling required mode, run `php artisan nvl:content:doctor --strict` for all presets and cache diagnostics, refresh configuration caches when changed, then restart long-lived workers. `php artisan nvl:content:clear` removes the selected artifact. Required runtime mode fails closed on invalid or absent cache; optional mode may compile source.

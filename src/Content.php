@@ -27,6 +27,7 @@ use Nvl\Content\Actions\RestoreContentBlockAction;
 use Nvl\Content\Actions\SyncContentDefinitionsAction;
 use Nvl\Content\Actions\UpdateContentBlockAction;
 use Nvl\Content\Actions\UpdateContentPlacementAction;
+use Nvl\Content\Contracts\ContentContract;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentBlockData;
@@ -57,7 +58,7 @@ use Nvl\Filterable\Data\FilterSet;
  *
  * @api
  */
-final readonly class Content
+final readonly class Content implements ContentContract
 {
     public function __construct(
         private ListContentDefinitionsAction $listDefinitions,

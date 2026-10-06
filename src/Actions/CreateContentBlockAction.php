@@ -7,6 +7,7 @@ namespace Nvl\Content\Actions;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\CreateContentBlockContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Enums\ContentAbility;
@@ -25,6 +26,7 @@ use Nvl\Content\Services\ContentRevisionRecorder;
 use Nvl\Content\Services\ContentScopeRegistry;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Validation\ContentValueValidator;
+use Nvl\Support\Events\DomainEventDispatcher;
 use Nvl\Translatable\Services\TranslationWriter;
 
 /**
@@ -32,7 +34,7 @@ use Nvl\Translatable\Services\TranslationWriter;
  *
  * @api
  */
-final readonly class CreateContentBlockAction
+final readonly class CreateContentBlockAction implements CreateContentBlockContract
 {
     public function __construct(
         private ContentAuthorization $authorization,
@@ -46,6 +48,7 @@ final readonly class CreateContentBlockAction
         private ContentPatch $patch,
         private ContentIdentityGuard $identities,
         private TranslationWriter $translations,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     public function execute(
@@ -163,12 +166,12 @@ final readonly class CreateContentBlockAction
                     $actor,
                 );
                 $this->revisions->record($block, ContentRevisionEvent::Created, $actor);
-                ContentBlockChanged::dispatch(
+                $this->domainEvents->dispatch(new ContentBlockChanged(
                     $block->id,
                     ContentRevisionEvent::Created,
                     $block->revision,
                     $actor,
-                );
+                ), $block->getConnection());
 
                 return $block->load(['definition', 'translations']);
             });

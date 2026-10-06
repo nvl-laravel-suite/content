@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentOwner;
+use Nvl\Content\Contracts\ListOwnerContentPlacementSummariesContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Enums\ContentAbility;
@@ -22,7 +23,7 @@ use Nvl\Content\Support\ContentConfiguration;
  *
  * @api
  */
-final readonly class ListOwnerContentPlacementSummariesAction
+final readonly class ListOwnerContentPlacementSummariesAction implements ListOwnerContentPlacementSummariesContract
 {
     private const int MAXIMUM_OWNERS = 100;
 

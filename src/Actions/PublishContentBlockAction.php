@@ -7,6 +7,7 @@ namespace Nvl\Content\Actions;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\PublishContentBlockContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Enums\ContentRevisionEvent;
@@ -22,13 +23,14 @@ use Nvl\Content\Services\ContentMediaSynchronizer;
 use Nvl\Content\Services\ContentRevisionRecorder;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Validation\ContentValueValidator;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Validates every required locale and publishes one exact revision.
  *
  * @api
  */
-final readonly class PublishContentBlockAction
+final readonly class PublishContentBlockAction implements PublishContentBlockContract
 {
     public function __construct(
         private ContentAuthorization $authorization,
@@ -39,6 +41,7 @@ final readonly class PublishContentBlockAction
         private ContentRevisionRecorder $revisions,
         private CanonicalJson $json,
         private ContentBlockPlacementSynchronizer $placements,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     public function execute(
@@ -121,12 +124,12 @@ final readonly class PublishContentBlockAction
                     $actor,
                 );
                 $this->revisions->record($model, ContentRevisionEvent::Published, $actor);
-                ContentBlockChanged::dispatch(
+                $this->domainEvents->dispatch(new ContentBlockChanged(
                     $model->id,
                     ContentRevisionEvent::Published,
                     $model->revision,
                     $actor,
-                );
+                ), $model->getConnection());
 
                 return $model->refresh()->load(['definition', 'translations']);
             }, 3);

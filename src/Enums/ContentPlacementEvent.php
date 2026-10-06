@@ -6,6 +6,8 @@ namespace Nvl\Content\Enums;
 
 /**
  * Committed lifecycle changes emitted for owner placement facts.
+ *
+ * @api
  */
 enum ContentPlacementEvent: string
 {

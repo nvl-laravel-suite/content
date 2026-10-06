@@ -6,6 +6,7 @@ namespace Nvl\Content\Actions;
 
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Nvl\Content\Contracts\ApplyContentDefinitionMigrationsContract;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentDefinitionMigrationPlanData;
@@ -23,7 +24,7 @@ use Nvl\Content\Support\ContentConfiguration;
  *
  * @api
  */
-final readonly class ApplyContentDefinitionMigrationsAction
+final readonly class ApplyContentDefinitionMigrationsAction implements ApplyContentDefinitionMigrationsContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

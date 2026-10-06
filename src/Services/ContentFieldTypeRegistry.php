@@ -46,4 +46,16 @@ final class ContentFieldTypeRegistry
     {
         return array_keys($this->adapters);
     }
+
+    /**
+     * Identify declared adapters without resolving request data.
+     *
+     * @internal
+     *
+     * @return array<string, class-string<ContentFieldTypeAdapter>>
+     */
+    public function compilationIdentities(): array
+    {
+        return array_map(static fn (ContentFieldTypeAdapter $adapter): string => $adapter::class, $this->adapters);
+    }
 }

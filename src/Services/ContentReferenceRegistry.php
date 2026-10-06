@@ -112,6 +112,18 @@ final class ContentReferenceRegistry
         return array_keys($this->resolvers);
     }
 
+    /**
+     * Identify registered resolver classes without invoking their factories.
+     *
+     * @internal
+     *
+     * @return array<string, class-string<ContentReferenceResolver>>
+     */
+    public function compilationIdentities(): array
+    {
+        return $this->resolvers;
+    }
+
     private function resolver(string $alias): ContentReferenceResolver
     {
         $this->assertRegistered($alias);

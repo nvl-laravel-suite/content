@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentOwner;
+use Nvl\Content\Contracts\ReorderContentPlacementsContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentEditorData;
 use Nvl\Content\Data\Mutations\ReorderContentPlacementData;
@@ -27,6 +28,7 @@ use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentPlacementTree;
 use Nvl\Content\Services\ContentPlacementValidator;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Applies one complete owner-group tree proposal under the canonical mutation lock.
@@ -36,7 +38,7 @@ use Nvl\Content\Support\ContentConfiguration;
  *
  * @api
  */
-final readonly class ReorderContentPlacementsAction
+final readonly class ReorderContentPlacementsAction implements ReorderContentPlacementsContract
 {
     public function __construct(
         private ContentAuthorization $authorization,
@@ -46,6 +48,7 @@ final readonly class ReorderContentPlacementsAction
         private ContentPlacementTree $tree,
         private ContentPlacementValidator $validator,
         private GetOwnerContentEditorAction $getOwnerEditor,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     /**
@@ -194,7 +197,7 @@ final readonly class ReorderContentPlacementsAction
                     }
 
                     foreach ($changed as $placement) {
-                        ContentPlacementChanged::dispatch(
+                        $this->domainEvents->dispatch(new ContentPlacementChanged(
                             $placement->id,
                             ContentPlacementEvent::Updated,
                             $placement->revision,
@@ -203,7 +206,7 @@ final readonly class ReorderContentPlacementsAction
                             $ownerId,
                             $group,
                             $placement->content_block_id,
-                        );
+                        ), $placement->getConnection());
                     }
 
                     return $this->getOwnerEditor->execute($owner, $group, $actor);

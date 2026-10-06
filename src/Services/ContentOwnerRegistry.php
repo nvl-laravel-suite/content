@@ -180,6 +180,18 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     }
 
     /**
+     * Identify registered owner models without querying persisted owners.
+     *
+     * @internal
+     *
+     * @return array<string, class-string<Model&ContentOwner>>
+     */
+    public function compilationIdentities(): array
+    {
+        return $this->models;
+    }
+
+    /**
      * Return the owner’s validated composition groups.
      *
      * @return list<string>

@@ -139,6 +139,9 @@ final class ContentDoctor
         private Factory $views,
         private CanonicalJson $json,
         private Repository $cache,
+        private CompiledContentDefinitionCache $compiledCache,
+        private ContentDefinitionCompilation $compilation,
+        private ContentPresetDiagnostics $presetDiagnostics,
     ) {}
 
     /**
@@ -161,7 +164,23 @@ final class ContentDoctor
         $cache = $this->cache;
 
         $cacheSupportsLocks = $cache->getStore() instanceof LockProvider;
+        $cacheEnabled = config('nvl-content.compiled_cache.enabled', false) === true;
+        $cacheRequired = config('nvl-content.compiled_cache.required', false) === true;
+        $compiled = ($cacheEnabled || $cacheRequired) ? $this->compiledCache->inspect() : null;
         $definitionList = $definitions->all();
+        $definitionError = null;
+        if ($definitionList === []) {
+            try {
+                if ($compiled !== null && $compiled['valid']) {
+                    $this->compiledCache->restore($definitions);
+                    $definitionList = $definitions->all();
+                } elseif (! $cacheRequired) {
+                    $definitionList = $this->compilation->compile();
+                }
+            } catch (Throwable $exception) {
+                $definitionError = $exception->getMessage();
+            }
+        }
         $checks = [
             'binding.authorization' => $container->bound(ContentAuthorization::class),
             'definitions' => array_map(
@@ -179,6 +198,22 @@ final class ContentDoctor
             'cache.placement_locks' => $cacheSupportsLocks,
             'cache.definition_sync_locks' => $cacheSupportsLocks,
         ];
+
+        $checks['definitions.compilation'] = $definitionError === null;
+        if ($definitionError !== null) {
+            $checks['definitions.compilation_error'] = $definitionError;
+        }
+        foreach ($this->presetDiagnostics->inspect() as $check) {
+            $checks[$check->key] = ['severity' => $check->severity, 'passed' => $check->passed, 'message' => $check->message];
+        }
+        foreach (['present', 'valid', 'stale'] as $key) {
+            $passed = $compiled === null || ($key === 'stale' ? ! $compiled[$key] : $compiled[$key]);
+            $checks['compiled_cache.'.$key] = [
+                'severity' => $compiled === null ? 'info' : ($cacheRequired ? 'error' : 'warning'),
+                'passed' => $passed,
+                'message' => $compiled === null ? 'Compiled cache usage is inactive.' : ($passed ? 'The compiled cache check passed.' : ($compiled['reason'] ?? 'Run nvl:content:cache to regenerate the deployment cache.')),
+            ];
+        }
 
         try {
             ContentRouteConfiguration::path('management');
@@ -258,6 +293,7 @@ final class ContentDoctor
         }
 
         $healthChecks = [
+            'definitions.compilation',
             'binding.authorization',
             'view.default',
             'routes.configuration',
@@ -279,6 +315,11 @@ final class ContentDoctor
         ];
         $healthy = collect($healthChecks)
             ->every(static fn (string $key): bool => ($checks[$key] ?? false) === true);
+        foreach ($checks as $check) {
+            if (is_array($check) && ($check['severity'] ?? null) === 'error' && ($check['passed'] ?? true) === false) {
+                $healthy = false;
+            }
+        }
         $checks['healthy'] = $healthy;
 
         return $checks;

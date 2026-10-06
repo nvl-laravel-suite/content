@@ -1,5 +1,16 @@
 # Upgrading
 
+## Consumer contracts, committed events and runtime policy (5.x)
+
+Prefer focused public interfaces in constructor injection; native implementations remain container defaults and host prebindings win. Returned models are documented identity/data handles: use package contracts for reads/writes and capability-specific batch readers instead of direct package queries. Enable the shipped Core PHPStan include in your host; do not invoke the suite workbench static audit command in a consumer.
+
+Events now carry immutable schemaVersion=1 and scalar/DTO snapshots. Replace model-bearing event fields with the IDs listed in [events](docs/events.md); load only through an authorized public reader when needed. Only six declared legacy `*Event` names are retained as PHP aliases for major 5, removal no earlier than major 6. Migrate exact imports/listeners/fakes to canonical names, replace suffix wildcard patterns explicitly, drain old queued payloads, rebuild event caches and restart workers. Framework Verified/PasswordReset remain native classes. Source-connection callbacks are process-local after-commit publication, not a durable outbox or exactly-once delivery.
+
+Package failures have a marker and optional response metadata. Opt into Core's JSON renderer deliberately; preserve existing host handlers and request-locale selection. Missing required host adapters produce `binding_required`/500; genuine configured authorization denial retains native handling. See the README error table and required-bindings section where applicable.
+
+Factories ship in runtime package mappings for host tests. Ordinary make may persist parents; withoutParents()->make creates detached fixtures. Supply persisted native owners/parents and active tenants explicitly, retain source revisions, and never treat a factory row as a real storage/provider/workflow effect. Core's optional installer publishes common config without enabling features; strict Doctor and explicit deployment cache/worker steps belong in the host release process. C3/C4/E executable acceptance is pending until recorded by integration.
+
+
 ## Optional tenancy adoption
 
 Deploy the nullable Content ownership expansion before enabling tenancy. Under
@@ -136,3 +147,22 @@ Use source `@api` workflows, extension contracts, and value types for applicatio
 `HasContent::contentPlacements()` are internal storage or lifecycle seams. Migrate direct traversal, eager/lazy loading, and aggregate queries to the package authorized read Actions or explicit C1 host scopes/adapters. Native host queries and opted-in Translatable behavior remain supported.
 
 `ContentBlockData::fromModel` and `ContentPlacementData::fromModel` are internal projectors. Use `GetContentBlockAction` and `ListContentPlacementsAction` with their required actor/group context to obtain their public DTO results.
+
+## Major 5 workflow injection
+
+Replace host constructor dependencies on selected concrete Actions with their focused `Nvl\Content\Contracts\*Contract` equivalents listed in the README. Existing equivalent workflow contracts are reused. Native concrete constructors, qualifiers, argument defaults, result types, and execution behavior remain compatible. Internal package Action/service chains retain their existing concrete dependencies.
+
+Default workflow registrations use `bindIf`, retaining host interfaces/instances registered before discovery. Register substitutes at the interface key; newly resolved host services receive late replacements. Substituting a workflow does not exercise the native authorization, storage, or lifecycle invariants, which require the owning integration coverage.
+
+Use `ContentContract` for the complete 24-method engine surface and the Content facade. The interface and concrete defaults use `scopedIf`; the interface resolves the existing concrete, preserving scoped identity and the optional editor’s contextual injection. After late facade replacement, clear `ContentContract::class` with `Content::clearResolvedInstance`, and clear facade caches across application/scoped boundaries.
+
+## Compiled definition cache
+
+Compiled caching is disabled by default. Configure `nvl-content.compiled_cache.enabled`, `required`, `path`, and `version` deliberately. `NVL_CONTENT_DEFINITIONS_VERSION` supplies the configured deployment token. Build the artifact for each release after registering host extensions:
+
+```sh
+php artisan nvl:content:cache --cache-version=release-2026-10-07
+php artisan nvl:content:doctor --strict
+```
+
+`--cache-version` must match the configured token when one is present; it does not change configuration. Required mode needs an explicit nonempty token and enabled caching. Generate the cache before enabling required mode, rebuild configuration caches when changing configuration, and restart long-lived workers. Optional mode may compile source when the cache is absent or invalid; required mode fails closed. A matching warm cache avoids source discovery and execution. Run `php artisan nvl:content:clear` to remove it. The version token is a deployment identity, not the Artisan application's reserved `--version` option.

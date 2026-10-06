@@ -7,6 +7,7 @@ namespace Nvl\Content\Actions;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\RestoreContentBlockContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Enums\ContentRevisionEvent;
@@ -17,18 +18,20 @@ use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ContentMediaSynchronizer;
 use Nvl\Content\Services\ContentRevisionRecorder;
 use Nvl\Content\Support\ContentArrays;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Restores one deleted block as a draft and re-establishes valid Media links.
  *
  * @api
  */
-final readonly class RestoreContentBlockAction
+final readonly class RestoreContentBlockAction implements RestoreContentBlockContract
 {
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentMediaSynchronizer $media,
         private ContentRevisionRecorder $revisions,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     public function execute(
@@ -91,12 +94,12 @@ final readonly class RestoreContentBlockAction
                     $actor,
                 );
                 $this->revisions->record($model, ContentRevisionEvent::Restored, $actor);
-                ContentBlockChanged::dispatch(
+                $this->domainEvents->dispatch(new ContentBlockChanged(
                     $model->id,
                     ContentRevisionEvent::Restored,
                     $model->revision,
                     $actor,
-                );
+                ), $model->getConnection());
 
                 return $model->refresh()->load(['definition', 'translations']);
             });

@@ -74,9 +74,11 @@ use Nvl\Media\Http\Controllers\MediaAssetController;
 use Nvl\Media\Models\Media;
 use Nvl\Media\Models\MediaAssociation;
 use Nvl\Media\Services\MediaPathResolver;
+use Nvl\Support\Events\ConnectionCommitCallbacks;
+use Nvl\Support\Events\DomainEventDispatcher;
+use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\Services\TenantBoundary;
-use Nvl\Tenancy\Services\TenantExtensionGuard;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 beforeEach(function (): void {
     Storage::fake('public');
@@ -883,6 +885,10 @@ it('loads deterministic definition files and guards custom view destinations', f
 });
 
 it('exposes independently configurable authorized management and public APIs', function (): void {
+    /** RefreshDatabase replaces the native transaction manager after migration-time resolution. */
+    $this->app->forgetInstance(ConnectionCommitCallbacks::class);
+    $this->app->forgetInstance(DomainEventDispatcher::class);
+
     config()->set([
         'nvl-content.routes.management.enabled' => true,
         'nvl-content.routes.management.prefix' => 'api/internal/content-manager',

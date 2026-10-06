@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\PlanContentDefinitionMigrationsContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentDefinitionData;
 use Nvl\Content\Data\ContentDefinitionMigrationPlanData;
@@ -26,7 +27,7 @@ use Nvl\Content\Support\ContentConfiguration;
  *
  * @api
  */
-final readonly class PlanContentDefinitionMigrationsAction
+final readonly class PlanContentDefinitionMigrationsAction implements PlanContentDefinitionMigrationsContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

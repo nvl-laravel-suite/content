@@ -7,6 +7,7 @@ namespace Nvl\Content\Actions;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\DeleteContentPlacementContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Enums\ContentPlacementEvent;
@@ -16,19 +17,21 @@ use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Services\ContentMediaSynchronizer;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Removes a leaf placement without deleting its reusable block.
  *
  * @api
  */
-final readonly class DeleteContentPlacementAction
+final readonly class DeleteContentPlacementAction implements DeleteContentPlacementContract
 {
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentOwnerRegistry $owners,
         private ContentPlacementOwnerLock $ownerLocks,
         private ContentMediaSynchronizer $media,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     /**
@@ -88,7 +91,7 @@ final readonly class DeleteContentPlacementAction
                             throw new InvalidArgumentException('Content placement deletion was canceled.');
                         }
 
-                        ContentPlacementChanged::dispatch(
+                        $this->domainEvents->dispatch(new ContentPlacementChanged(
                             $model->id,
                             ContentPlacementEvent::Deleted,
                             $nextRevision,
@@ -97,7 +100,7 @@ final readonly class DeleteContentPlacementAction
                             $model->owner_id,
                             $model->group,
                             $model->content_block_id,
-                        );
+                        ), $model->getConnection());
                     }, 3);
             },
         );

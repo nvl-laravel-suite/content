@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Nvl\Content\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Nvl\Content\Database\Factories\ContentBlockTranslationFactory;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Support\Config\PackageStorage;
@@ -20,10 +22,17 @@ use Nvl\Support\Config\PackageStorage;
  * @property string $locale
  * @property array<string, mixed> $values
  * @property-read ContentBlock $block
+ *
+ * @api
+ *
+ * @nvl-consumer-read id
  */
 final class ContentBlockTranslation extends Model
 {
     use GuardsTenantOwnership;
+
+    /** @use HasFactory<ContentBlockTranslationFactory> */
+    use HasFactory;
     use HasUuids;
 
     public const string TENANT_RESOURCE = 'content.translations';
@@ -57,5 +66,15 @@ final class ContentBlockTranslation extends Model
     public function block(): BelongsTo
     {
         return $this->belongsTo(ContentBlock::class, 'content_block_id');
+    }
+
+    /**
+     * Return the package's runtime fixture factory.
+     *
+     * @internal
+     */
+    protected static function newFactory(): ContentBlockTranslationFactory
+    {
+        return ContentBlockTranslationFactory::new();
     }
 }

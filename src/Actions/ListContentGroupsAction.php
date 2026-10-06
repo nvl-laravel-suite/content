@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentOwner;
+use Nvl\Content\Contracts\ListContentGroupsContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Services\ContentOwnerRegistry;
@@ -17,7 +18,7 @@ use Nvl\Content\Services\ContentOwnerRegistry;
  *
  * @api
  */
-final readonly class ListContentGroupsAction
+final readonly class ListContentGroupsAction implements ListContentGroupsContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

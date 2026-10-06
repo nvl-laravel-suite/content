@@ -7,6 +7,7 @@ namespace Nvl\Content\Actions;
 use Illuminate\Support\Collection;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentFieldPreset;
+use Nvl\Content\Contracts\ListContentPresetsContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentFieldDefinitionData;
 use Nvl\Content\Data\ContentFieldPresetData;
@@ -20,7 +21,7 @@ use Nvl\Content\Services\ContentSchemaCompiler;
  *
  * @api
  */
-final readonly class ListContentPresetsAction
+final readonly class ListContentPresetsAction implements ListContentPresetsContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

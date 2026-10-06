@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Nvl\Content\Definitions\Tables\ContentTables;
 use Nvl\Content\Services\ConfiguredContentAuthorization;
 
+/** Complete runtime defaults; publication sections are declared in ../resources/config/sections.json. */
 return [
     'connection' => null,
 
@@ -66,6 +67,13 @@ return [
     ],
     'allowed_definition_roots' => [
         base_path(),
+    ],
+
+    'compiled_cache' => [
+        'enabled' => false,
+        'path' => base_path('bootstrap/cache/nvl-content-definitions.json'),
+        'required' => false,
+        'version' => env('NVL_CONTENT_DEFINITIONS_VERSION'),
     ],
 
     'scopes' => [

@@ -7,12 +7,14 @@ namespace Nvl\Content\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Nvl\Content\Casts\ContentSchemaCast;
+use Nvl\Content\Database\Factories\ContentBlockFactory;
 use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
@@ -66,6 +68,9 @@ use Nvl\Translatable\Translatable;
 final class ContentBlock extends Model implements HasMedia, TranslatableModel
 {
     use GuardsTenantOwnership;
+
+    /** @use HasFactory<ContentBlockFactory> */
+    use HasFactory;
     use HasUuids;
     use InteractsWithMedia;
     use SoftDeletes;
@@ -222,5 +227,15 @@ final class ContentBlock extends Model implements HasMedia, TranslatableModel
             defaultSorts: ['-updated', 'key'],
             tieBreakerSort: 'id',
         );
+    }
+
+    /**
+     * Return the package's runtime fixture factory.
+     *
+     * @internal
+     */
+    protected static function newFactory(): ContentBlockFactory
+    {
+        return ContentBlockFactory::new();
     }
 }

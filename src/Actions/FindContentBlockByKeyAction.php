@@ -7,6 +7,7 @@ namespace Nvl\Content\Actions;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\FindContentBlockByKeyContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Enums\ContentAbility;
@@ -19,7 +20,7 @@ use Nvl\Content\Services\ContentIdentityGuard;
  *
  * @api
  */
-final readonly class FindContentBlockByKeyAction
+final readonly class FindContentBlockByKeyAction implements FindContentBlockByKeyContract
 {
     public function __construct(
         private ContentAuthorization $authorization,

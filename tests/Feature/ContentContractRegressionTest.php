@@ -10,6 +10,7 @@ use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -84,7 +85,12 @@ use Nvl\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 
 beforeEach(function (): void {
+    $this->contentContractMorphMap = Relation::morphMap();
     app(SyncContentDefinitionsAction::class)->execute(ContentActorData::system());
+});
+
+afterEach(function (): void {
+    Relation::morphMap($this->contentContractMorphMap, false);
 });
 
 it('preserves the original placement event constructor contract', function (): void {
@@ -3248,22 +3254,22 @@ it('fails closed instead of adopting a pre-existing package table', function (
 })->with([
     'definitions' => [
         'definitions',
-        '2026_07_28_100001_create_content_definitions_table.php',
+        '2026_07_28_100001_nvl_content_create_content_definitions_table.php',
     ],
     'blocks' => [
         'blocks',
-        '2026_07_28_100002_create_content_blocks_table.php',
+        '2026_07_28_100002_nvl_content_create_content_blocks_table.php',
     ],
     'translations' => [
         'blocks_i18n',
-        '2026_07_28_100003_create_content_blocks_i18n_table.php',
+        '2026_07_28_100003_nvl_content_create_content_blocks_i18n_table.php',
     ],
     'placements' => [
         'placements',
-        '2026_07_28_100004_create_content_placements_table.php',
+        '2026_07_28_100004_nvl_content_create_content_placements_table.php',
     ],
     'revisions' => [
         'revisions',
-        '2026_07_28_100005_create_content_revisions_table.php',
+        '2026_07_28_100005_nvl_content_create_content_revisions_table.php',
     ],
 ]);

@@ -7,9 +7,11 @@ namespace Nvl\Content\Services;
 use Closure;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use Nvl\Content\Support\ContentConfiguration;
-use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Support\Config\PackageOptions;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 
 /**
  * Serializes placement tree mutations on a stable owner-group lock key.
@@ -32,7 +34,9 @@ final readonly class ContentPlacementOwnerLock
         string $group,
         Closure $callback,
     ): mixed {
-        $store = $this->cache->getStore();
+        $name = PackageOptions::lockStore('content', 'placements');
+        $repository = $name === config('cache.default') ? $this->cache : Cache::store($name);
+        $store = $repository->getStore();
 
         if (! $store instanceof LockProvider) {
             throw new InvalidArgumentException(

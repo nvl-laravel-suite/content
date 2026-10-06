@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 use Nvl\Content\Casts\ContentSchemaCast;
 use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Config\PackageStorage;
 
 /**
  * Queryable mirror of one source-controlled content definition.
@@ -72,7 +73,7 @@ final class ContentDefinition extends Model
 
     public function getConnectionName(): ?string
     {
-        return ContentConfiguration::connection() ?? parent::getConnectionName();
+        return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
     }
 
     /**

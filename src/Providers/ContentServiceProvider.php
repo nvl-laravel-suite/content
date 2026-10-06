@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Nvl\Content\Providers;
 
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
@@ -19,7 +18,6 @@ use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentDefinitionMigration;
 use Nvl\Content\Contracts\ContentFieldPreset;
 use Nvl\Content\Contracts\ContentFieldTypeAdapter;
-use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
 use Nvl\Content\Contracts\ContentReferenceResolver;
 use Nvl\Content\FieldPresets\BannerContentFieldPreset;
@@ -45,6 +43,7 @@ use Nvl\Content\Services\ContentCatalogCopyRegistry;
 use Nvl\Content\Services\ContentDefinitionLoader;
 use Nvl\Content\Services\ContentDefinitionMigrationRegistry;
 use Nvl\Content\Services\ContentDefinitionRegistry;
+use Nvl\Content\Services\ContentDoctor;
 use Nvl\Content\Services\ContentFieldPresetRegistry;
 use Nvl\Content\Services\ContentFieldTypeRegistry;
 use Nvl\Content\Services\ContentJsonSchemaBuilder;
@@ -60,10 +59,12 @@ use Nvl\Content\Support\ContentUriSchemePolicy;
 use Nvl\Content\Tenancy\ContentResourceRegistrar;
 use Nvl\Content\Validation\ContentSchemaValidator;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Support\Doctor\PackageDoctorContributor;
+use Nvl\Support\Providers\SupportServiceProvider;
+use Nvl\Support\Providers\TenantServiceProvider;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Support\Traits\MergesPackageConfiguration;
-use Nvl\Tenancy\Providers\TenancyServiceProvider;
 use Nvl\Tenancy\Services\TenantAdoptionRegistry;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Opis\JsonSchema\Validator;
 
@@ -76,13 +77,18 @@ final class ContentServiceProvider extends ServiceProvider
 
     public function register(): void
     {
+        $this->app->register(SupportServiceProvider::class);
+        PackageDoctorContributor::register($this->app, 'nvl/content', fn (): array => PackageDoctorContributor::reportChecks($this->app->make(ContentDoctor::class)->inspect(), 'nvl:content:doctor'));
+
         ContentOwnerDeletionBridge::clear();
-        $this->app->register(TenancyServiceProvider::class);
+        $this->app->register(TenantServiceProvider::class);
         $this->mergePackageConfiguration(__DIR__.'/../../config/content.php', 'content');
-        (new ContentResourceRegistrar)->register(
-            $this->app->make(TenantResourceRegistry::class),
-            $this->app->make(TenantAdoptionRegistry::class),
-        );
+        (new ContentResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class));
+        $this->app->booted(function (): void {
+            if ($this->app->bound(TenantAdoptionRegistry::class)) {
+                (new ContentResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class), $this->app->make(TenantAdoptionRegistry::class));
+            }
+        });
         $this->validateUriSchemeConfiguration();
         $authorization = config(
             'content.authorization.class',
@@ -416,14 +422,14 @@ final class ContentServiceProvider extends ServiceProvider
         }
 
         foreach ($configured as $alias => $model) {
+            if (is_int($alias) && is_string($model)) {
+                $alias = $model;
+            }
             if (! is_string($alias)
-                || ! is_string($model)
-                || ! is_a($model, Model::class, true)
-                || ! is_a($model, ContentOwner::class, true)) {
+                || ! is_string($model)) {
                 throw new InvalidArgumentException('Every configured content owner is invalid.');
             }
 
-            /** @var class-string<Model&ContentOwner> $model */
             $registry->register($alias, $model);
         }
     }

@@ -53,6 +53,7 @@ abstract class TestCase extends Orchestra
                 HeroV1ToV2ContentMigration::class,
             ],
             'content.locales.available' => ['en', 'bg'],
+            'translatable.locales' => ['en', 'bg'],
             'content.locales.required_on_publish' => ['en'],
             'content.scopes' => [
                 'site' => ['key_pattern' => '/^[a-z0-9-]{1,50}$/'],

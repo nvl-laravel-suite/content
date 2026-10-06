@@ -8,7 +8,7 @@ use Closure;
 use Illuminate\Container\Container;
 use Illuminate\Support\Collection;
 use Nvl\Media\Models\Media;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 
 /**
  * Per-composition model and resolver cache; never shared across requests or jobs.

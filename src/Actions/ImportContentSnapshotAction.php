@@ -15,9 +15,9 @@ use Nvl\Content\Services\CanonicalJson;
 use Nvl\Content\Services\ContentCatalogCopyRegistry;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Media\Models\Media;
-use Nvl\Tenancy\Contracts\TenantContext;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantBoundary;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Tenancy\Contracts\TenantContext;
+use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 
 /** Reidentifies a grant-authorized snapshot beneath a canonical tenant owner. */
 final readonly class ImportContentSnapshotAction

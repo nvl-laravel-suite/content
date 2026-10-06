@@ -8,7 +8,7 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Services\ContentOwnerRegistry;
-use Nvl\Tenancy\Contracts\TenantParentResolver;
+use Nvl\Support\Tenancy\Contracts\TenantParentResolver;
 
 /** Exposes Content's registered owner morph aliases to the tenant boundary. */
 final readonly class ContentTenantParentResolver implements TenantParentResolver

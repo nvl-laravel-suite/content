@@ -6,9 +6,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Config\PackageStorage;
+use Nvl\Support\Schema\SchemaConstraints;
 
 return new class extends Migration
 {
+    /** Use the effective package connection for Laravel's migration transaction. */
+    public function getConnection(): ?string
+    {
+        return PackageStorage::connection('content');
+    }
+
     /** Expand Content storage with resumable tenant ownership columns and tenant-leading indexes. */
     public function up(): void
     {
@@ -25,17 +33,17 @@ return new class extends Migration
             $table->unique(['tenant_id', 'id'], 'content_blocks_tenant_id_unique');
             $table->index(['tenant_id', 'scope', 'scope_key', 'status'], 'content_blocks_tenant_scope_state_idx');
         });
-        $schema->table($translations, function (Blueprint $table) use ($blocks): void {
+        $schema->table($translations, function (Blueprint $table) use ($blocks, $schema): void {
             $table->uuid('tenant_id')->nullable()->after('id');
-            $table->dropForeign(['content_block_id']);
+            SchemaConstraints::drop($schema, $table, 'foreign', ['content_block_id']);
             $table->index(['tenant_id', 'locale', 'content_block_id'], 'content_blocks_i18n_tenant_lookup_idx');
             $table->foreign(['tenant_id', 'content_block_id'], 'content_blocks_i18n_tenant_block_foreign')
                 ->references(['tenant_id', 'id'])->on($blocks)->cascadeOnDelete();
         });
-        $schema->table($placements, function (Blueprint $table) use ($blocks, $placements): void {
+        $schema->table($placements, function (Blueprint $table) use ($blocks, $placements, $schema): void {
             $table->uuid('tenant_id')->nullable()->after('id');
-            $table->dropForeign(['content_block_id']);
-            $table->dropForeign(['parent_id']);
+            SchemaConstraints::drop($schema, $table, 'foreign', ['content_block_id']);
+            SchemaConstraints::drop($schema, $table, 'foreign', ['parent_id']);
             $table->dropUnique('content_placements_owner_group_key_unique');
             $table->unique(['tenant_id', 'owner_type', 'owner_id', 'group', 'key'], 'content_placements_tenant_owner_key_unique');
             $table->unique(['tenant_id', 'id'], 'content_placements_tenant_id_unique');
@@ -45,9 +53,9 @@ return new class extends Migration
             $table->foreign(['tenant_id', 'parent_id'], 'content_placements_tenant_parent_foreign')
                 ->references(['tenant_id', 'id'])->on($placements)->restrictOnDelete();
         });
-        $schema->table($revisions, function (Blueprint $table) use ($blocks): void {
+        $schema->table($revisions, function (Blueprint $table) use ($blocks, $schema): void {
             $table->uuid('tenant_id')->nullable()->after('id');
-            $table->dropForeign(['content_block_id']);
+            SchemaConstraints::drop($schema, $table, 'foreign', ['content_block_id']);
             $table->index(['tenant_id', 'content_block_id', 'revision'], 'content_revisions_tenant_block_idx');
             $table->foreign(['tenant_id', 'content_block_id'], 'content_revisions_tenant_block_foreign')
                 ->references(['tenant_id', 'id'])->on($blocks)->cascadeOnDelete();

@@ -46,6 +46,7 @@ use Nvl\Media\Enums\MediaLifecycleStatus;
 use Nvl\Media\Enums\MediaType;
 use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Models\Media;
+use Nvl\Support\OwnerRegistry;
 use Nvl\Tenancy\Services\TenantBoundary;
 use Nvl\Tenancy\Services\TenantResourceRegistry;
 
@@ -584,6 +585,7 @@ it('fails closed for invalid owner registrations identities and group declaratio
         app(Repository::class),
         app(TenantBoundary::class),
         app(TenantResourceRegistry::class),
+        app(OwnerRegistry::class),
     );
     $plainModel = new class extends Model {};
     $validOwner = new class extends Model implements ContentOwner
@@ -660,6 +662,7 @@ it('fails closed for invalid owner registrations identities and group declaratio
             app(Repository::class),
             app(TenantBoundary::class),
             app(TenantResourceRegistry::class),
+            app(OwnerRegistry::class),
         ))
             ->register('alternate-boundary-owner', TestContentOwner::class))
             ->toThrow(InvalidArgumentException::class);

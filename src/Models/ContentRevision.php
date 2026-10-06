@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Content\Enums\ContentRevisionEvent;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Config\PackageStorage;
 
 /**
  * Immutable audit snapshot created by public block mutations.
@@ -48,7 +49,7 @@ final class ContentRevision extends Model
 
     public function getConnectionName(): ?string
     {
-        return ContentConfiguration::connection() ?? parent::getConnectionName();
+        return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
     }
 
     /**

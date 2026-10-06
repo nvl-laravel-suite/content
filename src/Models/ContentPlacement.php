@@ -14,6 +14,7 @@ use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Media\Contracts\HasMedia;
 use Nvl\Media\Traits\InteractsWithMedia;
+use Nvl\Support\Config\PackageStorage;
 
 /**
  * Ordered placement of a reusable block within an allowlisted owner.
@@ -77,7 +78,7 @@ final class ContentPlacement extends Model implements HasMedia
 
     public function getConnectionName(): ?string
     {
-        return ContentConfiguration::connection() ?? parent::getConnectionName();
+        return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
     }
 
     /**

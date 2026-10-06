@@ -7,8 +7,10 @@ namespace Nvl\Content\Services;
 use Closure;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Config\PackageOptions;
 
 /**
  * Serializes definition mirror synchronization across deployment processes.
@@ -27,7 +29,9 @@ final readonly class ContentDefinitionSyncLock
      */
     public function run(Closure $callback): mixed
     {
-        $store = $this->cache->getStore();
+        $name = PackageOptions::lockStore('content', 'definitions');
+        $repository = $name === config('cache.default') ? $this->cache : Cache::store($name);
+        $store = $repository->getStore();
 
         if (! $store instanceof LockProvider) {
             throw new InvalidArgumentException(

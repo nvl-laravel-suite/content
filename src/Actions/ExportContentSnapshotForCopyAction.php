@@ -9,7 +9,7 @@ use Nvl\Content\Data\ContentSnapshotCopyData;
 use Nvl\Content\Services\ContentCatalogCopyRegistry;
 use Nvl\Content\Services\ContentMediaReferences;
 use Nvl\Content\Services\ContentOwnerRegistry;
-use Nvl\Tenancy\Contracts\TenantContext;
+use Nvl\Support\Tenancy\Contracts\TenantContext;
 use RuntimeException;
 
 final readonly class ExportContentSnapshotForCopyAction

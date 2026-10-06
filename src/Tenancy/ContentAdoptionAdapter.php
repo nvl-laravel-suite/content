@@ -11,10 +11,10 @@ use Nvl\Content\Models\ContentBlockTranslation;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Models\ContentRevision;
 use Nvl\Content\Services\ContentOwnerRegistry;
+use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Tenancy\Services\TenantAdoptionBoundary;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
 use Nvl\Tenancy\ValueObjects\TenantVerification;
@@ -152,7 +152,7 @@ final readonly class ContentAdoptionAdapter implements TenantAdoptionAdapter
     public function activate(TenantAdoptionPlan $plan): void
     {
         $this->assertVerified($plan, 'Content tenant ownership did not verify.');
-        $path = dirname(__DIR__, 2).'/database/tenancy/2026_09_16_170011_constrain_content_ownership.php';
+        $path = dirname(__DIR__, 2).'/database/tenancy/2026_09_16_170011_nvl_content_constrain_content_ownership.php';
         $this->migrator->usingConnection($plan->connection, fn () => $this->migrator->run([$path], ['force' => true]));
         $this->assertVerified($plan, 'Content tenant ownership failed after constraint activation.');
     }

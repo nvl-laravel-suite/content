@@ -9,16 +9,16 @@ use Nvl\Content\Models\ContentBlockTranslation;
 use Nvl\Content\Models\ContentDefinition;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Models\ContentRevision;
-use Nvl\Tenancy\Enums\TenantResourceKind;
+use Nvl\Support\Tenancy\Enums\TenantResourceKind;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Support\Tenancy\ValueObjects\TenantResourceDefinition;
 use Nvl\Tenancy\Services\TenantAdoptionRegistry;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
-use Nvl\Tenancy\ValueObjects\TenantResourceDefinition;
 
 /** Registers the immutable Content ownership graph and its adopter. */
 final class ContentResourceRegistrar
 {
     /** Register every Content resource and the package-owned adoption adapter. */
-    public function register(TenantResourceRegistry $resources, TenantAdoptionRegistry $adoption): void
+    public function register(TenantResourceRegistry $resources, ?TenantAdoptionRegistry $adoption = null): void
     {
         $resources->requireCompatible('content', 'media');
         $resources->registerParentResolver('content.placements', ContentTenantParentResolver::class);
@@ -31,6 +31,6 @@ final class ContentResourceRegistrar
         ] as $definition) {
             $resources->register($definition);
         }
-        $adoption->register('content', ContentAdoptionAdapter::class);
+        $adoption?->register('content', ContentAdoptionAdapter::class);
     }
 }

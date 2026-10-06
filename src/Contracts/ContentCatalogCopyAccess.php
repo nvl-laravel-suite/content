@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Contracts;
 
-use Nvl\Tenancy\ValueObjects\TenantId;
+use Nvl\Support\Tenancy\ValueObjects\TenantId;
 
 interface ContentCatalogCopyAccess
 {

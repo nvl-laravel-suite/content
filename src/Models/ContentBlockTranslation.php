@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Config\PackageStorage;
 
 /**
  * Localized field values for one content block.
@@ -37,7 +38,7 @@ final class ContentBlockTranslation extends Model
 
     public function getConnectionName(): ?string
     {
-        return ContentConfiguration::connection() ?? parent::getConnectionName();
+        return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
     }
 
     /**

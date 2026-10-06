@@ -6,13 +6,13 @@ namespace Nvl\Content\Services;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
-use Nvl\Tenancy\Services\TenantBoundary;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Support\OwnerRegistry;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Allowlist and morph map for model-backed Content owners.
@@ -27,12 +27,13 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
         private readonly Repository $configuration,
         private readonly TenantBoundary $tenancy,
         private readonly TenantResourceRegistry $tenantResources,
+        private readonly OwnerRegistry $identitiesRegistry,
     ) {}
 
     /**
      * Register one stable owner alias and its Content-capable Eloquent model.
      *
-     * @param  class-string  $model
+     * @param  string  $model  Shared alias or deprecated Eloquent class reference
      */
     public function register(string $alias, string $model): void
     {
@@ -44,8 +45,14 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             throw new InvalidArgumentException("Content owner [{$alias}] is already registered.");
         }
 
-        if (! is_a($model, Model::class, true)
-            || ! is_a($model, ContentOwner::class, true)) {
+        $reference = $model;
+        $model = is_a($reference, Model::class, true) ? $reference : $this->identitiesRegistry->model($reference);
+
+        if ($reference !== $model && $reference !== $alias) {
+            throw new InvalidArgumentException("Content owner [{$alias}] must use its canonical shared alias [{$reference}].");
+        }
+
+        if (! is_a($model, ContentOwner::class, true)) {
             throw new InvalidArgumentException(
                 "Content owner model [{$model}] must extend Model and implement ContentOwner.",
             );
@@ -54,25 +61,9 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
         /** @var Model&ContentOwner $owner */
         $owner = new $model;
         $this->groups($owner);
-        $existingAliasModel = Relation::getMorphedModel($alias);
-
-        if ($existingAliasModel !== null && $existingAliasModel !== $model) {
-            throw new InvalidArgumentException(
-                "Morph alias [{$alias}] is already assigned to [{$existingAliasModel}].",
-            );
-        }
-
-        foreach (Relation::morphMap() as $registeredAlias => $registeredModel) {
-            if ($registeredModel === $model && $registeredAlias !== $alias) {
-                throw new InvalidArgumentException(
-                    "Content owner model [{$model}] already uses morph alias [{$registeredAlias}].",
-                );
-            }
-        }
-
+        $this->identitiesRegistry->reference($reference, "content.owners.{$alias}", $alias, true);
         $this->models[$alias] = $model;
         ksort($this->models);
-        Relation::morphMap([$alias => $model], merge: true);
     }
 
     /**

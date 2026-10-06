@@ -11,10 +11,10 @@ use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentReferenceResolver;
 use Nvl\Content\Contracts\TenantSafeContentReferenceResolver;
 use Nvl\Content\Validation\ContentValidationContext;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantBoundary;
-use Nvl\Tenancy\Services\TenantExtensionGuard;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Allowlist for schema-declared references.

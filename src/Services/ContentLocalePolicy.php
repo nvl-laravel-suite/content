@@ -6,8 +6,8 @@ namespace Nvl\Content\Services;
 
 use InvalidArgumentException;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Contracts\LocaleCatalog;
 use Nvl\Translatable\Services\ContentLocale;
-use Nvl\Translatable\Services\LocaleRegistry;
 use Nvl\Translatable\Support\LocaleCode;
 
 /**
@@ -16,7 +16,7 @@ use Nvl\Translatable\Support\LocaleCode;
 final readonly class ContentLocalePolicy
 {
     public function __construct(
-        private LocaleRegistry $locales,
+        private LocaleCatalog $locales,
         private ContentLocale $contentLocale,
     ) {}
 

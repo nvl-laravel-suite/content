@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Content\Support;
 
 use InvalidArgumentException;
+use Nvl\Support\Config\PackageOptions;
 
 /**
  * Validates independently configurable management and public route groups.
@@ -57,27 +58,7 @@ final class ContentRouteConfiguration
      */
     public static function middleware(string $group): array
     {
-        $configured = config("content.routes.{$group}.middleware", ['api', 'auth']);
-
-        if (! is_array($configured)) {
-            throw new InvalidArgumentException(
-                "content.routes.{$group}.middleware must be an array.",
-            );
-        }
-
-        $middleware = [];
-
-        foreach ($configured as $item) {
-            if (! is_string($item) || trim($item) === '') {
-                throw new InvalidArgumentException(
-                    "Every content.routes.{$group}.middleware entry must be a non-empty string.",
-                );
-            }
-
-            $middleware[] = $item;
-        }
-
-        return $middleware;
+        return PackageOptions::routeMiddleware('content', $group, ['api', 'auth']);
     }
 
     private function __construct() {}

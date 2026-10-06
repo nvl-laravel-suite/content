@@ -1295,3 +1295,46 @@ definition discovery, generated contracts, and diagnostics.
 ## License
 
 NVL Content is open-sourced under the MIT License.
+
+## Shared owner identity
+
+Declare a model once in `config/nvl-core.php`:
+
+```php
+'owners' => ['article' => Article::class],
+```
+
+Enable this package capability separately in `config/content.php`:
+
+```php
+'owners' => ['article'],
+```
+
+Owners still implement ContentOwner, declare composition groups, and use HasContent. Registering identity does not grant a group or mutation ability. Core registration does not add the model to this package's allowlist.
+
+Existing package class/resolver/handler registrations remain accepted for one major cycle. Run `php artisan nvl:doctor --strict --format=json` to inspect compatibility diagnostics. See [UPGRADING.md](UPGRADING.md) before changing a persisted morph type.
+
+## Shared consumer diagnostics
+
+Run `php artisan nvl:doctor --strict --format=json` to combine the read-only checks from loaded NVL package providers. Errors fail the gate, and strict mode also fails warnings. This package's existing Doctor command remains available and uses the same package-owned inspection service.
+
+
+## Shared infrastructure options
+
+Definition synchronization and placement mutations use `content.locks.store`, then `nvl-core.locks.store`, then the application's cache store. Optional `locks.definitions.store` and `locks.placements.store` select different operation stores without changing `definition_sync` or `placements` lock durations. An injected application cache implementation remains available when the selected store is the application default.
+
+Management/public middleware can inherit Core by setting the relevant `content.routes.<group>.middleware` to null. Lists replace atomically, including an explicit empty list where appropriate. `content.authorization.guard` inherits Core's guard and applies only to bare `auth` entries; existing explicit guards and the Content authorization contract remain authoritative.
+
+## Next major: isolated schema identities
+
+Use `content.tables.<logical-key>` for every table and `content.connection` for its database connection. Null connection inherits `nvl-core.connection`, then Laravel's default. Tables are resolved at runtime by the package table definition helper.
+
+| Logical key | New default | Previous name |
+| --- | --- | --- |
+| `definitions` | `nvl_content_definitions` | `content_definitions` |
+| `blocks` | `nvl_content_blocks` | `content_blocks` |
+| `blocks_i18n` | `nvl_content_blocks_i18n` | `content_blocks_i18n` |
+| `placements` | `nvl_content_placements` | `content_placements` |
+| `revisions` | `nvl_content_revisions` | `content_revisions` |
+
+Migration filenames contain `nvl_content_`. Existing installations must complete the upgrade in `UPGRADING.md` before running new migrations. A pending creator rejects an existing target before any migration in the batch runs; legacy storage with old history needs an ownership decision.

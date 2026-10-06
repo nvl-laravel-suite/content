@@ -25,6 +25,7 @@ use Nvl\Filterable\Enums\FilterOperator;
 use Nvl\Filterable\Enums\FilterValueType;
 use Nvl\Media\Contracts\HasMedia;
 use Nvl\Media\Traits\InteractsWithMedia;
+use Nvl\Support\Config\PackageStorage;
 use Nvl\Translatable\Contracts\TranslatableModel;
 use Nvl\Translatable\Enums\TranslationMutationPolicy;
 use Nvl\Translatable\RelatedTranslationDefinition;
@@ -124,7 +125,7 @@ final class ContentBlock extends Model implements HasMedia, TranslatableModel
 
     public function getConnectionName(): ?string
     {
-        return ContentConfiguration::connection() ?? parent::getConnectionName();
+        return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
     }
 
     /**

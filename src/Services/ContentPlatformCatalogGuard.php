@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Nvl\Content\Services;
 
 use Illuminate\Contracts\Config\Repository;
-use Nvl\Tenancy\Contracts\TenantContext;
-use Nvl\Tenancy\Enums\TenantContextMode;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Support\Tenancy\Contracts\TenantContext;
+use Nvl\Support\Tenancy\Enums\TenantContextMode;
+use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 
 /** Restricts mutation of deployment-owned Content definitions to explicit platform execution. */
 final readonly class ContentPlatformCatalogGuard

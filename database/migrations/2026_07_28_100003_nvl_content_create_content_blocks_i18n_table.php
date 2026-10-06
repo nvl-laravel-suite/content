@@ -6,17 +6,24 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Config\PackageStorage;
 
 return new class extends Migration
 {
+    /** Use the effective package connection for Laravel's migration transaction. */
+    public function getConnection(): ?string
+    {
+        return PackageStorage::connection('content');
+    }
+
     public function up(): void
     {
         $schema = Schema::connection(ContentConfiguration::connection());
-        $tableName = ContentConfiguration::table('revisions');
+        $tableName = ContentConfiguration::table('blocks_i18n');
 
         if ($schema->hasTable($tableName)) {
             throw new LogicException(
-                "Content revisions table [{$tableName}] already exists; ".
+                "Content translations table [{$tableName}] already exists; ".
                 'disable content.migrations.enabled during controlled schema adoption.',
             );
         }
@@ -26,22 +33,18 @@ return new class extends Migration
             $table->foreignUuid('content_block_id')
                 ->constrained(ContentConfiguration::table('blocks'))
                 ->cascadeOnDelete();
-            $table->unsignedBigInteger('revision');
-            $table->string('event', 50);
-            $table->json('snapshot');
-            $table->string('actor_type', 191)->nullable();
-            $table->string('actor_id', 191)->nullable();
+            $table->string('locale', 35);
+            $table->json('values');
             $table->timestamps();
 
-            $table->unique(['content_block_id', 'revision'], 'content_revisions_block_unique');
-            $table->index(['event', 'created_at'], 'content_revisions_event_idx');
-            $table->index(['actor_type', 'actor_id'], 'content_revisions_actor_idx');
+            $table->unique(['content_block_id', 'locale'], 'content_blocks_i18n_locale_unique');
+            $table->index(['locale', 'content_block_id'], 'content_blocks_i18n_lookup_idx');
         });
     }
 
     public function down(): void
     {
         Schema::connection(ContentConfiguration::connection())
-            ->dropIfExists(ContentConfiguration::table('revisions'));
+            ->dropIfExists(ContentConfiguration::table('blocks_i18n'));
     }
 };

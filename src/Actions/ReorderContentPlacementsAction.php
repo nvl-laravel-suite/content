@@ -56,7 +56,7 @@ final readonly class ReorderContentPlacementsAction
         ContentActorData $actor,
     ): ContentEditorData {
         $maximum = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_per_group',
+            'nvl-content.placements.maximum_per_group',
             1_000,
         );
         $proposal = $this->normalizeProposal($data, $maximum);

@@ -42,12 +42,12 @@ abstract class TenancyTestCase extends Orchestra
     {
         $app['config']->set([
             'cache.default' => 'array',
-            'content.authorization.callback' => static fn (): bool => true,
-            'content.locales.available' => ['en'],
-            'content.locales.required_on_publish' => ['en'],
-            'content.scopes' => ['site' => ['key_pattern' => '/^[a-z0-9-]{1,50}$/']],
-            'content.owners' => ['tenant-owner' => TenantContentOwner::class],
-            'content.definitions.hero' => [
+            'nvl-content.authorization.callback' => static fn (): bool => true,
+            'nvl-content.locales.available' => ['en'],
+            'nvl-content.locales.required_on_publish' => ['en'],
+            'nvl-content.scopes' => ['site' => ['key_pattern' => '/^[a-z0-9-]{1,50}$/']],
+            'nvl-content.owners' => ['tenant-owner' => TenantContentOwner::class],
+            'nvl-content.definitions.hero' => [
                 'name' => 'Hero',
                 'category' => 'marketing',
                 'version' => 1,
@@ -61,16 +61,16 @@ abstract class TenancyTestCase extends Orchestra
                     'required' => true,
                 ]]],
             ],
-            'media.routes.api_enabled' => false,
-            'media.routes.assets_enabled' => false,
-            'tenancy.enabled' => true,
-            'tenancy.profile' => 'application',
-            'tenancy.resources' => [
+            'nvl-media.routes.api_enabled' => false,
+            'nvl-media.routes.assets_enabled' => false,
+            'nvl-tenancy.enabled' => true,
+            'nvl-tenancy.profile' => 'application',
+            'nvl-tenancy.resources' => [
                 'media' => 'tenant',
                 'content' => 'tenant',
                 'content-test-owners' => 'tenant',
             ],
-            'tenancy.sharing.media' => 'none',
+            'nvl-tenancy.sharing.media' => 'none',
         ]);
         TenantScenario::bind($app);
     }

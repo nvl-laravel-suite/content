@@ -40,11 +40,11 @@ final readonly class ContentDefinitionSyncLock
         }
 
         $seconds = ContentConfiguration::positiveInteger(
-            'content.definition_sync.lock_seconds',
+            'nvl-content.definition_sync.lock_seconds',
             60,
         );
         $wait = ContentConfiguration::positiveInteger(
-            'content.definition_sync.lock_wait_seconds',
+            'nvl-content.definition_sync.lock_wait_seconds',
             10,
         );
 

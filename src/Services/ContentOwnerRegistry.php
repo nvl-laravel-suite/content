@@ -15,13 +15,14 @@ use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
- * Allowlist and morph map for model-backed Content owners.
+ * Declares Content capabilities while preserving native Laravel owner identities.
  */
 final class ContentOwnerRegistry implements ContentOwnerRegistrar
 {
     /** @var array<string, class-string<Model&ContentOwner>> */
     private array $models = [];
 
+    /** Retain Content's allowlist, validation and native owner identity boundaries. */
     public function __construct(
         private readonly ContentIdentityGuard $identities,
         private readonly Repository $configuration,
@@ -34,10 +35,12 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
      * Register one stable owner alias and its Content-capable Eloquent model.
      *
      * @param  string  $model  Shared alias or deprecated Eloquent class reference
+     *
+     * @throws InvalidArgumentException When the capability alias or model is already registered or invalid
      */
     public function register(string $alias, string $model): void
     {
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1 && ! is_a($alias, Model::class, true)) {
             throw new InvalidArgumentException("Content owner alias [{$alias}] is invalid.");
         }
 
@@ -58,10 +61,15 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             );
         }
 
+        $registeredAlias = array_search($model, $this->models, true);
+        if (is_string($registeredAlias)) {
+            throw new InvalidArgumentException("Content owner model [{$model}] is already registered as [{$registeredAlias}].");
+        }
+
         /** @var Model&ContentOwner $owner */
         $owner = new $model;
         $this->groups($owner);
-        $this->identitiesRegistry->reference($reference, "content.owners.{$alias}", $alias, true);
+        $this->identitiesRegistry->reference($reference, "nvl-content.owners.{$alias}", $alias);
         $this->models[$alias] = $model;
         ksort($this->models);
     }
@@ -89,7 +97,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     {
         foreach ($this->models as $alias => $model) {
             if ($owner instanceof $model) {
-                return $alias;
+                return $owner->getMorphClass();
             }
         }
 
@@ -125,7 +133,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             );
         }
 
-        if ($this->configuration->get('tenancy.enabled') === true) {
+        if ($this->configuration->get('nvl-tenancy.enabled') === true) {
             $canonical = $query->findOrFail($identifier);
             $resource = $this->tenantResources->forModel($canonical);
             $this->tenancy->assertRecord($canonical, $resource->key);
@@ -141,6 +149,12 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
      */
     public function model(string $alias): string
     {
+        foreach ($this->models as $registeredModel) {
+            if ((new $registeredModel)->getMorphClass() === $alias) {
+                return $registeredModel;
+            }
+        }
+
         return $this->models[$alias]
             ?? throw new InvalidArgumentException(
                 "Content owner [{$alias}] is not registered.",
@@ -218,8 +232,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     private function resolveOwner(string $alias, string $identifier, bool $withTrashed): Model&ContentOwner
     {
         $this->identities->owner($alias, $identifier);
-        $class = $this->models[$alias]
-            ?? throw new InvalidArgumentException("Content owner [{$alias}] is not registered.");
+        $class = $this->model($alias);
         $query = (new $class)->newQuery();
 
         if ($withTrashed) {
@@ -245,7 +258,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             );
         }
 
-        if ($this->configuration->get('tenancy.enabled') === true) {
+        if ($this->configuration->get('nvl-tenancy.enabled') === true) {
             $resource = $this->tenantResources->forModel($owner);
             $this->tenancy->assertRecord($owner, $resource->key);
         }

@@ -61,7 +61,7 @@ final readonly class ListOwnerContentPlacementSummariesAction
 
         $this->assertPersisted($normalized);
         $maximum = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_per_group',
+            'nvl-content.placements.maximum_per_group',
             1_000,
         );
         /** @var array<string, list<ContentPlacementData>> $summaries */

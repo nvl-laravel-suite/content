@@ -37,7 +37,7 @@ final readonly class ContentPlacementTree
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
         $maximum = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_per_group',
+            'nvl-content.placements.maximum_per_group',
             1_000,
         );
         $query = $owner->contentPlacements()
@@ -119,7 +119,7 @@ final readonly class ContentPlacementTree
         /** @var Collection<string, ContentPlacement> $byId */
         $byId = $placements->keyBy('id');
         $maximumDepth = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_depth',
+            'nvl-content.placements.maximum_depth',
             50,
         );
 
@@ -129,7 +129,7 @@ final readonly class ContentPlacementTree
 
         foreach ($placements as $placement) {
             $block = $placement->block;
-            if ($this->configuration->get('tenancy.enabled') === true
+            if ($this->configuration->get('nvl-tenancy.enabled') === true
                 && (! is_string($placement->tenant_id)
                 || ! is_string($block->tenant_id)
                 || $placement->tenant_id !== $block->tenant_id)) {
@@ -168,7 +168,7 @@ final readonly class ContentPlacementTree
                     );
                 }
 
-                if ($this->configuration->get('tenancy.enabled') === true
+                if ($this->configuration->get('nvl-tenancy.enabled') === true
                     && $parent->tenant_id !== $placement->tenant_id) {
                     throw new InvalidArgumentException('Nested content placements must share tenant ownership.');
                 }

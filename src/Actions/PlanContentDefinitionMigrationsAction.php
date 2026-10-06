@@ -148,11 +148,11 @@ final readonly class PlanContentDefinitionMigrationsAction
     private function batchLimit(?int $requested): int
     {
         $default = ContentConfiguration::positiveInteger(
-            'content.definition_migration.batch_size',
+            'nvl-content.definition_migration.batch_size',
             100,
         );
         $maximum = ContentConfiguration::positiveInteger(
-            'content.definition_migration.maximum_batch_size',
+            'nvl-content.definition_migration.maximum_batch_size',
             1_000,
         );
         $limit = $requested ?? $default;

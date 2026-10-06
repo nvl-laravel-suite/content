@@ -7,7 +7,7 @@ use Nvl\Content\Http\Controllers\ContentBlocksController;
 use Nvl\Content\Http\Controllers\ContentCompositionController;
 use Nvl\Content\Support\ContentRouteConfiguration;
 
-if ((bool) config('content.routes.management.enabled', false)) {
+if ((bool) config('nvl-content.routes.management.enabled', false)) {
     Route::prefix(ContentRouteConfiguration::path('management'))
         ->name(ContentRouteConfiguration::name('management'))
         ->middleware(ContentRouteConfiguration::middleware('management'))
@@ -83,7 +83,7 @@ if ((bool) config('content.routes.management.enabled', false)) {
         });
 }
 
-if ((bool) config('content.routes.public.enabled', false)) {
+if ((bool) config('nvl-content.routes.public.enabled', false)) {
     Route::prefix(ContentRouteConfiguration::path('public'))
         ->name(ContentRouteConfiguration::name('public'))
         ->middleware(ContentRouteConfiguration::middleware('public'))

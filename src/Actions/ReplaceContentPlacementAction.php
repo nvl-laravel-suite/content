@@ -76,7 +76,7 @@ final readonly class ReplaceContentPlacementAction
                 ): ContentPlacementData {
                     $this->owners->id($owner);
                     $maximum = ContentConfiguration::positiveInteger(
-                        'content.placements.maximum_per_group',
+                        'nvl-content.placements.maximum_per_group',
                         1_000,
                     );
                     $placements = ContentPlacement::query()

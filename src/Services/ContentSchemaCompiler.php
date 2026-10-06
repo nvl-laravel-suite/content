@@ -84,7 +84,7 @@ final readonly class ContentSchemaCompiler
     private function compileField(array $field, array $presetStack, int $depth): array
     {
         $maximumDepth = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_depth',
+            'nvl-content.validation.maximum_depth',
             12,
         );
 

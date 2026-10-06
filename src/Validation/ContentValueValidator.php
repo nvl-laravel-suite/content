@@ -208,7 +208,7 @@ final readonly class ContentValueValidator
             }
         }
 
-        if ((bool) config('content.validation.reject_unknown_fields', true)) {
+        if ((bool) config('nvl-content.validation.reject_unknown_fields', true)) {
             $unknown = array_diff(array_keys($values), array_keys($allowed));
 
             if ($unknown !== []) {
@@ -627,7 +627,7 @@ final readonly class ContentValueValidator
             }
         }
 
-        if ((bool) config('content.validation.reject_unknown_fields', true)) {
+        if ((bool) config('nvl-content.validation.reject_unknown_fields', true)) {
             $unknown = array_diff(array_keys($values), array_keys($definitions));
 
             if ($unknown !== []) {
@@ -703,7 +703,7 @@ final readonly class ContentValueValidator
 
         if ($publishing) {
             $requiredLocales = ContentConfiguration::stringList(
-                'content.locales.required_on_publish',
+                'nvl-content.locales.required_on_publish',
             );
             $locales = [
                 ...$locales,
@@ -843,7 +843,7 @@ final readonly class ContentValueValidator
         }
 
         $requiredLocales = ContentConfiguration::stringList(
-            'content.locales.required_on_publish',
+            'nvl-content.locales.required_on_publish',
         );
 
         if ($requiredLocales === []) {
@@ -1072,7 +1072,7 @@ final readonly class ContentValueValidator
             JSON_THROW_ON_ERROR,
         );
         $maximum = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_payload_bytes',
+            'nvl-content.validation.maximum_payload_bytes',
             524_288,
         );
 
@@ -1088,7 +1088,7 @@ final readonly class ContentValueValidator
         ContentValidationContext $context,
     ): void {
         $maximum = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_depth',
+            'nvl-content.validation.maximum_depth',
             12,
         );
 
@@ -1108,7 +1108,7 @@ final readonly class ContentValueValidator
         ContentValidationContext $context,
     ): void {
         $globalMaximum = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_items',
+            'nvl-content.validation.maximum_items',
             500,
         );
         $maximum = $field->setting('max_items', $globalMaximum);

@@ -151,7 +151,7 @@ final readonly class ContentRenderer
         int $depth,
     ): RenderedContentBlockData {
         $maximumDepth = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_depth',
+            'nvl-content.placements.maximum_depth',
             50,
         );
 
@@ -166,11 +166,11 @@ final readonly class ContentRenderer
         $view = $block->definition_view;
 
         if (! is_string($view) || $view === '') {
-            $configured = config('content.rendering.default_view', 'nvl-content::blocks.default');
+            $configured = config('nvl-content.rendering.default_view', 'nvl-content::blocks.default');
             $view = is_string($configured) ? $configured : 'nvl-content::blocks.default';
         }
 
-        if ((bool) config('content.rendering.strict_views', true) && ! $this->views->exists($view)) {
+        if ((bool) config('nvl-content.rendering.strict_views', true) && ! $this->views->exists($view)) {
             throw new InvalidArgumentException(
                 "Content block view [{$view}] does not exist.",
             );

@@ -33,7 +33,7 @@ final readonly class ContentSchemaValidator
     private function validateField(ContentFieldDefinition $field, int $depth): void
     {
         $maximum = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_depth',
+            'nvl-content.validation.maximum_depth',
             12,
         );
 

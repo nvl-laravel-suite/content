@@ -173,8 +173,8 @@ final class ContentDoctor
             'field_types' => $fieldTypes->aliases(),
             'owners' => $owners->aliases(),
             'references' => $references->aliases(),
-            'management_routes' => (bool) config('content.routes.management.enabled', false),
-            'public_routes' => (bool) config('content.routes.public.enabled', false),
+            'management_routes' => (bool) config('nvl-content.routes.management.enabled', false),
+            'public_routes' => (bool) config('nvl-content.routes.public.enabled', false),
             'view.default' => $this->defaultViewExists($views),
             'cache.placement_locks' => $cacheSupportsLocks,
             'cache.definition_sync_locks' => $cacheSupportsLocks,
@@ -187,10 +187,10 @@ final class ContentDoctor
             ContentRouteConfiguration::path('public');
             ContentRouteConfiguration::name('public');
             ContentRouteConfiguration::middleware('public');
-            ContentConfiguration::positiveInteger('content.placements.lock_seconds', 30);
-            ContentConfiguration::positiveInteger('content.placements.lock_wait_seconds', 10);
-            ContentConfiguration::positiveInteger('content.definition_sync.lock_seconds', 60);
-            ContentConfiguration::positiveInteger('content.definition_sync.lock_wait_seconds', 10);
+            ContentConfiguration::positiveInteger('nvl-content.placements.lock_seconds', 30);
+            ContentConfiguration::positiveInteger('nvl-content.placements.lock_wait_seconds', 10);
+            ContentConfiguration::positiveInteger('nvl-content.definition_sync.lock_seconds', 60);
+            ContentConfiguration::positiveInteger('nvl-content.definition_sync.lock_wait_seconds', 10);
             $checks['routes.configuration'] = true;
         } catch (Throwable $exception) {
             $checks['routes.configuration'] = false;
@@ -207,7 +207,7 @@ final class ContentDoctor
             $checks['schema.columns'] = $this->requiredColumnsExist($schema);
             $checks['schema.indexes'] = $this->requiredIndexesExist($schema);
             $checks['schema.foreign_keys'] = $this->requiredForeignKeysExist($schema);
-            if (config('tenancy.enabled') === true) {
+            if (config('nvl-tenancy.enabled') === true) {
                 foreach (['blocks', 'blocks_i18n', 'placements', 'revisions'] as $key) {
                     $checks["tenancy.column.{$key}.tenant_id"] = $schema->hasColumn(
                         ContentConfiguration::table($key),
@@ -286,7 +286,7 @@ final class ContentDoctor
 
     private function defaultViewExists(Factory $views): bool
     {
-        $view = config('content.rendering.default_view', 'nvl-content::blocks.default');
+        $view = config('nvl-content.rendering.default_view', 'nvl-content::blocks.default');
 
         return is_string($view) && $view !== '' && $views->exists($view);
     }

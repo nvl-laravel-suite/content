@@ -60,7 +60,7 @@ final class ContentScopeRegistry
      */
     private function configured(): array
     {
-        $configured = config('content.scopes', []);
+        $configured = config('nvl-content.scopes', []);
 
         if (! is_array($configured)) {
             throw new InvalidArgumentException('content.scopes must be an array.');

@@ -88,7 +88,7 @@ final readonly class PlaceContentBlockAction
                         ],
                     );
                     $maximum = ContentConfiguration::positiveInteger(
-                        'content.placements.maximum_per_group',
+                        'nvl-content.placements.maximum_per_group',
                         1_000,
                     );
                     $locked = ContentPlacement::query()

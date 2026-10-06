@@ -24,22 +24,23 @@ final readonly class ContentTenantParentResolver implements TenantParentResolver
     {
         $types = [];
         foreach ($this->owners->aliases() as $alias) {
-            $types[$alias] = $this->owners->model($alias);
+            $model = $this->owners->model($alias);
+            $types[(new $model)->getMorphClass()] = $model;
         }
 
         if ($types !== []) {
             return $types;
         }
 
-        $configured = $this->configuration->get('content.owners', []);
+        $configured = $this->configuration->get('nvl-content.owners', []);
         if (! is_array($configured)) {
             return [];
         }
-        foreach ($configured as $alias => $model) {
-            if (is_string($alias) && is_string($model)
+        foreach ($configured as $model) {
+            if (is_string($model)
                 && is_a($model, Model::class, true)
                 && is_a($model, ContentOwner::class, true)) {
-                $types[$alias] = $model;
+                $types[(new $model)->getMorphClass()] = $model;
             }
         }
 

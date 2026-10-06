@@ -163,7 +163,7 @@ final readonly class ContentValueRenderer
         ContentValidationContext $context,
     ): void {
         $maximum = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_depth',
+            'nvl-content.validation.maximum_depth',
             12,
         );
 

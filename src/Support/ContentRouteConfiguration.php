@@ -14,7 +14,7 @@ final class ContentRouteConfiguration
 {
     public static function path(string $group): string
     {
-        $path = config("content.routes.{$group}.prefix", "api/v1/content/{$group}");
+        $path = config("nvl-content.routes.{$group}.prefix", "nvl/api/v1/content/{$group}");
 
         if (! is_string($path)) {
             throw new InvalidArgumentException("content.routes.{$group}.prefix must be a string.");
@@ -36,7 +36,7 @@ final class ContentRouteConfiguration
 
     public static function name(string $group): string
     {
-        $name = config("content.routes.{$group}.name", "nvl.content.{$group}.");
+        $name = config("nvl-content.routes.{$group}.name", "nvl.content.{$group}.");
 
         if (! is_string($name)) {
             throw new InvalidArgumentException("content.routes.{$group}.name must be a string.");

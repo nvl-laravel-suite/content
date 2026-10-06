@@ -361,7 +361,7 @@ final readonly class ContentSnapshotService
         $placementId = $record->placementId;
 
         $maximumDepth = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_depth',
+            'nvl-content.placements.maximum_depth',
             50,
         );
 
@@ -395,13 +395,13 @@ final readonly class ContentSnapshotService
 
         $view = $record->definitionView !== null && $record->definitionView !== ''
             ? $record->definitionView
-            : config('content.rendering.default_view', 'nvl-content::blocks.default');
+            : config('nvl-content.rendering.default_view', 'nvl-content::blocks.default');
 
         if (! is_string($view) || $view === '') {
             throw new InvalidArgumentException('Content snapshot has no renderable view.');
         }
 
-        if ((bool) config('content.rendering.strict_views', true) && ! $this->views->exists($view)) {
+        if ((bool) config('nvl-content.rendering.strict_views', true) && ! $this->views->exists($view)) {
             throw new InvalidArgumentException("Content block view [{$view}] does not exist.");
         }
 
@@ -457,7 +457,7 @@ final readonly class ContentSnapshotService
         array $blocks,
     ): void {
         $maximumPlacements = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_per_group',
+            'nvl-content.placements.maximum_per_group',
             1_000,
         );
 
@@ -468,7 +468,7 @@ final readonly class ContentSnapshotService
         }
 
         $maximum = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_snapshot_bytes',
+            'nvl-content.validation.maximum_snapshot_bytes',
             2_097_152,
         );
         $payload = [
@@ -483,7 +483,7 @@ final readonly class ContentSnapshotService
             'Content composition snapshot',
             $maximum,
             ContentConfiguration::positiveInteger(
-                'content.validation.maximum_snapshot_depth',
+                'nvl-content.validation.maximum_snapshot_depth',
                 32,
             ),
         );
@@ -516,7 +516,7 @@ final readonly class ContentSnapshotService
     /** Resolve the current tenant UUID while preserving legacy disabled snapshots. */
     private function snapshotTenantId(): ?string
     {
-        if ($this->configuration->get('tenancy.enabled') !== true) {
+        if ($this->configuration->get('nvl-tenancy.enabled') !== true) {
             return null;
         }
 
@@ -571,7 +571,7 @@ final readonly class ContentSnapshotService
     private function assertTree(array $records): void
     {
         $maximumDepth = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_depth',
+            'nvl-content.placements.maximum_depth',
             50,
         );
 

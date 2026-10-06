@@ -378,7 +378,11 @@ it('keeps retained soft-deleted owner placements valid during reusable block mut
 it('provides a stable placement association identity under strict morph maps', function (bool $hasMedia): void {
     $previous = Relation::morphMap();
     $required = Relation::requiresMorphMap();
-    Relation::enforceMorphMap(['content-block' => ContentBlock::class], merge: true);
+    Relation::morphMap([
+        'content-block' => ContentBlock::class,
+        'host-page' => TestContentOwner::class,
+    ], merge: true);
+    Relation::requireMorphMap();
 
     try {
         $block = placementMediaBlock('strict-morph-map');

@@ -18,7 +18,7 @@ final class ContentPayloadGuard
     public function metadata(array $metadata): void
     {
         $maximum = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_metadata_bytes',
+            'nvl-content.validation.maximum_metadata_bytes',
             65_536,
         );
 
@@ -37,7 +37,7 @@ final class ContentPayloadGuard
         }
 
         $maximum = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_reference_display_bytes',
+            'nvl-content.validation.maximum_reference_display_bytes',
             65_536,
         );
 
@@ -51,11 +51,11 @@ final class ContentPayloadGuard
         ?int $maximumDepth = null,
     ): void {
         $maximum = $maximumBytes ?? ContentConfiguration::positiveInteger(
-            'content.validation.maximum_payload_bytes',
+            'nvl-content.validation.maximum_payload_bytes',
             524_288,
         );
         $depth = $maximumDepth ?? ContentConfiguration::positiveInteger(
-            'content.validation.maximum_depth',
+            'nvl-content.validation.maximum_depth',
             12,
         );
         $this->assertJsonShape($value, $label, 1, $depth);
@@ -82,7 +82,7 @@ final class ContentPayloadGuard
 
         if (is_string($value)) {
             $maximumLength = ContentConfiguration::positiveInteger(
-                'content.validation.maximum_string_length',
+                'nvl-content.validation.maximum_string_length',
                 100_000,
             );
 
@@ -114,7 +114,7 @@ final class ContentPayloadGuard
         }
 
         $maximumItems = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_items',
+            'nvl-content.validation.maximum_items',
             500,
         );
 

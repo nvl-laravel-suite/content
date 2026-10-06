@@ -70,7 +70,7 @@ final class ContentFieldSettingsValidator
     private function validateLength(ContentFieldDefinition $field): void
     {
         $global = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_string_length',
+            'nvl-content.validation.maximum_string_length',
             100_000,
         );
         $minimum = $field->setting('min_length', 0);
@@ -100,8 +100,8 @@ final class ContentFieldSettingsValidator
 
         $global = ContentConfiguration::positiveInteger(
             $field->type === 'media_collection'
-                ? 'content.media.maximum_per_field'
-                : 'content.validation.maximum_items',
+                ? 'nvl-content.media.maximum_per_field'
+                : 'nvl-content.validation.maximum_items',
             $field->type === 'media_collection' ? 50 : 500,
         );
         $minimum = $field->setting('min_items', 0);
@@ -196,8 +196,8 @@ final class ContentFieldSettingsValidator
             'allowed_schemes',
             ContentConfiguration::stringList(
                 $field->type === 'uri'
-                    ? 'content.links.allowed_schemes'
-                    : 'content.validation.url_schemes',
+                    ? 'nvl-content.links.allowed_schemes'
+                    : 'nvl-content.validation.url_schemes',
             ),
         );
 

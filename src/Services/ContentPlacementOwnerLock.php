@@ -45,14 +45,14 @@ final readonly class ContentPlacementOwnerLock
         }
 
         $seconds = ContentConfiguration::positiveInteger(
-            'content.placements.lock_seconds',
+            'nvl-content.placements.lock_seconds',
             30,
         );
         $wait = ContentConfiguration::positiveInteger(
-            'content.placements.lock_wait_seconds',
+            'nvl-content.placements.lock_wait_seconds',
             10,
         );
-        $key = $this->tenancy->key('content.placements', 'nvl:content:placement-owner:'.hash(
+        $key = 'nvl:content:placement-owner:'.$this->tenancy->key('content.placements', hash(
             'sha256',
             "{$ownerType}\0{$ownerId}\0{$group}",
         ));

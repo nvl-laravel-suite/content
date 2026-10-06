@@ -18,7 +18,7 @@ final readonly class ContentPlatformCatalogGuard
     /** Require explicit platform context whenever tenancy is enabled. */
     public function authorize(): void
     {
-        if ($this->configuration->get('tenancy.enabled') === true
+        if ($this->configuration->get('nvl-tenancy.enabled') === true
             && $this->context->snapshot()->mode !== TenantContextMode::Platform) {
             throw new TenantBoundaryViolation('Content definitions are deployment-owned platform vocabulary.');
         }

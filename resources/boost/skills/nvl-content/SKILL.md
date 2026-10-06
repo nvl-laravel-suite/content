@@ -61,9 +61,9 @@ composition snapshots.
 - Mark locale-dependent leaves or subtrees localized. Keep structural Media
   IDs, destinations, targets, layout, and emphasis in base values while their
   alt text, labels, captions, and copy live in locale rows.
-- Register every Content locale in `translatable.locales`; Content may narrow
+- Register every Content locale in `nvl-translatable.locales`; Content may narrow
   that canonical registry but must not create a second locale universe.
-- Require complete localized values in `content.locales.required_on_publish`;
+- Require complete localized values in `nvl-content.locales.required_on_publish`;
   an empty list requires every available locale. Other locales may remain
   partial, including nested translations, but every supplied value must still
   pass validation. Resolve missing optional copy through normal locale fallback.
@@ -267,11 +267,11 @@ $pagePlacements = $placementsByOwner['page:'.(string) $page->getKey()] ?? [];
 
 ## Shared owner identities
 
-- Declare canonical owner identity once in `nvl-core.owners`; reference its alias in `content` capability configuration.
+- Declare owner class lists in `nvl-core.owners` and reference model classes in `content` capability configuration. Laravel `getMorphClass()` supplies the host-authored stored identity; declarations do not add global host morph mappings.
 - Owners still implement ContentOwner, declare composition groups, and use HasContent. Registering identity does not grant a group or mutation ability.
 - Keep the package allowlist and authorization independent of Core registration. Never authorize a model merely because Core knows it.
-- Accept legacy class/resolver/handler inputs during the documented one-major compatibility cycle. Report deprecated host identity inputs through `nvl:doctor`; preserve established write-time morph types.
-- Before introducing an alias for historical FQCN-backed data, explicitly convert reviewed package-owned columns and reconcile affected host relations. Never silently rewrite host morph tables or enable `enforceMorphMap()` globally.
+- Preserve resolvers, handlers and authorization. Legacy aliases require agreement with native `getMorphClass()` and are removed in major 6; Doctor reports mismatches and stored identity drift without conversion.
+- If the host changes its morph map, explicitly reconcile reviewed package-owned columns and affected host relations before cutover. Core and package capability registration never mutate the host morph map or rewrite stored values.
 
 ## Shared consumer diagnostics
 
@@ -285,4 +285,17 @@ Run `php artisan nvl:doctor --strict --format=json` to combine checks from loade
 
 ### Brownfield storage identities
 
-Resolve all package tables through the table helper and canonical `content.tables.*`, connections through `content.connection` with Core/Laravel inheritance. Defaults use `nvl_content_*`; migration filenames include that package slug. Never silently adopt a matching table or generic migration filename. Run shared `nvl:doctor --strict --format=json` and the explicit `nvl:schema:upgrade --package=content --claim-legacy --dry-run --format=json` before upgrading owned legacy storage. Validate the complete plan and choose one migration owner. Preserve host records, constraint names and stored morph values. Deprecated config inputs last one major; canonical options take precedence.
+Resolve all package tables through the table helper and canonical `nvl-content.tables.*`, connections through `nvl-content.connection` with Core/Laravel inheritance. Defaults use `nvl_content_*`; migration filenames include that package slug. Never silently adopt a matching table or generic migration filename. Run shared `nvl:doctor --strict --format=json` and the explicit `nvl:schema:upgrade --package=content --claim-legacy --dry-run --format=json` before upgrading owned legacy storage. Validate the complete plan and choose one migration owner. Preserve host records, constraint names and stored morph values. Deprecated config inputs last one major; canonical options take precedence.
+
+## Cache and lock ownership
+
+Placement locks retain `nvl:content:placement-owner:` outside the tenant identity in every runtime mode. Definition synchronization keeps `nvl:content:definitions:sync`. Existing generic tenant lock entries are never acquired or removed.
+
+Drain old mutation workers and maintenance processes, then wait for their outstanding lock leases to end before starting the new major across all nodes. Running old and new lock prefixes concurrently would create independent serialization domains. Restart workers after cutover; preserve host-selected stores and keys, and do not flush a shared cache to remove old NVL entries.
+
+## Canonical configuration ownership
+
+- Read/write `nvl-content` configuration and publish only canonical `nvl-<package>-<resource>` tags. Keep logical package/tenant resource identifiers unchanged.
+- Generic config roots and unprefixed package environment names are foreign by default. For an upgrading NVL host only, select `nvl-core.compatibility.legacy_config` package IDs and `legacy_env` explicitly; both default off. Canonical presence wins, including false/null/empty values. Legacy inputs are read without writing back and are removed in major 6.
+- Use canonical `NVL_<PACKAGE>_*` variables only in config evaluation, then rebuild configuration caches and restart workers after cutover. Shared Laravel environment variables retain their names. Consult Core's versioned `support/resources/global-names.json` for all renames.
+- Old global aliases and legacy route families require separate explicit `global_aliases`/`legacy_routes` package selections. Preserve collisions and use Doctor diagnostics; never grant generic permissions automatically or claim signed-link compatibility without the same authorization/signature checks.

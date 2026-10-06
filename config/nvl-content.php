@@ -145,13 +145,13 @@ return [
     'routes' => [
         'management' => [
             'enabled' => false,
-            'prefix' => 'api/v1/content',
+            'prefix' => 'nvl/api/v1/content',
             'name' => 'nvl.content.management.',
             'middleware' => ['api', 'auth'],
         ],
         'public' => [
             'enabled' => false,
-            'prefix' => 'api/v1/content',
+            'prefix' => 'nvl/api/v1/content',
             'name' => 'nvl.content.public.',
             'middleware' => ['api', 'throttle:120,1'],
         ],

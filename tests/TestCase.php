@@ -45,22 +45,22 @@ abstract class TestCase extends Orchestra
         $app['config']->set([
             'cache.default' => 'array',
             'filesystems.default' => 'public',
-            'media.disk' => 'public',
-            'media.routes.api_enabled' => false,
-            'media.routes.assets_enabled' => false,
-            'content.authorization.callback' => static fn (): bool => true,
-            'content.definition_migrations' => [
+            'nvl-media.disk' => 'public',
+            'nvl-media.routes.api_enabled' => false,
+            'nvl-media.routes.assets_enabled' => false,
+            'nvl-content.authorization.callback' => static fn (): bool => true,
+            'nvl-content.definition_migrations' => [
                 HeroV1ToV2ContentMigration::class,
             ],
-            'content.locales.available' => ['en', 'bg'],
-            'translatable.locales' => ['en', 'bg'],
-            'content.locales.required_on_publish' => ['en'],
-            'content.scopes' => [
+            'nvl-content.locales.available' => ['en', 'bg'],
+            'nvl-translatable.locales' => ['en', 'bg'],
+            'nvl-content.locales.required_on_publish' => ['en'],
+            'nvl-content.scopes' => [
                 'site' => ['key_pattern' => '/^[a-z0-9-]{1,50}$/'],
             ],
-            'content.owners' => ['page' => TestContentOwner::class],
-            'content.references' => ['article' => TestReferenceResolver::class],
-            'content.definitions' => [
+            'nvl-content.owners' => ['page' => TestContentOwner::class],
+            'nvl-content.references' => ['article' => TestReferenceResolver::class],
+            'nvl-content.definitions' => [
                 'hero' => [
                     'name' => 'Hero',
                     'category' => 'marketing',

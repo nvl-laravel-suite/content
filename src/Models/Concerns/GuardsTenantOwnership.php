@@ -25,7 +25,7 @@ trait GuardsTenantOwnership
 
         static::creating(static function (Model $model): void {
             $container = Container::getInstance();
-            if ($container->make('config')->get('tenancy.enabled') !== true) {
+            if ($container->make('config')->get('nvl-tenancy.enabled') !== true) {
                 return;
             }
             $definition = $container->make(TenantResourceRegistry::class)->get(self::TENANT_RESOURCE);

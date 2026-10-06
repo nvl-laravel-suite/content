@@ -82,7 +82,7 @@ final class PublishContentViewsCommand extends Command
 
     private function assertAllowed(string $destination): void
     {
-        $roots = config('content.view_publishing.allowed_roots', [resource_path('views')]);
+        $roots = config('nvl-content.view_publishing.allowed_roots', [resource_path('views')]);
 
         if (! is_array($roots) || $roots === []) {
             throw new InvalidArgumentException(

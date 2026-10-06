@@ -178,7 +178,7 @@ it('resolves the editor for a Content service built with the legacy constructor'
         ContentActorData::system(),
     );
 
-    expect($editor->ownerType)->toBe('page')
+    expect($editor->ownerType)->toBe(TestContentOwner::class)
         ->and($editor->ownerId)->toBe($owner->id)
         ->and($editor->group)->toBe('homepage')
         ->and($editor->placements)->toBe([]);
@@ -414,7 +414,7 @@ it('returns one complete typed editor bootstrap for a consumer-owned UI', functi
     );
     $editor = Content::editor($owner, 'homepage', $actor);
 
-    expect($editor->ownerType)->toBe('page')
+    expect($editor->ownerType)->toBe(TestContentOwner::class)
         ->and($editor->ownerId)->toBe($owner->id)
         ->and($editor->group)->toBe('homepage')
         ->and($editor->placementLimit)->toBe(1_000)
@@ -623,14 +623,14 @@ it('bulk loads authorized owner placement summaries at a constant query count', 
     $authorization->includesBlocks = [];
     [$bulkQueryCount, $bulk] = $measure($owners->all());
 
-    expect($single)->toHaveKey('page:'.$owners[0]->id)
-        ->and($single['page:'.$owners[0]->id][0])->toBeInstanceOf(ContentPlacementData::class)
-        ->and($single['page:'.$owners[0]->id][0]->block)->toBeInstanceOf(ContentBlockData::class)
-        ->and($single['page:'.$owners[0]->id][0]->block?->translations['en']['title'] ?? null)
+    expect($single)->toHaveKey(TestContentOwner::class.':'.$owners[0]->id)
+        ->and($single[TestContentOwner::class.':'.$owners[0]->id][0])->toBeInstanceOf(ContentPlacementData::class)
+        ->and($single[TestContentOwner::class.':'.$owners[0]->id][0]->block)->toBeInstanceOf(ContentBlockData::class)
+        ->and($single[TestContentOwner::class.':'.$owners[0]->id][0]->block?->translations['en']['title'] ?? null)
         ->toBe('Bulk summary block')
         ->and($bulk)->toHaveCount(25)
         ->and(array_keys($bulk))->toBe($owners->map(
-            static fn (TestContentOwner $owner): string => 'page:'.$owner->id,
+            static fn (TestContentOwner $owner): string => TestContentOwner::class.':'.$owner->id,
         )->all())
         ->and($authorization->ownerIds)->toBe($owners->pluck('id')->all())
         ->and($authorization->includesBlocks)->toBe(array_fill(0, 25, true))
@@ -663,7 +663,7 @@ it('uses serialization-safe canonical keys for mixed string and integer owners',
         ContentActorData::system(),
     );
 
-    expect(array_keys($summaries))->toBe(['string-page:1', 'integer-page:1'])
+    expect(array_keys($summaries))->toBe([TestStringContentOwner::class.':1', TestIntegerContentOwner::class.':1'])
         ->and(json_encode($summaries, JSON_THROW_ON_ERROR))->toStartWith('{');
 });
 
@@ -837,7 +837,7 @@ it('rejects stale owners and per-owner placement overflow in bulk summaries', fu
         );
     }
 
-    config()->set('content.placements.maximum_per_group', 1);
+    config()->set('nvl-content.placements.maximum_per_group', 1);
 
     DB::flushQueryLog();
     DB::enableQueryLog();
@@ -1154,7 +1154,7 @@ it('replaces one owner placement block without changing its tree facts', functio
         static fn (ContentPlacementChanged $event): bool => $event->placementId === $placement->id
             && $event->event === ContentPlacementEvent::Updated
             && $event->revision === 2
-            && $event->ownerType === 'page'
+            && $event->ownerType === TestContentOwner::class
             && $event->ownerId === $owner->id
             && $event->group === 'homepage'
             && $event->blockId === $replacement->id,
@@ -1307,7 +1307,7 @@ it('serializes placement replacement and retries one deadlock without duplicatin
         new PlaceContentBlockData(key: 'replace-lock-slot'),
         $actor,
     );
-    config()->set('content.placements.lock_wait_seconds', 1);
+    config()->set('nvl-content.placements.lock_wait_seconds', 1);
     $store = app(Repository::class)->getStore();
 
     expect($store)->toBeInstanceOf(LockProvider::class);
@@ -1318,7 +1318,7 @@ it('serializes placement replacement and retries one deadlock without duplicatin
 
     $key = 'nvl:content:placement-owner:'.hash(
         'sha256',
-        "page\0{$owner->id}\0homepage",
+        $owner->getMorphClass()."\0{$owner->id}\0homepage",
     );
     $lock = $store->lock($key, 10);
 
@@ -1605,7 +1605,7 @@ it('validates and atomically applies a complete deterministic placement reorder'
     foreach ($events as $event) {
         expect($event->event)->toBe(ContentPlacementEvent::Updated)
             ->and($event->revision)->toBe(2)
-            ->and($event->ownerType)->toBe('page')
+            ->and($event->ownerType)->toBe(TestContentOwner::class)
             ->and($event->ownerId)->toBe($owner->id)
             ->and($event->group)->toBe('homepage')
             ->and($event->blockId)->toBe($block->id);
@@ -1693,7 +1693,7 @@ it('rejects partial duplicate stale cyclic cross-region and oversized reorder pr
             $actor,
         ))->toThrow(InvalidArgumentException::class);
 
-    config()->set('content.placements.maximum_per_group', 1);
+    config()->set('nvl-content.placements.maximum_per_group', 1);
 
     expect(fn () => $reorder->execute(
         $owner,
@@ -2019,14 +2019,14 @@ it('compiles definitions strictly before registration', function (): void {
     )))->toThrow(InvalidArgumentException::class);
 
     config()->set([
-        'content.definitions' => [
+        'nvl-content.definitions' => [
             'unknown-definition-property' => [
                 'name' => 'Unknown definition property',
                 'schema' => ['fields' => []],
                 'versoin' => 2,
             ],
         ],
-        'content.definition_paths' => [],
+        'nvl-content.definition_paths' => [],
     ]);
 
     expect(fn () => app(ContentDefinitionLoader::class)->load())
@@ -2187,8 +2187,8 @@ it('keeps valid external schema field defaults shape-only at boot', function ():
 
 it('rejects ambiguous and unsupported translation locale keys', function (): void {
     config()->set([
-        'content.locales.available' => ['en-US'],
-        'translatable.locales' => ['en-US'],
+        'nvl-content.locales.available' => ['en-US'],
+        'nvl-translatable.locales' => ['en-US'],
     ]);
 
     expect(fn () => app(CreateContentBlockAction::class)->execute(
@@ -2206,8 +2206,8 @@ it('rejects ambiguous and unsupported translation locale keys', function (): voi
     ))->toThrow(InvalidArgumentException::class);
 
     config()->set([
-        'content.locales.available' => [],
-        'translatable.locales' => ['en', 'bg'],
+        'nvl-content.locales.available' => [],
+        'nvl-translatable.locales' => ['en', 'bg'],
     ]);
 
     expect(fn () => app(CreateContentBlockAction::class)->execute(
@@ -2224,10 +2224,10 @@ it('rejects ambiguous and unsupported translation locale keys', function (): voi
 
 it('returns stable unprocessable API errors for semantic content failures', function (): void {
     config()->set([
-        'content.routes.management.enabled' => true,
-        'content.routes.management.prefix' => 'api/content-contract',
-        'content.routes.management.name' => 'content.contract.',
-        'content.routes.management.middleware' => [],
+        'nvl-content.routes.management.enabled' => true,
+        'nvl-content.routes.management.prefix' => 'api/content-contract',
+        'nvl-content.routes.management.name' => 'content.contract.',
+        'nvl-content.routes.management.middleware' => [],
     ]);
     require __DIR__.'/../../routes/api.php';
     app('router')->getRoutes()->refreshNameLookups();
@@ -2283,7 +2283,7 @@ it('bounds arbitrary JSON structures recursively', function (): void {
         allowedScopes: ['site'],
     ));
     app(SyncContentDefinitionsAction::class)->execute(ContentActorData::system());
-    config()->set('content.validation.maximum_depth', 3);
+    config()->set('nvl-content.validation.maximum_depth', 3);
 
     expect(fn () => app(CreateContentBlockAction::class)->execute(
         new CreateContentBlockData(
@@ -2339,7 +2339,7 @@ it('hard-denies unsafe semantic destinations despite consumer scheme allowlists'
     string $scheme,
     string $destination,
 ): void {
-    config()->set('content.links.allowed_schemes', ['https', $scheme]);
+    config()->set('nvl-content.links.allowed_schemes', ['https', $scheme]);
     $context = new ContentValidationContext(
         ContentActorData::system(),
         'en',
@@ -2361,7 +2361,7 @@ it('hard-denies unsafe semantic destinations despite consumer scheme allowlists'
 
 it('removes executable rich-text links despite runtime scheme configuration', function (): void {
     config()->set(
-        'content.rich_text.allowed_link_schemes',
+        'nvl-content.rich_text.allowed_link_schemes',
         ['https', 'javascript'],
     );
     $adapter = new RichTextFieldTypeAdapter;
@@ -2390,9 +2390,9 @@ it('rejects unsafe global scheme configuration during package bootstrap', functi
     expect(fn () => (new ContentServiceProvider(app()))->register())
         ->toThrow(InvalidArgumentException::class);
 })->with([
-    'semantic links' => 'content.links.allowed_schemes',
-    'URL fields' => 'content.validation.url_schemes',
-    'rich text links' => 'content.rich_text.allowed_link_schemes',
+    'semantic links' => 'nvl-content.links.allowed_schemes',
+    'URL fields' => 'nvl-content.validation.url_schemes',
+    'rich text links' => 'nvl-content.rich_text.allowed_link_schemes',
 ]);
 
 it('rejects duplicate repeater keys', function (): void {
@@ -2542,7 +2542,7 @@ it('accepts empty PHP arrays for objects containing only localized descendants',
 });
 
 it('rechecks payload bounds after defaults expand normalized values', function (): void {
-    config()->set('content.validation.maximum_payload_bytes', 64);
+    config()->set('nvl-content.validation.maximum_payload_bytes', 64);
 
     $schema = ContentSchema::fromArray([
         [
@@ -2679,7 +2679,7 @@ it('replans definition synchronization after acquiring database locks', function
 });
 
 it('serializes definition synchronization across deployment processes', function (): void {
-    config()->set('content.definition_sync.lock_wait_seconds', 1);
+    config()->set('nvl-content.definition_sync.lock_wait_seconds', 1);
     $store = app(Repository::class)->getStore();
 
     expect($store)->toBeInstanceOf(LockProvider::class);
@@ -2702,7 +2702,7 @@ it('serializes definition synchronization across deployment processes', function
 });
 
 it('applies one placement depth definition consistently', function (): void {
-    config()->set('content.placements.maximum_depth', 2);
+    config()->set('nvl-content.placements.maximum_depth', 2);
     $block = app(CreateContentBlockAction::class)->execute(
         new CreateContentBlockData(
             definition: 'hero',
@@ -2747,7 +2747,7 @@ it('applies one placement depth definition consistently', function (): void {
 });
 
 it('rejects reparenting a subtree beyond the placement depth limit', function (): void {
-    config()->set('content.placements.maximum_depth', 3);
+    config()->set('nvl-content.placements.maximum_depth', 3);
     $actor = ContentActorData::system();
     $block = app(CreateContentBlockAction::class)->execute(
         new CreateContentBlockData(
@@ -2872,7 +2872,7 @@ it('isolates reference display caches by the complete resolver context', functio
 });
 
 it('replaces configured lists while recursively filling missing map defaults', function (): void {
-    config()->set('content', [
+    config()->set('nvl-content', [
         'links' => [
             'allowed_schemes' => ['https'],
         ],
@@ -2885,14 +2885,14 @@ it('replaces configured lists while recursively filling missing map defaults', f
 
     (new ContentServiceProvider(app()))->register();
 
-    expect(config('content.links.allowed_schemes'))->toBe(['https'])
-        ->and(config('content.links.allow_relative'))->toBeTrue()
-        ->and(config('content.routes.public.middleware'))->toBe([])
-        ->and(config('content.routes.public.enabled'))->toBeFalse();
+    expect(config('nvl-content.links.allowed_schemes'))->toBe(['https'])
+        ->and(config('nvl-content.links.allow_relative'))->toBeTrue()
+        ->and(config('nvl-content.routes.public.middleware'))->toBe([])
+        ->and(config('nvl-content.routes.public.enabled'))->toBeFalse();
 });
 
 it('fails strict diagnostics for a default view rejected by live rendering', function (): void {
-    config()->set('content.rendering.default_view', '');
+    config()->set('nvl-content.rendering.default_view', '');
 
     $this->artisan('nvl:content:doctor', ['--strict' => true, '--format' => 'json'])
         ->assertFailed()
@@ -2900,7 +2900,7 @@ it('fails strict diagnostics for a default view rejected by live rendering', fun
 });
 
 it('validates definition synchronization lock configuration', function (string $key): void {
-    config()->set("content.definition_sync.{$key}", 0);
+    config()->set("nvl-content.definition_sync.{$key}", 0);
 
     $this->artisan('nvl:content:doctor', ['--strict' => true, '--format' => 'json'])
         ->assertFailed()
@@ -2972,8 +2972,8 @@ it('rejects schemas missing required foreign key semantics', function (): void {
 });
 
 it('rejects conflicting keyed definition identities and normalized property aliases', function (): void {
-    config()->set('content.definition_paths', []);
-    config()->set('content.definitions', [
+    config()->set('nvl-content.definition_paths', []);
+    config()->set('nvl-content.definitions', [
         'outer-key' => [
             'key' => 'inner-key',
             'name' => 'Conflicting identity',
@@ -2984,7 +2984,7 @@ it('rejects conflicting keyed definition identities and normalized property alia
     expect(fn () => app(ContentDefinitionLoader::class)->load())
         ->toThrow(InvalidArgumentException::class);
 
-    config()->set('content.definitions', [[
+    config()->set('nvl-content.definitions', [[
         'key' => 'conflicting-aliases',
         'name' => 'Conflicting aliases',
         'allowed_scopes' => ['global'],
@@ -3242,7 +3242,7 @@ it('fails closed instead of adopting a pre-existing package table', function (
     string $migrationFile,
 ): void {
     $tableName = "adopted_content_{$tableKey}";
-    config()->set("content.tables.{$tableKey}", $tableName);
+    config()->set("nvl-content.tables.{$tableKey}", $tableName);
     Schema::create($tableName, function (Blueprint $table): void {
         $table->string('sentinel');
     });

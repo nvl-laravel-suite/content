@@ -98,35 +98,35 @@ it('round trips schemas through the Eloquent cast and rejects invalid values', f
 it('fails closed for malformed package configuration and portable identities', function (): void {
     $checks = [
         function (): void {
-            config()->set('content.connection', []);
+            config()->set('nvl-content.connection', []);
             ContentConfiguration::connection();
         },
         function (): void {
-            config()->set('content.tables.blocks', 'unsafe-table');
+            config()->set('nvl-content.tables.blocks', 'unsafe-table');
             ContentConfiguration::table('blocks');
         },
         function (): void {
-            config()->set('content.validation.maximum_items', 0);
-            ContentConfiguration::positiveInteger('content.validation.maximum_items', 1);
+            config()->set('nvl-content.validation.maximum_items', 0);
+            ContentConfiguration::positiveInteger('nvl-content.validation.maximum_items', 1);
         },
         function (): void {
-            config()->set('content.locales.available', ['en', '']);
-            ContentConfiguration::stringList('content.locales.available');
+            config()->set('nvl-content.locales.available', ['en', '']);
+            ContentConfiguration::stringList('nvl-content.locales.available');
         },
         function (): void {
-            config()->set('content.routes.management.prefix', '../admin');
+            config()->set('nvl-content.routes.management.prefix', '../admin');
             ContentRouteConfiguration::path('management');
         },
         function (): void {
-            config()->set('content.routes.management.name', '');
+            config()->set('nvl-content.routes.management.name', '');
             ContentRouteConfiguration::name('management');
         },
         function (): void {
-            config()->set('content.routes.management.middleware', ['api', '']);
+            config()->set('nvl-content.routes.management.middleware', ['api', '']);
             ContentRouteConfiguration::middleware('management');
         },
         fn () => (new ContentIdentityGuard)->blockKey('invalid key'),
-        fn () => (new ContentIdentityGuard)->owner('Page', 'owner-1'),
+        fn () => (new ContentIdentityGuard)->owner('Invalid/Owner', 'owner-1'),
         fn () => (new ContentIdentityGuard)->owner('page', 'invalid owner'),
         fn () => (new ContentIdentityGuard)->placementKey('invalid key'),
         fn () => (new ContentIdentityGuard)->region('Invalid'),
@@ -140,7 +140,7 @@ it('fails closed for malformed package configuration and portable identities', f
 });
 
 it('rejects an authorization implementation that violates the package contract', function (): void {
-    config()->set('content.authorization.class', stdClass::class);
+    config()->set('nvl-content.authorization.class', stdClass::class);
 
     expect(fn () => (new ContentServiceProvider(app()))->register())
         ->toThrow(InvalidArgumentException::class);
@@ -544,14 +544,14 @@ it('enforces media shape availability visibility MIME and authorization boundari
         ),
     ];
 
-    config()->set('content.media.allow_private_for_private_blocks', false);
+    config()->set('nvl-content.media.allow_private_for_private_blocks', false);
     $invalidCalls[] = fn () => $single->normalize($private->id, $field, $privateContext);
 
     foreach ($invalidCalls as $call) {
         expect($call)->toThrow(InvalidArgumentException::class);
     }
 
-    config()->set('content.media.allow_private_for_private_blocks', true);
+    config()->set('nvl-content.media.allow_private_for_private_blocks', true);
     $denyingAuthorization = new class implements MediaAuthorization
     {
         public function allows(
@@ -657,13 +657,7 @@ it('fails closed for invalid owner registrations identities and group declaratio
             ->toThrow(InvalidArgumentException::class);
         expect(fn () => $registry->assertGroup($validOwner, 'secondary'))
             ->toThrow(InvalidArgumentException::class);
-        expect(fn () => (new ContentOwnerRegistry(
-            app(ContentIdentityGuard::class),
-            app(Repository::class),
-            app(TenantBoundary::class),
-            app(TenantResourceRegistry::class),
-            app(OwnerRegistry::class),
-        ))
+        expect(fn () => app(ContentOwnerRegistry::class)
             ->register('alternate-boundary-owner', TestContentOwner::class))
             ->toThrow(InvalidArgumentException::class);
     } finally {
@@ -828,10 +822,10 @@ PHP);
             ],
         ], JSON_THROW_ON_ERROR));
         config()->set([
-            'content.definitions' => [],
-            'content.definition_paths' => [$definitions],
-            'content.required_definition_paths' => [],
-            'content.allowed_definition_roots' => [$temporary],
+            'nvl-content.definitions' => [],
+            'nvl-content.definition_paths' => [$definitions],
+            'nvl-content.required_definition_paths' => [],
+            'nvl-content.allowed_definition_roots' => [$temporary],
         ]);
 
         expect(array_map(
@@ -839,49 +833,49 @@ PHP);
             app(ContentDefinitionLoader::class)->load(),
         ))->toBe(['json-card', 'php-card']);
 
-        config()->set('content.definitions', 'invalid');
+        config()->set('nvl-content.definitions', 'invalid');
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.definitions' => [],
-            'content.definition_paths' => 'invalid',
+            'nvl-content.definitions' => [],
+            'nvl-content.definition_paths' => 'invalid',
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.definition_paths' => [],
-            'content.required_definition_paths' => [$temporary.'/missing'],
+            'nvl-content.definition_paths' => [],
+            'nvl-content.required_definition_paths' => [$temporary.'/missing'],
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.required_definition_paths' => [],
-            'content.definition_paths' => [$definitions],
-            'content.allowed_definition_roots' => [],
+            'nvl-content.required_definition_paths' => [],
+            'nvl-content.definition_paths' => [$definitions],
+            'nvl-content.allowed_definition_roots' => [],
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.allowed_definition_roots' => [$temporary],
-            'content.definition_limits.maximum_files' => 1,
+            'nvl-content.allowed_definition_roots' => [$temporary],
+            'nvl-content.definition_limits.maximum_files' => 1,
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.definitions' => [
+            'nvl-content.definitions' => [
                 'key' => 'single-definition',
                 'name' => 'Single definition',
                 'schema' => ['fields' => []],
             ],
-            'content.definition_paths' => [],
-            'content.required_definition_paths' => [],
-            'content.allowed_definition_roots' => [$temporary],
-            'content.definition_limits.maximum_files' => 500,
+            'nvl-content.definition_paths' => [],
+            'nvl-content.required_definition_paths' => [],
+            'nvl-content.allowed_definition_roots' => [$temporary],
+            'nvl-content.definition_limits.maximum_files' => 500,
         ]);
         expect(app(ContentDefinitionLoader::class)->load()[0]->key)
             ->toBe('single-definition');
@@ -914,36 +908,36 @@ PHP);
         ];
 
         foreach ($invalidDefinitions as $invalidDefinitionsConfiguration) {
-            config()->set('content.definitions', $invalidDefinitionsConfiguration);
+            config()->set('nvl-content.definitions', $invalidDefinitionsConfiguration);
             expect(fn () => app(ContentDefinitionLoader::class)->load())
                 ->toThrow(InvalidArgumentException::class);
         }
 
         config()->set([
-            'content.definitions' => [],
-            'content.definition_paths' => [],
-            'content.required_definition_paths' => 'invalid',
+            'nvl-content.definitions' => [],
+            'nvl-content.definition_paths' => [],
+            'nvl-content.required_definition_paths' => 'invalid',
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.required_definition_paths' => [],
-            'content.definition_paths' => [''],
+            'nvl-content.required_definition_paths' => [],
+            'nvl-content.definition_paths' => [''],
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.definition_paths' => [$temporary],
-            'content.allowed_definition_roots' => [$definitions],
+            'nvl-content.definition_paths' => [$temporary],
+            'nvl-content.allowed_definition_roots' => [$definitions],
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.definition_paths' => [],
-            'content.allowed_definition_roots' => [$temporary.'/missing-root'],
+            'nvl-content.definition_paths' => [],
+            'nvl-content.allowed_definition_roots' => [$temporary.'/missing-root'],
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
@@ -956,22 +950,22 @@ PHP);
             ],
         ], JSON_THROW_ON_ERROR));
         config()->set([
-            'content.definition_paths' => [$singleFile],
-            'content.allowed_definition_roots' => [$temporary],
-            'content.definition_limits.maximum_file_bytes' => 1_048_576,
+            'nvl-content.definition_paths' => [$singleFile],
+            'nvl-content.allowed_definition_roots' => [$temporary],
+            'nvl-content.definition_limits.maximum_file_bytes' => 1_048_576,
         ]);
         expect(app(ContentDefinitionLoader::class)->load()[0]->key)
             ->toBe('file-definition');
 
         $invalidFile = $definitions.'/invalid.content.php';
         File::put($invalidFile, '<?php return "invalid";');
-        config()->set('content.definition_paths', [$invalidFile]);
+        config()->set('nvl-content.definition_paths', [$invalidFile]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.definition_paths' => [$singleFile],
-            'content.definition_limits.maximum_file_bytes' => 1,
+            'nvl-content.definition_paths' => [$singleFile],
+            'nvl-content.definition_limits.maximum_file_bytes' => 1,
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
@@ -1007,7 +1001,7 @@ it('validates command input before changing definition state', function (): void
         '--format' => 'yaml',
     ])->run())->toThrow(InvalidArgumentException::class);
 
-    config()->set('content.connection', []);
+    config()->set('nvl-content.connection', []);
     $this->artisan('nvl:content:doctor')
         ->assertSuccessful()
         ->expectsOutputToContain('database.error')

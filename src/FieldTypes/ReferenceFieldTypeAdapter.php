@@ -69,7 +69,7 @@ final class ReferenceFieldTypeAdapter extends AbstractFieldTypeAdapter implement
 
         $maximum = $field->setting(
             'max_items',
-            ContentConfiguration::positiveInteger('content.validation.maximum_items', 500),
+            ContentConfiguration::positiveInteger('nvl-content.validation.maximum_items', 500),
         );
 
         if (! is_int($maximum) || count($ids) > $maximum) {

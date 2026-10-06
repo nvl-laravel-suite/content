@@ -64,6 +64,7 @@ use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Support\Providers\TenantServiceProvider;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Support\Traits\MergesPackageConfiguration;
+use Nvl\Support\Traits\RegistersNamespacedResources;
 use Nvl\Tenancy\Services\TenantAdoptionRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Opis\JsonSchema\Validator;
@@ -74,6 +75,7 @@ use Opis\JsonSchema\Validator;
 final class ContentServiceProvider extends ServiceProvider
 {
     use MergesPackageConfiguration;
+    use RegistersNamespacedResources;
 
     public function register(): void
     {
@@ -82,7 +84,7 @@ final class ContentServiceProvider extends ServiceProvider
 
         ContentOwnerDeletionBridge::clear();
         $this->app->register(TenantServiceProvider::class);
-        $this->mergePackageConfiguration(__DIR__.'/../../config/content.php', 'content');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/nvl-content.php', 'content');
         (new ContentResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class));
         $this->app->booted(function (): void {
             if ($this->app->bound(TenantAdoptionRegistry::class)) {
@@ -91,7 +93,7 @@ final class ContentServiceProvider extends ServiceProvider
         });
         $this->validateUriSchemeConfiguration();
         $authorization = config(
-            'content.authorization.class',
+            'nvl-content.authorization.class',
             ConfiguredContentAuthorization::class,
         );
 
@@ -126,9 +128,9 @@ final class ContentServiceProvider extends ServiceProvider
     private function validateUriSchemeConfiguration(): void
     {
         foreach ([
-            'content.links.allowed_schemes',
-            'content.validation.url_schemes',
-            'content.rich_text.allowed_link_schemes',
+            'nvl-content.links.allowed_schemes',
+            'nvl-content.validation.url_schemes',
+            'nvl-content.rich_text.allowed_link_schemes',
         ] as $key) {
             ContentUriSchemePolicy::validateAllowedSchemes(
                 ContentConfiguration::stringList($key),
@@ -162,7 +164,7 @@ final class ContentServiceProvider extends ServiceProvider
         $this->registerPlacementMorphAlias();
         ContentOwnerDeletionBridge::use($ownerDeletion);
 
-        if ((bool) config('content.migrations.enabled', true)) {
+        if ((bool) config('nvl-content.migrations.enabled', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
         }
 
@@ -189,7 +191,7 @@ final class ContentServiceProvider extends ServiceProvider
         }
 
         $this->publishes([
-            __DIR__.'/../../config/content.php' => config_path('content.php'),
+            __DIR__.'/../../config/nvl-content.php' => config_path('nvl-content.php'),
         ], 'content-config');
         $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
@@ -251,7 +253,7 @@ final class ContentServiceProvider extends ServiceProvider
         $registry->register($this->app->make(MediaFieldTypeAdapter::class, ['multiple' => true]));
         $registry->register($this->app->make(ReferenceFieldTypeAdapter::class, ['multiple' => false]));
         $registry->register($this->app->make(ReferenceFieldTypeAdapter::class, ['multiple' => true]));
-        $configured = config('content.field_types', []);
+        $configured = config('nvl-content.field_types', []);
 
         if (! is_array($configured)) {
             throw new InvalidArgumentException('content.field_types must be an array.');
@@ -291,7 +293,7 @@ final class ContentServiceProvider extends ServiceProvider
             $registry->register($preset);
         }
 
-        $configured = config('content.presets', []);
+        $configured = config('nvl-content.presets', []);
 
         if (! is_array($configured)) {
             throw new InvalidArgumentException('content.presets must be an array.');
@@ -385,7 +387,7 @@ final class ContentServiceProvider extends ServiceProvider
     private function registerDefinitionMigrations(
         ContentDefinitionMigrationRegistry $registry,
     ): void {
-        $configured = config('content.definition_migrations', []);
+        $configured = config('nvl-content.definition_migrations', []);
 
         if (! is_array($configured)) {
             throw new InvalidArgumentException(
@@ -415,7 +417,7 @@ final class ContentServiceProvider extends ServiceProvider
 
     private function registerOwners(ContentOwnerRegistry $registry): void
     {
-        $configured = config('content.owners', []);
+        $configured = config('nvl-content.owners', []);
 
         if (! is_array($configured)) {
             throw new InvalidArgumentException('content.owners must be an array.');
@@ -436,7 +438,7 @@ final class ContentServiceProvider extends ServiceProvider
 
     private function registerReferences(ContentReferenceRegistry $registry): void
     {
-        $configured = config('content.references', []);
+        $configured = config('nvl-content.references', []);
 
         if (! is_array($configured)) {
             throw new InvalidArgumentException('content.references must be an array.');

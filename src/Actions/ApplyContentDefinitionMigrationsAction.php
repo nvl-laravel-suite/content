@@ -49,7 +49,7 @@ final readonly class ApplyContentDefinitionMigrationsAction
         }
 
         $maximum = ContentConfiguration::positiveInteger(
-            'content.definition_migration.maximum_batch_size',
+            'nvl-content.definition_migration.maximum_batch_size',
             1_000,
         );
 
@@ -85,7 +85,7 @@ final readonly class ApplyContentDefinitionMigrationsAction
         $attempts = max(
             1,
             ContentConfiguration::positiveInteger(
-                'content.definition_migration.transaction_attempts',
+                'nvl-content.definition_migration.transaction_attempts',
                 3,
             ),
         );

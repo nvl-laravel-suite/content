@@ -46,7 +46,7 @@ final class ContentDefinitionLoader
     {
         /** @var array<string, array<string, mixed>> $rawDefinitions */
         $rawDefinitions = [];
-        $configured = config('content.definitions', []);
+        $configured = config('nvl-content.definitions', []);
 
         if (! is_array($configured)) {
             throw new InvalidArgumentException('content.definitions must be an array.');
@@ -160,8 +160,8 @@ final class ContentDefinitionLoader
      */
     private function definitionFiles(): array
     {
-        $optionalPaths = config('content.definition_paths', []);
-        $requiredPaths = config('content.required_definition_paths', []);
+        $optionalPaths = config('nvl-content.definition_paths', []);
+        $requiredPaths = config('nvl-content.required_definition_paths', []);
 
         if (! is_array($optionalPaths)) {
             throw new InvalidArgumentException('content.definition_paths must be an array.');
@@ -243,7 +243,7 @@ final class ContentDefinitionLoader
         $files = array_values(array_unique($files));
         sort($files);
         $maximumFiles = ContentConfiguration::positiveInteger(
-            'content.definition_limits.maximum_files',
+            'nvl-content.definition_limits.maximum_files',
             500,
         );
 
@@ -254,7 +254,7 @@ final class ContentDefinitionLoader
         }
 
         $maximumBytes = ContentConfiguration::positiveInteger(
-            'content.definition_limits.maximum_file_bytes',
+            'nvl-content.definition_limits.maximum_file_bytes',
             1_048_576,
         );
 
@@ -276,7 +276,7 @@ final class ContentDefinitionLoader
      */
     private function allowedRoots(): array
     {
-        $configured = config('content.allowed_definition_roots', [base_path()]);
+        $configured = config('nvl-content.allowed_definition_roots', [base_path()]);
 
         if (! is_array($configured) || $configured === []) {
             throw new InvalidArgumentException(

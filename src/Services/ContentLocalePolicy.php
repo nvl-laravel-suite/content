@@ -25,7 +25,7 @@ final readonly class ContentLocalePolicy
      */
     public function available(): array
     {
-        $configured = ContentConfiguration::stringList('content.locales.available');
+        $configured = ContentConfiguration::stringList('nvl-content.locales.available');
         $registered = $this->locales->supported();
         $available = $configured === [] ? $registered : $configured;
         $normalized = [];

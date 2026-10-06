@@ -115,7 +115,7 @@ it('reports unsupported stored versions without exposing content values', functi
 
 it('authorizes definition migration planning explicitly', function (): void {
     config()->set(
-        'content.authorization.callback',
+        'nvl-content.authorization.callback',
         static fn (ContentAbility $ability): bool => $ability !== ContentAbility::MigrateDefinitions,
     );
 
@@ -126,10 +126,10 @@ it('authorizes definition migration planning explicitly', function (): void {
 
 it('returns a stable conflict when the management API receives an old block', function (): void {
     config()->set([
-        'content.routes.management.enabled' => true,
-        'content.routes.management.prefix' => 'api/content-migrations',
-        'content.routes.management.name' => 'content.migrations.',
-        'content.routes.management.middleware' => [],
+        'nvl-content.routes.management.enabled' => true,
+        'nvl-content.routes.management.prefix' => 'api/content-migrations',
+        'nvl-content.routes.management.name' => 'content.migrations.',
+        'nvl-content.routes.management.middleware' => [],
     ]);
     require __DIR__.'/../../routes/api.php';
     app('router')->getRoutes()->refreshNameLookups();

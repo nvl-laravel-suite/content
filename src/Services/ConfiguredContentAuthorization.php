@@ -27,7 +27,7 @@ final class ConfiguredContentAuthorization implements ContentAuthorization
             return;
         }
 
-        $callback = config('content.authorization.callback');
+        $callback = config('nvl-content.authorization.callback');
         $allowed = is_callable($callback)
             && $callback($ability, $actor, $block, $owner, $context) === true;
 

@@ -11,11 +11,11 @@ See the [installation and publishing guide](https://github.com/nvl-laravel-suite
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/content:^2.0` |
+| Installed through | `composer require nvl/content:^5.0` |
 | Module identifier | `nvl/content` |
 | PHP namespace | `Nvl\Content` |
 | Service provider | `Nvl\Content\Providers\ContentServiceProvider` |
-| Configuration | `config/content.php` |
+| Configuration | `config/nvl-content.php` |
 
 `nvl/content` is a headless, schema-driven content-block engine for Laravel
 12–13 on PHP 8.4+. It provides reusable, translatable blocks, typed fields,
@@ -99,7 +99,7 @@ Composer installs these declared dependencies automatically.
 ## Installation
 
 ```bash
-composer require nvl/content:^2.0
+composer require nvl/content:^5.0
 php artisan migrate
 php artisan nvl:content:definitions:sync --dry-run
 php artisan nvl:content:definitions:sync
@@ -110,7 +110,7 @@ php artisan nvl:content:doctor --strict --format=json
 
 Laravel discovers `Nvl\Content\Providers\ContentServiceProvider`. Automatic
 migrations are enabled by default. Existing applications that own compatible
-tables must disable `content.migrations.enabled` for that schema before
+tables must disable `nvl-content.migrations.enabled` for that schema before
 migrating and leave package migration ownership disabled. Bundled migrations
 fail closed when a target table already exists; they never silently adopt or
 later drop a pre-existing table.
@@ -118,16 +118,16 @@ later drop a pre-existing table.
 Optional publish tags are:
 
 ```bash
-php artisan vendor:publish --tag=content-config
-php artisan vendor:publish --tag=content-migrations
-php artisan vendor:publish --tag=content-views
-php artisan vendor:publish --tag=content-skills
+php artisan vendor:publish --tag=nvl-content-config
+php artisan vendor:publish --tag=nvl-content-migrations
+php artisan vendor:publish --tag=nvl-content-views
+php artisan vendor:publish --tag=nvl-content-skills
 ```
 
 Choose exactly one migration owner. For automatic vendor loading, leave
-`content.migrations.enabled=true` and do not publish `content-migrations`. For
-host-owned migrations, publish `content-migrations`, set
-`content.migrations.enabled=false` before the first migration, and maintain the
+`nvl-content.migrations.enabled=true` and do not publish `nvl-content-migrations`. For
+host-owned migrations, publish `nvl-content-migrations`, set
+`nvl-content.migrations.enabled=false` before the first migration, and maintain the
 copied files as application migrations. Never run both sources; Laravel
 retimestamps published migrations.
 
@@ -168,7 +168,7 @@ final class SystemContentAuthorization implements ContentAuthorization
 ```
 
 Register that adapter, the owner alias, locales, and a source definition in
-`config/content.php`:
+`config/nvl-content.php`:
 
 ```php
 'authorization' => [
@@ -290,18 +290,18 @@ than storing a Closure callback in cached configuration.
 
 ## Defining blocks
 
-Definitions may be placed inline in `config/content.php`, or in sorted
+Definitions may be placed inline in `config/nvl-content.php`, or in sorted
 `*.content.php` and `*.content.json` files under configured
-`content.definition_paths`. Paths must resolve beneath
-`content.allowed_definition_roots`; traversal and symlink escapes fail closed.
+`nvl-content.definition_paths`. Paths must resolve beneath
+`nvl-content.allowed_definition_roots`; traversal and symlink escapes fail closed.
 Duplicate keys also fail during application boot. Discovery is bounded by
-`content.definition_limits.maximum_files` and
-`content.definition_limits.maximum_file_bytes`; unreadable or oversized
+`nvl-content.definition_limits.maximum_files` and
+`nvl-content.definition_limits.maximum_file_bytes`; unreadable or oversized
 sources fail the boot rather than being partially loaded.
 
 Optional paths may be absent, which keeps the package installable before an
 application creates `resources/content`. Put deployment-critical roots in
-`content.required_definition_paths`; a missing required root fails boot and
+`nvl-content.required_definition_paths`; a missing required root fails boot and
 prevents an accidental empty scan from orphaning the synchronized mirror.
 
 ```php
@@ -503,7 +503,7 @@ are denied by default. Enabling remote references should only be considered
 with a consumer-owned resolver and explicit network/security policy.
 
 Custom types implement `Nvl\Content\Contracts\ContentFieldTypeAdapter` and are
-registered by alias in `content.field_types`. Registration rejects mismatched
+registered by alias in `nvl-content.field_types`. Registration rejects mismatched
 or duplicate aliases. An adapter may additionally implement
 `ContentFieldDefinitionValidator` to reject invalid type-specific settings at
 application boot rather than waiting for the first mutation.
@@ -558,7 +558,7 @@ DTO projections.
 
 Every registered preset is compiled and validated during application boot,
 including presets that no definition currently uses. Consumer presets may
-implement `ContentFieldPreset` or be declared under `content.presets`.
+implement `ContentFieldPreset` or be declared under `nvl-content.presets`.
 Definition fields may override presentation metadata, defaults, and settings,
 but cannot replace a preset's `type`, `fields`, or `item` structure.
 Custom normalization receives one base or locale partition at a time;
@@ -632,14 +632,14 @@ $block = $create->execute(
 ```
 
 Configure available locales and locales required for publication under
-`content.locales`. Every Content locale must also be registered in
-`translatable.locales`, which remains the canonical locale runtime. Publishing
+`nvl-content.locales`. Every Content locale must also be registered in
+`nvl-translatable.locales`, which remains the canonical locale runtime. Publishing
 validates the complete schema again, including
 required localized fields and Media/reference availability. Locales listed in
 `required_on_publish` must contain every required localized value; other
 locales may remain partial, and every supplied value is still validated.
 An empty `required_on_publish` list requires all available locales. When
-`content.locales.available` is empty, Content uses the Translatable locale
+`nvl-content.locales.available` is empty, Content uses the Translatable locale
 registry. Locale aliases that normalize to the same key are rejected instead
 of silently overwriting one another. HTTP rendering defaults to the
 request-scoped `ContentLocale`, not Laravel's UI locale.
@@ -827,7 +827,7 @@ Because Content and Media writes form one logical transaction, any block that
 contains or previously contained Media references must use the same named
 database connection as Media. `nvl:content:doctor --strict` verifies this.
 Private URL lifetime is configured with
-`content.media.private_url_ttl_minutes`.
+`nvl-content.media.private_url_ttl_minutes`.
 
 ## Rendering and Blade starting views
 
@@ -865,7 +865,7 @@ php artisan nvl:content:views:publish
 php artisan nvl:content:views:publish --path=resources/views/content --force
 ```
 
-The destination must remain under `content.view_publishing.allowed_roots`.
+The destination must remain under `nvl-content.view_publishing.allowed_roots`.
 Traversal, symlink escape, non-directory targets, and accidental replacement
 without `--force` fail or skip safely.
 
@@ -968,7 +968,7 @@ $editor = Content::editor($page, 'homepage', $actor);
 
 `ContentEditorData` contains deterministically ordered definitions, presets,
 declared groups, placement DTOs with their editable `ContentBlockData`, and
-`placementLimit`, the validated `content.placements.maximum_per_group` ceiling
+`placementLimit`, the validated `nvl-content.placements.maximum_per_group` ceiling
 the UI must enforce. The placed block projection includes its definition key,
 lifecycle state, base values, localized values, metadata, and revisions, so a
 consumer does not navigate `placement.block.definition` or
@@ -1127,7 +1127,7 @@ component classes in schemas.
 
 `Nvl\Content\Contracts\ContentAuthorization` is invoked for all reads,
 mutations, placements, rendering, and snapshots. The configured adapter denies
-non-system callers unless `content.authorization.callback` explicitly returns
+non-system callers unless `nvl-content.authorization.callback` explicitly returns
 true. Bind a consumer policy adapter for larger applications. An adapter may
 also implement `Nvl\Content\Contracts\ContentBlockQueryScope` to apply
 actor/tenant constraints to block catalog queries before caller-controlled
@@ -1142,13 +1142,13 @@ enabled, each has configurable prefix, route-name prefix, and middleware:
 'routes' => [
     'management' => [
         'enabled' => true,
-        'prefix' => 'api/v1/content',
+        'prefix' => 'nvl/api/v1/content',
         'name' => 'nvl.content.management.',
         'middleware' => ['api', 'auth:sanctum', 'throttle:60,1'],
     ],
     'public' => [
         'enabled' => true,
-        'prefix' => 'api/v1/content',
+        'prefix' => 'nvl/api/v1/content',
         'name' => 'nvl.content.public.',
         'middleware' => ['api', 'throttle:120,1'],
     ],
@@ -1301,18 +1301,18 @@ NVL Content is open-sourced under the MIT License.
 Declare a model once in `config/nvl-core.php`:
 
 ```php
-'owners' => ['article' => Article::class],
+'owners' => [Article::class],
 ```
 
-Enable this package capability separately in `config/content.php`:
+Enable this package capability separately in `config/nvl-content.php`:
 
 ```php
-'owners' => ['article'],
+'owners' => [Article::class],
 ```
 
 Owners still implement ContentOwner, declare composition groups, and use HasContent. Registering identity does not grant a group or mutation ability. Core registration does not add the model to this package's allowlist.
 
-Existing package class/resolver/handler registrations remain accepted for one major cycle. Run `php artisan nvl:doctor --strict --format=json` to inspect compatibility diagnostics. See [UPGRADING.md](UPGRADING.md) before changing a persisted morph type.
+Laravel's `getMorphClass()` determines stored identity. These class declarations do not install host morph maps. Keep resolvers, handlers and authorization independent; use `nvl:doctor --strict --format=json` to review legacy alias mismatches or stored identity drift. See [UPGRADING.md](UPGRADING.md) before changing the host's morph map.
 
 ## Shared consumer diagnostics
 
@@ -1321,13 +1321,13 @@ Run `php artisan nvl:doctor --strict --format=json` to combine the read-only che
 
 ## Shared infrastructure options
 
-Definition synchronization and placement mutations use `content.locks.store`, then `nvl-core.locks.store`, then the application's cache store. Optional `locks.definitions.store` and `locks.placements.store` select different operation stores without changing `definition_sync` or `placements` lock durations. An injected application cache implementation remains available when the selected store is the application default.
+Definition synchronization and placement mutations use `nvl-content.locks.store`, then `nvl-core.locks.store`, then the application's cache store. Optional `locks.definitions.store` and `locks.placements.store` select different operation stores without changing `definition_sync` or `placements` lock durations. An injected application cache implementation remains available when the selected store is the application default.
 
-Management/public middleware can inherit Core by setting the relevant `content.routes.<group>.middleware` to null. Lists replace atomically, including an explicit empty list where appropriate. `content.authorization.guard` inherits Core's guard and applies only to bare `auth` entries; existing explicit guards and the Content authorization contract remain authoritative.
+Management/public middleware can inherit Core by setting the relevant `nvl-content.routes.<group>.middleware` to null. Lists replace atomically, including an explicit empty list where appropriate. `nvl-content.authorization.guard` inherits Core's guard and applies only to bare `auth` entries; existing explicit guards and the Content authorization contract remain authoritative.
 
 ## Next major: isolated schema identities
 
-Use `content.tables.<logical-key>` for every table and `content.connection` for its database connection. Null connection inherits `nvl-core.connection`, then Laravel's default. Tables are resolved at runtime by the package table definition helper.
+Use `nvl-content.tables.<logical-key>` for every table and `nvl-content.connection` for its database connection. Null connection inherits `nvl-core.connection`, then Laravel's default. Tables are resolved at runtime by the package table definition helper.
 
 | Logical key | New default | Previous name |
 | --- | --- | --- |
@@ -1337,4 +1337,10 @@ Use `content.tables.<logical-key>` for every table and `content.connection` for 
 | `placements` | `nvl_content_placements` | `content_placements` |
 | `revisions` | `nvl_content_revisions` | `content_revisions` |
 
-Migration filenames contain `nvl_content_`. Existing installations must complete the upgrade in `UPGRADING.md` before running new migrations. A pending creator rejects an existing target before any migration in the batch runs; legacy storage with old history needs an ownership decision.
+Migration filenames contain `nvl_content_`. Existing installations must complete the upgrade in `UPGRADING.md` before running new migrations. A pending creator rejects an existing target before that owned migration runs; use `nvl:schema:preflight` for an explicit whole-batch check; legacy storage with old history needs an ownership decision.
+
+Owned cache and lock identities follow `nvl:<package>:<purpose>:…`. Placement locks retain `nvl:content:placement-owner:` outside the tenant identity in every runtime mode. Definition synchronization keeps `nvl:content:definitions:sync`. Existing generic tenant lock entries are never acquired or removed. See [UPGRADING](UPGRADING.md) for coordinated worker and lock lease cutover.
+
+## Canonical configuration ownership
+
+Use `nvl-content` settings in `config/nvl-content.php` and canonical package environment names. Old generic roots are foreign unless an upgrading NVL host explicitly selects them in Core's default-off compatibility. Canonical false/null/empty values win; no old roots are populated or written back. Keep logical package/resource IDs unchanged. Review [Core's rename inventory and cache/worker cutover](https://github.com/nvl-laravel-suite/core/blob/main/UPGRADING.md#major-5-canonical-configuration-and-environment).

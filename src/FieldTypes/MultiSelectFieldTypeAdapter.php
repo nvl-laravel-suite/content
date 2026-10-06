@@ -37,7 +37,7 @@ final class MultiSelectFieldTypeAdapter extends AbstractFieldTypeAdapter
 
         $maximum = $field->setting(
             'max_items',
-            ContentConfiguration::positiveInteger('content.validation.maximum_items', 500),
+            ContentConfiguration::positiveInteger('nvl-content.validation.maximum_items', 500),
         );
 
         if (! is_int($maximum) || count($value) > $maximum) {

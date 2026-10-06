@@ -50,7 +50,7 @@ final class ContentRenderResources
                 $this->media[$media->id] = $media;
             });
 
-        if (Container::getInstance()->make('config')->get('tenancy.enabled') === true) {
+        if (Container::getInstance()->make('config')->get('nvl-tenancy.enabled') === true) {
             $unresolved = array_diff($missing, array_keys($this->media));
             if ($unresolved !== []) {
                 throw new TenantBoundaryViolation('A Content media reference is outside the active tenant.');

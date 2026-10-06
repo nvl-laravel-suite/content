@@ -58,7 +58,7 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
 
         $maximum = $field->setting(
             'max_items',
-            ContentConfiguration::positiveInteger('content.media.maximum_per_field', 50),
+            ContentConfiguration::positiveInteger('nvl-content.media.maximum_per_field', 50),
         );
 
         if (! is_int($maximum) || count($ids) > $maximum) {
@@ -163,7 +163,7 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
             }
 
             $minutes = ContentConfiguration::positiveInteger(
-                'content.media.private_url_ttl_minutes',
+                'nvl-content.media.private_url_ttl_minutes',
                 15,
             );
             $rendered[] = new RenderedPrivateMediaData(
@@ -186,7 +186,7 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
         ContentValidationContext $context,
     ): void {
         if ($context->visibility === ContentVisibility::Public
-            && (bool) config('content.media.require_public_for_public_blocks', true)
+            && (bool) config('nvl-content.media.require_public_for_public_blocks', true)
             && $media->visibility !== MediaVisibility::Public) {
             throw new InvalidArgumentException(
                 "Public content field [{$context->path}] may only reference public media.",
@@ -195,7 +195,7 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
 
         if ($context->visibility === ContentVisibility::Private
             && $media->visibility === MediaVisibility::Private
-            && ! (bool) config('content.media.allow_private_for_private_blocks', true)) {
+            && ! (bool) config('nvl-content.media.allow_private_for_private_blocks', true)) {
             throw new InvalidArgumentException(
                 "Private media is disabled for content field [{$context->path}].",
             );

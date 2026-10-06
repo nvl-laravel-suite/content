@@ -39,7 +39,7 @@ final class StringFieldTypeAdapter extends AbstractFieldTypeAdapter
         $maximum = $field->setting(
             'max_length',
             ContentConfiguration::positiveInteger(
-                'content.validation.maximum_string_length',
+                'nvl-content.validation.maximum_string_length',
                 100_000,
             ),
         );
@@ -128,7 +128,7 @@ final class StringFieldTypeAdapter extends AbstractFieldTypeAdapter
 
         $allowed = $field->setting(
             'allowed_schemes',
-            ContentConfiguration::stringList('content.validation.url_schemes'),
+            ContentConfiguration::stringList('nvl-content.validation.url_schemes'),
         );
         $scheme = parse_url($value, PHP_URL_SCHEME);
         $host = parse_url($value, PHP_URL_HOST);
@@ -186,7 +186,7 @@ final class StringFieldTypeAdapter extends AbstractFieldTypeAdapter
             );
         }
 
-        $allowRelative = config('content.links.allow_relative', true);
+        $allowRelative = config('nvl-content.links.allow_relative', true);
 
         if ($allowRelative === true
             && (str_starts_with($value, '/')
@@ -197,7 +197,7 @@ final class StringFieldTypeAdapter extends AbstractFieldTypeAdapter
 
         $allowed = $field->setting(
             'allowed_schemes',
-            ContentConfiguration::stringList('content.links.allowed_schemes'),
+            ContentConfiguration::stringList('nvl-content.links.allowed_schemes'),
         );
         $parsedScheme = parse_url($value, PHP_URL_SCHEME);
 

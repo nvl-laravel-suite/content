@@ -26,7 +26,9 @@ final class ContentIdentityGuard
      */
     public function owner(string $type, string $identifier): void
     {
-        $this->alias($type, 'owner type');
+        if (preg_match('/^[A-Za-z_][A-Za-z0-9_\\\\.:-]{0,254}$/D', $type) !== 1) {
+            throw new InvalidArgumentException("Content owner type [{$type}] is invalid.");
+        }
 
         if (preg_match('/^[A-Za-z0-9_.:-]{1,191}$/', $identifier) !== 1) {
             throw new InvalidArgumentException('Content owner identifier is invalid.');

@@ -40,7 +40,7 @@ final class JsonFieldTypeAdapter extends AbstractFieldTypeAdapter implements Con
             );
         }
 
-        if (! (bool) config('content.validation.json_schema.allow_remote_references', false)
+        if (! (bool) config('nvl-content.validation.json_schema.allow_remote_references', false)
             && $this->containsRemoteReference($schema)) {
             throw new InvalidArgumentException(
                 "JSON Schema for [{$field->key}] contains a remote reference.",
@@ -72,7 +72,7 @@ final class JsonFieldTypeAdapter extends AbstractFieldTypeAdapter implements Con
             );
         }
 
-        if (! (bool) config('content.validation.json_schema.allow_remote_references', false)
+        if (! (bool) config('nvl-content.validation.json_schema.allow_remote_references', false)
             && $this->containsRemoteReference($schema)) {
             throw new InvalidArgumentException(
                 "JSON Schema for [{$context->path}] contains a remote reference.",

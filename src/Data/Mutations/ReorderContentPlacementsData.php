@@ -37,7 +37,7 @@ final class ReorderContentPlacementsData extends Data
     public static function rules(): array
     {
         $maximum = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_per_group',
+            'nvl-content.placements.maximum_per_group',
             1_000,
         );
 

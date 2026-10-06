@@ -71,7 +71,7 @@ final class UpdateContentBlockData extends Data
      */
     private static function contentLocales(): ?array
     {
-        $configured = ContentConfiguration::stringList('content.locales.available');
+        $configured = ContentConfiguration::stringList('nvl-content.locales.available');
 
         return $configured === [] ? null : $configured;
     }

@@ -132,7 +132,7 @@ final class ContentReferenceRegistry
         string $identifier,
         ContentValidationContext $context,
     ): void {
-        if ($this->configuration->get('tenancy.enabled') !== true) {
+        if ($this->configuration->get('nvl-tenancy.enabled') !== true) {
             return;
         }
         if (! $resolver instanceof TenantSafeContentReferenceResolver) {

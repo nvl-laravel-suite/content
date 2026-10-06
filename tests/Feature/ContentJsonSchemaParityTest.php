@@ -13,8 +13,8 @@ use Nvl\Content\Validation\ContentValueValidator;
 use Opis\JsonSchema\Validator;
 
 it('keeps generated schemas aligned with runtime content constraints', function (): void {
-    config()->set('content.validation.maximum_items', 2);
-    config()->set('content.rich_text.maximum_input_length', 5);
+    config()->set('nvl-content.validation.maximum_items', 2);
+    config()->set('nvl-content.rich_text.maximum_input_length', 5);
 
     $schema = app(ContentSchemaCompiler::class)->compile([
         'fields' => [

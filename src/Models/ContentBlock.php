@@ -106,7 +106,7 @@ final class ContentBlock extends Model implements HasMedia, TranslatableModel
 
     protected function defineTranslations(): RelatedTranslationDefinition
     {
-        $locales = ContentConfiguration::stringList('content.locales.available');
+        $locales = ContentConfiguration::stringList('nvl-content.locales.available');
 
         return new RelatedTranslationDefinition(
             translationModel: ContentBlockTranslation::class,

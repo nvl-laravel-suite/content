@@ -23,18 +23,18 @@ final class RichTextFieldTypeAdapter extends AbstractFieldTypeAdapter
     public function __construct()
     {
         $maximum = ContentConfiguration::positiveInteger(
-            'content.rich_text.maximum_input_length',
+            'nvl-content.rich_text.maximum_input_length',
             250_000,
         );
         $schemes = ContentUriSchemePolicy::runtimeAllowedSchemes(
             ContentConfiguration::stringList(
-                'content.rich_text.allowed_link_schemes',
+                'nvl-content.rich_text.allowed_link_schemes',
             ),
         );
         $configuration = (new HtmlSanitizerConfig)
             ->allowSafeElements()
             ->allowLinkSchemes($schemes)
-            ->allowRelativeLinks((bool) config('content.rich_text.allow_relative_links', true))
+            ->allowRelativeLinks((bool) config('nvl-content.rich_text.allow_relative_links', true))
             ->allowMediaSchemes([])
             ->allowRelativeMedias(false)
             ->withMaxInputLength($maximum);
@@ -60,7 +60,7 @@ final class RichTextFieldTypeAdapter extends AbstractFieldTypeAdapter
         }
 
         $maximum = ContentConfiguration::positiveInteger(
-            'content.rich_text.maximum_input_length',
+            'nvl-content.rich_text.maximum_input_length',
             250_000,
         );
 

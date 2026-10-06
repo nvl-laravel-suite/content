@@ -108,7 +108,7 @@ it('permits publishing a snapshot when the override supplies the required field'
 
 it('allows partial optional locales when all required publication locales are complete', function (): void {
     $actor = ContentActorData::system();
-    config()->set('content.locales.required_on_publish', ['en']);
+    config()->set('nvl-content.locales.required_on_publish', ['en']);
     app(SyncContentDefinitionsAction::class)->execute($actor);
     $block = app(CreateContentBlockAction::class)->execute(new CreateContentBlockData(
         definition: 'hero',
@@ -126,7 +126,7 @@ it('allows partial optional locales when all required publication locales are co
     app(PlaceContentBlockAction::class)->execute($published, $owner, 'default', new PlaceContentBlockData(
         key: 'localized',
     ), $actor);
-    config()->set('translatable.fallback_locales', ['en']);
+    config()->set('nvl-translatable.fallback_locales', ['en']);
     $rendered = app(ContentRenderer::class)->render($owner, 'default', 'bg', $actor);
 
     expect($published->status)->toBe(ContentStatus::Published)
@@ -134,7 +134,7 @@ it('allows partial optional locales when all required publication locales are co
 });
 
 it('still requires every configured publication locale to be complete', function (array $requiredLocales): void {
-    config()->set('content.locales.required_on_publish', $requiredLocales);
+    config()->set('nvl-content.locales.required_on_publish', $requiredLocales);
     $actor = ContentActorData::system();
     $block = app(CreateContentBlockAction::class)->execute(new CreateContentBlockData(
         definition: 'hero',
@@ -152,7 +152,7 @@ it('still requires every configured publication locale to be complete', function
 ]);
 
 it('continues validating every supplied optional locale value', function (): void {
-    config()->set('content.locales.required_on_publish', ['en']);
+    config()->set('nvl-content.locales.required_on_publish', ['en']);
 
     expect(fn () => app(CreateContentBlockAction::class)->execute(new CreateContentBlockData(
         definition: 'hero',

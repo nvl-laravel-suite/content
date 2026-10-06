@@ -247,7 +247,7 @@ final readonly class ContentPlacementValidator
         $visited = [$parent->id => true];
         $cursor = $parent;
         $maximum = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_depth',
+            'nvl-content.placements.maximum_depth',
             50,
         );
         $depth = 2;
@@ -302,7 +302,7 @@ final readonly class ContentPlacementValidator
         }
 
         $maximum = ContentConfiguration::positiveInteger(
-            'content.placements.maximum_depth',
+            'nvl-content.placements.maximum_depth',
             50,
         );
         $placements = ContentPlacement::query()

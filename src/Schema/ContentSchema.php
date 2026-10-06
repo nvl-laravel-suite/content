@@ -29,7 +29,7 @@ final readonly class ContentSchema implements JsonSerializable
         }
 
         $maximumFields = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_fields',
+            'nvl-content.validation.maximum_fields',
             250,
         );
 

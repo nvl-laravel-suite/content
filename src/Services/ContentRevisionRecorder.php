@@ -54,7 +54,7 @@ final readonly class ContentRevisionRecorder
         ];
 
         $maximum = ContentConfiguration::positiveInteger(
-            'content.validation.maximum_revision_bytes',
+            'nvl-content.validation.maximum_revision_bytes',
             2_097_152,
         );
 

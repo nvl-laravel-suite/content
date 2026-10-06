@@ -54,7 +54,7 @@ final readonly class GetOwnerContentEditorAction
             groups: $groups,
             placements: array_values($placements->all()),
             placementLimit: ContentConfiguration::positiveInteger(
-                'content.placements.maximum_per_group',
+                'nvl-content.placements.maximum_per_group',
                 1_000,
             ),
         );

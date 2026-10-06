@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Cache;
 use Nvl\Content\Actions\SyncContentDefinitionsAction;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Facades\Content;
+use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentReferenceRegistry;
 use Nvl\Content\Tests\Fixtures\TenantScenario;
 use Nvl\Content\Tests\Fixtures\UnsafeReferenceResolver;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Tenancy\Exceptions\TenantContextMissing;
 
@@ -48,6 +51,29 @@ it('keeps definition synchronization behind explicit platform execution', functi
         expect(fn () => app(SyncContentDefinitionsAction::class)->execute(
             ContentActorData::system(),
         ))->toThrow(TenantBoundaryViolation::class);
+    });
+});
+
+it('keeps tenant placement locks under the owned package prefix without disturbing old host locks', function (): void {
+    $this->scenario->run(TenantScenario::A, function (): void {
+        $boundary = app(TenantBoundary::class);
+        $identity = hash('sha256', "owner-type\0owner-id\0main");
+        $foreignKey = $boundary->key('content.placements', 'nvl:content:placement-owner:'.$identity);
+        $ownedKey = 'nvl:content:placement-owner:'.$boundary->key('content.placements', $identity);
+        $foreignLock = Cache::lock($foreignKey, 10);
+        expect($foreignLock->get())->toBeTrue();
+
+        try {
+            $result = app(ContentPlacementOwnerLock::class)->run('owner-type', 'owner-id', 'main', static function () use ($ownedKey, $foreignKey): string {
+                expect(Cache::lock($ownedKey, 10)->get())->toBeFalse()
+                    ->and(Cache::lock($foreignKey, 10)->get())->toBeFalse();
+
+                return 'placed';
+            });
+            expect($result)->toBe('placed');
+        } finally {
+            $foreignLock->release();
+        }
     });
 });
 

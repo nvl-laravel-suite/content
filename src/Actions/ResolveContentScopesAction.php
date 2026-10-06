@@ -140,7 +140,7 @@ final readonly class ResolveContentScopesAction
         }
 
         $maximumScopes = ContentConfiguration::positiveInteger(
-            'content.rendering.scope_resolution.maximum_scopes',
+            'nvl-content.rendering.scope_resolution.maximum_scopes',
             25,
         );
 
@@ -187,11 +187,11 @@ final readonly class ResolveContentScopesAction
     private function limit(?int $requested): int
     {
         $default = ContentConfiguration::positiveInteger(
-            'content.rendering.scope_resolution.limit',
+            'nvl-content.rendering.scope_resolution.limit',
             250,
         );
         $maximum = ContentConfiguration::positiveInteger(
-            'content.rendering.scope_resolution.maximum_limit',
+            'nvl-content.rendering.scope_resolution.maximum_limit',
             1_000,
         );
         $limit = $requested ?? $default;

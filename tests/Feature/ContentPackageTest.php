@@ -184,10 +184,10 @@ it('creates publishes places and renders a sanitized translatable composition', 
     );
     $rendered = $composition->blocks[0];
     config()->set([
-        'content.locales.available' => ['en', 'bg', 'de'],
-        'translatable.locales' => ['en', 'bg', 'de'],
-        'translatable.fallback_locales' => ['bg'],
-        'translatable.default_locale' => 'en',
+        'nvl-content.locales.available' => ['en', 'bg', 'de'],
+        'nvl-translatable.locales' => ['en', 'bg', 'de'],
+        'nvl-translatable.fallback_locales' => ['bg'],
+        'nvl-translatable.default_locale' => 'en',
     ]);
     $snapshot = app(ContentSnapshotService::class)->capture(
         $owner,
@@ -623,8 +623,8 @@ it('enforces private media uploader ownership', function (): void {
 });
 
 it('keeps routes disabled by default and reports a healthy installation', function (): void {
-    expect(config('content.routes.management.enabled'))->toBeFalse()
-        ->and(config('content.routes.public.enabled'))->toBeFalse();
+    expect(config('nvl-content.routes.management.enabled'))->toBeFalse()
+        ->and(config('nvl-content.routes.public.enabled'))->toBeFalse();
 
     $this->artisan('nvl:content:doctor', ['--strict' => true, '--format' => 'json'])
         ->assertSuccessful()
@@ -818,10 +818,10 @@ it('loads deterministic definition files and guards custom view destinations', f
             ], JSON_THROW_ON_ERROR),
         );
         config()->set([
-            'content.definitions' => [],
-            'content.definition_paths' => [$definitionRoot],
-            'content.allowed_definition_roots' => [$temporary],
-            'content.view_publishing.allowed_roots' => [$viewRoot],
+            'nvl-content.definitions' => [],
+            'nvl-content.definition_paths' => [$definitionRoot],
+            'nvl-content.allowed_definition_roots' => [$temporary],
+            'nvl-content.view_publishing.allowed_roots' => [$viewRoot],
         ]);
         $definitions = app(ContentDefinitionLoader::class)->load();
 
@@ -856,15 +856,15 @@ it('loads deterministic definition files and guards custom view destinations', f
             '--path' => $temporary.'/outside',
         ]))->toThrow(InvalidArgumentException::class);
 
-        config()->set('content.view_publishing.allowed_roots', []);
+        config()->set('nvl-content.view_publishing.allowed_roots', []);
         expect(fn () => $this->artisan('nvl:content:views:publish', [
             '--path' => $destination,
         ])->run())->toThrow(InvalidArgumentException::class);
-        config()->set('content.view_publishing.allowed_roots', [$temporary.'/missing-root']);
+        config()->set('nvl-content.view_publishing.allowed_roots', [$temporary.'/missing-root']);
         expect(fn () => $this->artisan('nvl:content:views:publish', [
             '--path' => $temporary.'/missing-root/views',
         ])->run())->toThrow(InvalidArgumentException::class);
-        config()->set('content.view_publishing.allowed_roots', [$viewRoot]);
+        config()->set('nvl-content.view_publishing.allowed_roots', [$viewRoot]);
 
         $symlink = $viewRoot.'/linked-outside';
         symlink($outsideViewRoot, $symlink);
@@ -884,14 +884,14 @@ it('loads deterministic definition files and guards custom view destinations', f
 
 it('exposes independently configurable authorized management and public APIs', function (): void {
     config()->set([
-        'content.routes.management.enabled' => true,
-        'content.routes.management.prefix' => 'api/internal/content-manager',
-        'content.routes.management.name' => 'consumer.content.management',
-        'content.routes.management.middleware' => [],
-        'content.routes.public.enabled' => true,
-        'content.routes.public.prefix' => 'api/site-content',
-        'content.routes.public.name' => 'consumer.content.public',
-        'content.routes.public.middleware' => [],
+        'nvl-content.routes.management.enabled' => true,
+        'nvl-content.routes.management.prefix' => 'api/internal/content-manager',
+        'nvl-content.routes.management.name' => 'consumer.content.management',
+        'nvl-content.routes.management.middleware' => [],
+        'nvl-content.routes.public.enabled' => true,
+        'nvl-content.routes.public.prefix' => 'api/site-content',
+        'nvl-content.routes.public.name' => 'consumer.content.public',
+        'nvl-content.routes.public.middleware' => [],
     ]);
     require __DIR__.'/../../routes/api.php';
     app('router')->getRoutes()->refreshNameLookups();
@@ -981,7 +981,7 @@ it('exposes independently configurable authorized management and public APIs', f
         ],
     )
         ->assertCreated()
-        ->assertJsonPath('data.ownerType', 'page')
+        ->assertJsonPath('data.ownerType', TestContentOwner::class)
         ->assertJsonPath('data.ownerId', $owner->id)
         ->assertJsonPath('data.group', 'main');
     $placementId = $placement->json('data.id');
@@ -998,7 +998,7 @@ it('exposes independently configurable authorized management and public APIs', f
         ->assertJsonPath('data.0.revision', 1);
     $this->getJson("/api/internal/content-manager/owners/page/{$owner->id}/groups/main/editor")
         ->assertOk()
-        ->assertJsonPath('data.ownerType', 'page')
+        ->assertJsonPath('data.ownerType', TestContentOwner::class)
         ->assertJsonPath('data.ownerId', $owner->id)
         ->assertJsonPath('data.group', 'main')
         ->assertJsonPath('data.placementLimit', 1_000)
@@ -1311,25 +1311,25 @@ it('binds snapshots to owners and rejects missing parents and cycles', function 
 
     expect($nested->blocks[0]->children)->toHaveCount(1);
 
-    config()->set('content.placements.maximum_per_group', 1);
+    config()->set('nvl-content.placements.maximum_per_group', 1);
     expect(fn () => app(ContentSnapshotService::class)->render(
         $snapshotFor([$root, $child]),
         'en',
         $actor,
     ))->toThrow(InvalidArgumentException::class);
-    config()->set('content.placements.maximum_per_group', 1_000);
+    config()->set('nvl-content.placements.maximum_per_group', 1_000);
 
     $withoutView = ContentCompositionSnapshotBlockData::from([
         ...$root->toArray(),
         'definition_view' => null,
     ]);
-    config()->set('content.rendering.default_view', '');
+    config()->set('nvl-content.rendering.default_view', '');
     expect(fn () => app(ContentSnapshotService::class)->render(
         $snapshotFor([$withoutView]),
         'en',
         $actor,
     ))->toThrow(InvalidArgumentException::class);
-    config()->set('content.rendering.default_view', 'missing::content-view');
+    config()->set('nvl-content.rendering.default_view', 'missing::content-view');
     expect(fn () => app(ContentSnapshotService::class)->render(
         $snapshotFor([$withoutView]),
         'en',
@@ -1344,7 +1344,7 @@ it('binds snapshots to owners and rejects missing parents and cycles', function 
         ),
         $actor,
     );
-    config()->set('content.rendering.default_view', 'nvl-content::blocks.default');
+    config()->set('nvl-content.rendering.default_view', 'nvl-content::blocks.default');
 
     expect(app(ContentSnapshotService::class)->capture(
         $owner,
@@ -1411,7 +1411,7 @@ it('lists definitions and safely unplaces leaf nodes before deleting blocks', fu
         ContentPlacementChanged::class,
         static fn (ContentPlacementChanged $event): bool => $event->placementId === $child->id
             && $event->event === ContentPlacementEvent::Deleted
-            && $event->ownerType === 'page'
+            && $event->ownerType === TestContentOwner::class
             && $event->ownerId === $owner->id
             && $event->group === 'default'
             && $event->blockId === $block->id,
@@ -1510,7 +1510,7 @@ it('preserves localized media association identity and returns typed private pro
 it('serves a rendered private media URL when a system actor is not the uploader', function (): void {
     Route::get('/media/private/{owner}/{media}', [MediaAssetController::class, 'showPrivate'])
         ->middleware(['signed', SubstituteBindings::class])
-        ->name('media.private.show');
+        ->name('nvl.media.private.show');
 
     $private = Media::factory()->create([
         'mime_type' => 'image/jpeg',
@@ -1567,7 +1567,7 @@ it('serves a rendered private media URL when a system actor is not the uploader'
 });
 
 it('fails closed for invalid route middleware unsafe URLs and unbounded definition discovery', function (): void {
-    config()->set('content.routes.management.middleware', ['api', null]);
+    config()->set('nvl-content.routes.management.middleware', ['api', null]);
     expect(fn () => ContentRouteConfiguration::middleware('management'))
         ->toThrow(InvalidArgumentException::class);
 
@@ -1611,17 +1611,17 @@ it('fails closed for invalid route middleware unsafe URLs and unbounded definiti
         File::put($temporary.'/a.content.json', '{"a":{"name":"A","schema":{"fields":[]}}}');
         File::put($temporary.'/b.content.json', '{"b":{"name":"B","schema":{"fields":[]}}}');
         config()->set([
-            'content.definition_paths' => [$temporary],
-            'content.allowed_definition_roots' => [$temporary],
-            'content.definition_limits.maximum_files' => 1,
+            'nvl-content.definition_paths' => [$temporary],
+            'nvl-content.allowed_definition_roots' => [$temporary],
+            'nvl-content.definition_limits.maximum_files' => 1,
         ]);
 
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);
 
         config()->set([
-            'content.definition_paths' => [],
-            'content.required_definition_paths' => [$temporary.'/missing'],
+            'nvl-content.definition_paths' => [],
+            'nvl-content.required_definition_paths' => [$temporary.'/missing'],
         ]);
         expect(fn () => app(ContentDefinitionLoader::class)->load())
             ->toThrow(InvalidArgumentException::class);

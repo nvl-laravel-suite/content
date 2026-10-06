@@ -185,11 +185,11 @@ final class ContentJsonSchemaBuilder
         $minimum = $field->setting('min_length');
         $defaultMaximum = $field->type === 'rich_text'
             ? ContentConfiguration::positiveInteger(
-                'content.rich_text.maximum_input_length',
+                'nvl-content.rich_text.maximum_input_length',
                 250_000,
             )
             : ContentConfiguration::positiveInteger(
-                'content.validation.maximum_string_length',
+                'nvl-content.validation.maximum_string_length',
                 100_000,
             );
         $maximum = $field->setting(
@@ -278,8 +278,8 @@ final class ContentJsonSchemaBuilder
             'max_items',
             ContentConfiguration::positiveInteger(
                 $field->type === 'media_collection'
-                    ? 'content.media.maximum_per_field'
-                    : 'content.validation.maximum_items',
+                    ? 'nvl-content.media.maximum_per_field'
+                    : 'nvl-content.validation.maximum_items',
                 $field->type === 'media_collection' ? 50 : 500,
             ),
         );

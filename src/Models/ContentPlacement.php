@@ -16,8 +16,8 @@ use Nvl\Content\Database\Factories\ContentPlacementFactory;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Relations\StringBelongsTo;
 use Nvl\Content\Support\ContentConfiguration;
-use Nvl\Media\Contracts\HasMedia;
-use Nvl\Media\Traits\InteractsWithMedia;
+use Nvl\Media\Contracts\HasNvlMedia;
+use Nvl\Media\Traits\InteractsWithNvlMedia;
 use Nvl\Support\Config\PackageStorage;
 
 /**
@@ -43,7 +43,7 @@ use Nvl\Support\Config\PackageStorage;
  *
  * @api
  */
-final class ContentPlacement extends Model implements HasMedia
+final class ContentPlacement extends Model implements HasNvlMedia
 {
     use GuardsTenantOwnership;
 
@@ -51,7 +51,7 @@ final class ContentPlacement extends Model implements HasMedia
     use HasFactory;
 
     use HasUuids;
-    use InteractsWithMedia;
+    use InteractsWithNvlMedia;
 
     public const string TENANT_RESOURCE = 'content.placements';
 

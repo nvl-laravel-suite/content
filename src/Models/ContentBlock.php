@@ -25,8 +25,8 @@ use Nvl\Filterable\Definitions\FilterSchema;
 use Nvl\Filterable\Definitions\SortDefinition;
 use Nvl\Filterable\Enums\FilterOperator;
 use Nvl\Filterable\Enums\FilterValueType;
-use Nvl\Media\Contracts\HasMedia;
-use Nvl\Media\Traits\InteractsWithMedia;
+use Nvl\Media\Contracts\HasNvlMedia;
+use Nvl\Media\Traits\InteractsWithNvlMedia;
 use Nvl\Support\Config\PackageStorage;
 use Nvl\Translatable\Contracts\TranslatableModel;
 use Nvl\Translatable\Enums\TranslationMutationPolicy;
@@ -65,7 +65,7 @@ use Nvl\Translatable\Translatable;
  *
  * @api
  */
-final class ContentBlock extends Model implements HasMedia, TranslatableModel
+final class ContentBlock extends Model implements HasNvlMedia, TranslatableModel
 {
     use GuardsTenantOwnership;
 
@@ -73,7 +73,7 @@ final class ContentBlock extends Model implements HasMedia, TranslatableModel
     use HasFactory;
 
     use HasUuids;
-    use InteractsWithMedia;
+    use InteractsWithNvlMedia;
     use SoftDeletes;
     use Translatable;
 

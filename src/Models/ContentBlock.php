@@ -71,6 +71,7 @@ final class ContentBlock extends Model implements HasMedia, TranslatableModel
 
     /** @use HasFactory<ContentBlockFactory> */
     use HasFactory;
+
     use HasUuids;
     use InteractsWithMedia;
     use SoftDeletes;

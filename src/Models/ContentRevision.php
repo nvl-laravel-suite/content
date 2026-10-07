@@ -37,6 +37,7 @@ final class ContentRevision extends Model
 
     /** @use HasFactory<ContentRevisionFactory> */
     use HasFactory;
+
     use HasUuids;
 
     public const string TENANT_RESOURCE = 'content.revisions';

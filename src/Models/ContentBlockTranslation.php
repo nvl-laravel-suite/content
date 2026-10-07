@@ -33,6 +33,7 @@ final class ContentBlockTranslation extends Model
 
     /** @use HasFactory<ContentBlockTranslationFactory> */
     use HasFactory;
+
     use HasUuids;
 
     public const string TENANT_RESOURCE = 'content.translations';

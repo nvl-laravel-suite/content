@@ -47,6 +47,7 @@ final class ContentPlacement extends Model implements HasMedia
 
     /** @use HasFactory<ContentPlacementFactory> */
     use HasFactory;
+
     use HasUuids;
     use InteractsWithMedia;
 

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Nvl\Content\Providers;
 
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Content\Actions\ApplyContentDefinitionMigrationsAction;
@@ -117,6 +116,7 @@ use Nvl\Content\Tenancy\ContentResourceRegistrar;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
 use Nvl\Support\Doctor\PackageDoctorContributor;
 use Nvl\Support\Globals\GlobalNames;
+use Nvl\Support\OwnerRegistry;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Support\Providers\TenantServiceProvider;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
@@ -325,18 +325,7 @@ final class ContentServiceProvider extends ServiceProvider
      */
     private function registerPlacementMorphAlias(): void
     {
-        if (in_array(ContentPlacement::class, Relation::morphMap(), true)) {
-            return;
-        }
-
-        $alias = 'nvl-content-placement';
-        $existing = Relation::getMorphedModel($alias);
-
-        if ($existing !== null && $existing !== ContentPlacement::class) {
-            throw new InvalidArgumentException("Content placement morph alias [{$alias}] is already in use.");
-        }
-
-        Relation::morphMap([$alias => ContentPlacement::class], merge: true);
+        $this->app->make(OwnerRegistry::class)->registerPackage('nvl-content-placement', ContentPlacement::class, package: 'content');
     }
 
     private function registerFieldTypes(ContentFieldTypeRegistry $registry): void

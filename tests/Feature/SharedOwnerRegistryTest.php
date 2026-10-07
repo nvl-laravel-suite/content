@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Nvl\Content\Providers\ContentServiceProvider;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Tests\Fixtures\TestContentOwner;
 use Nvl\Content\Tests\Fixtures\TestIntegerContentOwner;
+use Nvl\Support\Globals\GlobalNames;
 
 beforeEach(function (): void {
     $this->originalOwnerMorphMap = Relation::morphMap();
@@ -30,4 +32,14 @@ it('rejects a content capability key that differs from its canonical stored owne
 
     expect(fn () => app()->build(ContentOwnerRegistry::class)->register('page.detail', 'page'))
         ->toThrow(InvalidArgumentException::class);
+});
+
+it('preserves a host placement alias clash and reports it without aborting package boot', function (): void {
+    Relation::morphMap(['nvl-content-placement' => TestContentOwner::class], false);
+    $map = Relation::morphMap();
+    $provider = new ContentServiceProvider(app());
+    (new ReflectionMethod($provider, 'registerPlacementMorphAlias'))->invoke($provider);
+    $diagnostics = app(GlobalNames::class)->diagnostics();
+    expect(Relation::morphMap())->toBe($map)
+        ->and(collect($diagnostics)->filter(static fn ($check): bool => str_contains($check->message, '[nvl-content-placement]')))->toHaveCount(1);
 });

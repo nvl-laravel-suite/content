@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Nvl\Content\Database\Factories\ContentPlacementFactory;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Content\Relations\StringBelongsTo;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Media\Contracts\HasMedia;
 use Nvl\Media\Traits\InteractsWithMedia;
@@ -100,6 +102,26 @@ final class ContentPlacement extends Model implements HasMedia
             'overrides' => 'array',
             'revision' => 'integer',
         ];
+    }
+
+    /**
+     * Keep inverse polymorphic existence queries portable across native owner key types.
+     *
+     * @template TRelatedModel of Model
+     * @template TDeclaringModel of Model
+     *
+     * @param  Builder<TRelatedModel>  $query
+     * @param  TDeclaringModel  $child
+     * @param  string  $foreignKey
+     * @param  string  $ownerKey
+     * @param  string  $relation
+     * @return BelongsTo<TRelatedModel, TDeclaringModel>
+     */
+    protected function newBelongsTo(Builder $query, Model $child, $foreignKey, $ownerKey, $relation): BelongsTo
+    {
+        return $foreignKey === 'owner_id'
+            ? new StringBelongsTo($query, $child, $foreignKey, $ownerKey, $relation)
+            : parent::newBelongsTo($query, $child, $foreignKey, $ownerKey, $relation);
     }
 
     /**

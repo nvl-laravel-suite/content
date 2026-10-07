@@ -9,6 +9,7 @@ use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\Mutations\CreateContentBlockData;
 use Nvl\Content\Facades\Content;
+use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Tests\Fixtures\TestIntegerContentOwner;
 use Nvl\Content\Traits\HasContent;
 
@@ -53,7 +54,8 @@ it('supports integer owner keys across relation reads writes and existence queri
         ->and(TestIntegerContentOwner::query()
             ->whereHas('contentPlacements')
             ->pluck('id')
-            ->all())->toBe([$owner->getKey()]);
+            ->all())->toBe([$owner->getKey()])
+        ->and(ContentPlacement::query()->whereHasMorph('owner', [TestIntegerContentOwner::class])->pluck('id')->all())->toBe([$placement->getKey()]);
 });
 
 it('handles absent keys and rejects compound owner identifiers', function (): void {

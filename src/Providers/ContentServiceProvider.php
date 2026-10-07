@@ -199,7 +199,10 @@ final class ContentServiceProvider extends ServiceProvider
         $this->app->singleton(ContentJsonSchemaBuilder::class);
         $this->app->scoped(ContentLocalizedValues::class);
         $this->app->singleton(ContentOwnerRegistry::class);
-        $this->app->alias(ContentOwnerRegistry::class, ContentOwnerRegistrar::class);
+        $names = $this->app->make(GlobalNames::class);
+        $exists = fn (string $name): bool => $this->app->bound($name);
+        $install = fn (string $name) => $this->app->alias(ContentOwnerRegistry::class, $name);
+        $names->reserve('content', 'container', ContentOwnerRegistrar::class, $exists, $install);
         $this->app->singleton(ContentReferenceRegistry::class);
         $this->app->singleton(ContentSchemaCompiler::class);
         $this->app->scopedIf(Content::class);

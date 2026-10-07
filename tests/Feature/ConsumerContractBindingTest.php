@@ -37,6 +37,7 @@ use Nvl\Content\Content;
 use Nvl\Content\Contracts\ApplyContentDefinitionMigrationsContract;
 use Nvl\Content\Contracts\ArchiveContentBlockContract;
 use Nvl\Content\Contracts\ContentContract;
+use Nvl\Content\Contracts\ContentOwnerRegistrar;
 use Nvl\Content\Contracts\CreateContentBlockContract;
 use Nvl\Content\Contracts\DeleteContentBlockContract;
 use Nvl\Content\Contracts\DeleteContentPlacementContract;
@@ -206,6 +207,23 @@ test('provider registration preserves early interface bindings in a second nativ
         foreach ($hosts as $contract => $host) {
             expect($consumer->make($contract))->toBe($host);
         }
+    } finally {
+        Container::setInstance($this->app);
+        $consumer->flush();
+    }
+});
+
+test('preserves a host Content owner registrar and records its container collision', function (): void {
+    $consumer = new Application($this->app->basePath());
+    $consumer->instance('config', new Repository($this->app->make('config')->all()));
+    $consumer->instance('env', 'testing');
+    $consumer->register(FilesystemServiceProvider::class);
+    $host = Mockery::mock(ContentOwnerRegistrar::class);
+    $consumer->instance(ContentOwnerRegistrar::class, $host);
+    try {
+        $consumer->register(ContentServiceProvider::class);
+        expect($consumer->make(ContentOwnerRegistrar::class))->toBe($host)
+            ->and($consumer['config']->get('nvl-core.configuration.global_names'))->not->toBeEmpty();
     } finally {
         Container::setInstance($this->app);
         $consumer->flush();

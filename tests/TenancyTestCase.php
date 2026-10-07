@@ -12,6 +12,7 @@ use Nvl\Content\Tests\Fixtures\TenantScenario;
 use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Filterable\Providers\FilterableServiceProvider;
 use Nvl\Media\Providers\MediaServiceProvider;
+use Nvl\Support\Providers\LocaleServiceProvider;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Tenancy\Providers\TenancyServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
@@ -29,7 +30,7 @@ abstract class TenancyTestCase extends Orchestra
         return [
             DataServiceProvider::class,
             FilterableServiceProvider::class,
-            SupportServiceProvider::class,
+            LocaleServiceProvider::class, SupportServiceProvider::class,
             TenancyServiceProvider::class,
             TranslatableServiceProvider::class,
             MediaServiceProvider::class,

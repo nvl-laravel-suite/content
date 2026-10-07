@@ -2,7 +2,6 @@
     "schema_version": 1,
     "configs": {
         "nvl-content": {
-            "required": [],
             "common": [
                 "allowed_definition_roots",
                 "authorization.callback",

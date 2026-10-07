@@ -74,9 +74,9 @@ use Nvl\Media\Http\Controllers\MediaAssetController;
 use Nvl\Media\Models\Media;
 use Nvl\Media\Models\MediaAssociation;
 use Nvl\Media\Services\MediaPathResolver;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
-use Nvl\Tenancy\Services\TenantBoundary;
 
 beforeEach(function (): void {
     Storage::fake('public');

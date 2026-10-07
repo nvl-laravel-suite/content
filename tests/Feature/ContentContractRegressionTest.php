@@ -80,9 +80,9 @@ use Nvl\Content\Validation\ContentValueValidator;
 use Nvl\Filterable\Data\FilterCriterion;
 use Nvl\Filterable\Data\FilterSet;
 use Nvl\Filterable\Enums\FilterOperator;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
-use Nvl\Tenancy\Services\TenantBoundary;
 
 beforeEach(function (): void {
     $this->contentContractMorphMap = Relation::morphMap();

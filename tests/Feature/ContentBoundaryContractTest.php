@@ -47,8 +47,8 @@ use Nvl\Media\Enums\MediaType;
 use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Models\Media;
 use Nvl\Support\OwnerRegistry;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
-use Nvl\Tenancy\Services\TenantBoundary;
 
 it('round trips typed composition snapshots through the Eloquent cast', function (): void {
     $model = new class extends Model {};

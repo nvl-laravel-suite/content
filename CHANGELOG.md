@@ -5,6 +5,14 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [5.0.1] - 2026-10-08
+
+### Changed
+
+- Correct published-family verification and adoption guidance for local Dagger CI; runtime contracts are unchanged.
+- Preserve released migrations in upgrade guidance instead of advising edits to original creators.
+
+
 ## [5.0.0] - 2026-10-08
 
 ### Added

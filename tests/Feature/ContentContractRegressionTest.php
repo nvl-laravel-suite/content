@@ -80,7 +80,7 @@ use Nvl\Content\Validation\ContentValueValidator;
 use Nvl\Filterable\Data\FilterCriterion;
 use Nvl\Filterable\Data\FilterSet;
 use Nvl\Filterable\Enums\FilterOperator;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
@@ -2592,7 +2592,7 @@ it('exposes the registered reference aliases without resolving them', function (
         app(),
         app(ContentPayloadGuard::class),
         app(ConfigRepository::class),
-        app(TenantBoundary::class),
+        app(OwnershipBoundary::class),
         app(TenantResourceRegistry::class),
         app(TenantExtensionGuard::class),
     );

@@ -20,6 +20,7 @@ use Nvl\Content\Services\CanonicalJson;
 use Nvl\Content\Services\ContentDefinitionRegistry;
 use Nvl\Content\Services\ContentIdentityGuard;
 use Nvl\Content\Services\ContentMediaSynchronizer;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentPatch;
 use Nvl\Content\Services\ContentPayloadGuard;
 use Nvl\Content\Services\ContentRevisionRecorder;
@@ -36,6 +37,7 @@ use Nvl\Translatable\Services\TranslationWriter;
  */
 final readonly class CreateContentBlockAction implements CreateContentBlockContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentDefinitionRegistry $definitions,
@@ -51,6 +53,7 @@ final readonly class CreateContentBlockAction implements CreateContentBlockContr
         private DomainEventDispatcher $domainEvents,
     ) {}
 
+    /** Create a validated block and localized values on its canonical source. */
     public function execute(
         CreateContentBlockData $data,
         ContentActorData $actor,
@@ -137,7 +140,7 @@ final readonly class CreateContentBlockAction implements CreateContentBlockContr
                     );
                 }
 
-                $block = ContentBlock::query()->create([
+                $block = ContentModelRegistry::create([
                     'definition_id' => $lockedDefinition->id,
                     'key' => $data->key,
                     'scope' => $data->scope,

@@ -20,12 +20,14 @@ use Nvl\Media\Enums\MediaAbility;
 use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Models\Media;
 use Nvl\Media\Models\MediaAssociation;
+use Nvl\Media\Services\MediaModelRegistry;
 
 /**
  * Keeps Media associations aligned with normalized field IDs without owning binaries.
  */
 final readonly class ContentMediaSynchronizer
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentMediaReferences $references,
         private AttachMediaAction $attach,
@@ -134,7 +136,7 @@ final readonly class ContentMediaSynchronizer
             $collection = $this->collection($reference['path'], $reference['locale']);
             $key = $reference['id'].'|'.$collection;
             $desiredKeys[$key] = true;
-            $media = Media::query()->findOrFail($reference['id']);
+            $media = MediaModelRegistry::query()->findOrFail($reference['id']);
             $ability = $media->visibility === MediaVisibility::Public
                 ? MediaAbility::Reuse
                 : MediaAbility::Associate;

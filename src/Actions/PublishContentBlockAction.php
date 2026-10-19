@@ -20,6 +20,7 @@ use Nvl\Content\Services\ContentBlockPlacementSynchronizer;
 use Nvl\Content\Services\ContentDefinitionRegistry;
 use Nvl\Content\Services\ContentDefinitionVersionGuard;
 use Nvl\Content\Services\ContentMediaSynchronizer;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentRevisionRecorder;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Validation\ContentValueValidator;
@@ -32,6 +33,7 @@ use Nvl\Support\Events\DomainEventDispatcher;
  */
 final readonly class PublishContentBlockAction implements PublishContentBlockContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentDefinitionRegistry $definitions,
@@ -44,6 +46,7 @@ final readonly class PublishContentBlockAction implements PublishContentBlockCon
         private DomainEventDispatcher $domainEvents,
     ) {}
 
+    /** Publish an admitted block at its expected revision. */
     public function execute(
         ContentBlock|string $block,
         int $expectedRevision,
@@ -51,9 +54,9 @@ final readonly class PublishContentBlockAction implements PublishContentBlockCon
     ): ContentBlock {
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
 
-        return DB::connection((new ContentBlock)->getConnectionName())
+        return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())
             ->transaction(function () use ($actor, $blockId, $expectedRevision): ContentBlock {
-                $model = ContentBlock::query()
+                $model = ContentModelRegistry::query()
                     ->with(['definition', 'translations'])
                     ->lockForUpdate()
                     ->findOrFail($blockId);

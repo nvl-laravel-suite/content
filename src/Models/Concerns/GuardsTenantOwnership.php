@@ -8,6 +8,7 @@ use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Enums\TenantResourceKind;
 use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
@@ -20,7 +21,9 @@ trait GuardsTenantOwnership
     protected static function bootGuardsTenantOwnership(): void
     {
         static::addGlobalScope('tenant-boundary', static function (Builder $query): void {
-            Container::getInstance()->make(TenantBoundary::class)->query($query, self::TENANT_RESOURCE);
+            if (! ContentOwnership::declared()) {
+                Container::getInstance()->make(TenantBoundary::class)->query($query, self::TENANT_RESOURCE);
+            }
         });
 
         static::creating(static function (Model $model): void {
@@ -59,6 +62,9 @@ trait GuardsTenantOwnership
         });
 
         static::updating(static function (Model $model): void {
+            if (ContentOwnership::declared()) {
+                return;
+            }
             if ($model->isDirty('tenant_id')) {
                 throw new TenantBoundaryViolation('Persisted Content ownership is immutable.');
             }

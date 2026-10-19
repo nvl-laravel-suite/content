@@ -3,10 +3,13 @@
 declare(strict_types=1);
 
 use Nvl\Content\Definitions\Tables\ContentTables;
+use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ConfiguredContentAuthorization;
 
 /** Complete runtime defaults; publication sections are declared in ../resources/config/sections.json. */
 return [
+    'models' => ['block' => ContentBlock::class],
+    'ownership' => ['owner_resources' => []],
     'connection' => null,
 
     'tables' => [

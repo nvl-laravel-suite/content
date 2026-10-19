@@ -15,8 +15,8 @@ use Nvl\Content\Data\ContentDefinitionMigrationResultData;
 use Nvl\Content\Data\ContentDefinitionMigrationResultItemData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Exceptions\StaleContentException;
-use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ContentBlockDefinitionMigrator;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
 
 /**
@@ -26,11 +26,13 @@ use Nvl\Content\Support\ContentConfiguration;
  */
 final readonly class ApplyContentDefinitionMigrationsAction implements ApplyContentDefinitionMigrationsContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentBlockDefinitionMigrator $migrator,
     ) {}
 
+    /** Migrate reviewed block versions under their actual source locks. */
     public function execute(
         ContentDefinitionMigrationPlanData $plan,
         ContentActorData $actor,
@@ -93,12 +95,12 @@ final readonly class ApplyContentDefinitionMigrationsAction implements ApplyCont
             ),
         );
 
-        return DB::connection((new ContentBlock)->getConnectionName())
+        return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())
             ->transaction(function () use ($actor, $targets): ContentDefinitionMigrationResultData {
                 $migrated = [];
 
                 foreach ($targets as $target) {
-                    $block = ContentBlock::withTrashed()
+                    $block = ContentModelRegistry::query()->withTrashed()
                         ->with(['definition', 'translations'])
                         ->lockForUpdate()
                         ->findOrFail($target->blockId);

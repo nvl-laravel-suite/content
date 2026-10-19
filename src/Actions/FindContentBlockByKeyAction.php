@@ -11,9 +11,9 @@ use Nvl\Content\Contracts\FindContentBlockByKeyContract;
 use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Enums\ContentAbility;
-use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Relations\ExactTextValueComparison;
 use Nvl\Content\Services\ContentIdentityGuard;
+use Nvl\Content\Services\ContentModelRegistry;
 
 /**
  * Finds one unambiguous editable block by its exact portable key.
@@ -22,6 +22,7 @@ use Nvl\Content\Services\ContentIdentityGuard;
  */
 final readonly class FindContentBlockByKeyAction implements FindContentBlockByKeyContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentIdentityGuard $identities,
@@ -33,7 +34,7 @@ final readonly class FindContentBlockByKeyAction implements FindContentBlockByKe
     public function execute(string $key, ContentActorData $actor): ContentBlockData
     {
         $this->identities->blockKey($key);
-        $query = ContentBlock::query()
+        $query = ContentModelRegistry::query()
             ->with(['definition', 'translations']);
         $driver = $query->getModel()->getConnection()->getDriverName();
         $wrappedKey = $query->getQuery()->getGrammar()->wrap(
@@ -49,7 +50,7 @@ final readonly class FindContentBlockByKeyAction implements FindContentBlockByKe
             ->get();
 
         if ($blocks->isEmpty()) {
-            throw (new ModelNotFoundException)->setModel(ContentBlock::class, [$key]);
+            throw (new ModelNotFoundException)->setModel(ContentModelRegistry::modelClass(), [$key]);
         }
 
         foreach ($blocks as $block) {

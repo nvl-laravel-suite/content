@@ -40,6 +40,7 @@ use Nvl\Support\Events\DomainEventDispatcher;
  */
 final readonly class ReorderContentPlacementsAction implements ReorderContentPlacementsContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentOwnerRegistry $owners,
@@ -65,6 +66,7 @@ final readonly class ReorderContentPlacementsAction implements ReorderContentPla
             1_000,
         );
         $proposal = $this->normalizeProposal($data, $maximum);
+        $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
         $this->owners->assertGroup($owner, $group);

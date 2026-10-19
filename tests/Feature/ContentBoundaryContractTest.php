@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -47,8 +46,7 @@ use Nvl\Media\Enums\MediaType;
 use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Models\Media;
 use Nvl\Support\OwnerRegistry;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
-use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 
 it('round trips typed composition snapshots through the Eloquent cast', function (): void {
     $model = new class extends Model {};
@@ -582,9 +580,7 @@ it('fails closed for invalid owner registrations identities and group declaratio
     $originalMorphMap = Relation::morphMap();
     $registry = new ContentOwnerRegistry(
         app(ContentIdentityGuard::class),
-        app(Repository::class),
-        app(TenantBoundary::class),
-        app(TenantResourceRegistry::class),
+        app(OwnershipBoundary::class),
         app(OwnerRegistry::class),
     );
     $plainModel = new class extends Model {};

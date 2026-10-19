@@ -24,6 +24,7 @@ use Nvl\Content\Validation\ContentValueValidator;
  */
 final readonly class ContentRenderer
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentOwnerRegistry $owners,
@@ -47,6 +48,7 @@ final readonly class ContentRenderer
         ContentActorData $actor,
         bool $publicOnly = true,
     ): RenderedContentCompositionData {
+        $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
         $this->owners->assertGroup($owner, $group);

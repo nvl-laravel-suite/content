@@ -14,6 +14,7 @@ use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Events\ContentBlockChanged;
 use Nvl\Content\Exceptions\StaleContentException;
 use Nvl\Content\Models\ContentBlock;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentRevisionRecorder;
 use Nvl\Support\Events\DomainEventDispatcher;
 
@@ -24,12 +25,14 @@ use Nvl\Support\Events\DomainEventDispatcher;
  */
 final readonly class ArchiveContentBlockAction implements ArchiveContentBlockContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentRevisionRecorder $revisions,
         private DomainEventDispatcher $domainEvents,
     ) {}
 
+    /** Archive an admitted block at its expected revision. */
     public function execute(
         ContentBlock|string $block,
         int $expectedRevision,
@@ -37,9 +40,9 @@ final readonly class ArchiveContentBlockAction implements ArchiveContentBlockCon
     ): ContentBlock {
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
 
-        return DB::connection((new ContentBlock)->getConnectionName())
+        return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())
             ->transaction(function () use ($actor, $blockId, $expectedRevision): ContentBlock {
-                $model = ContentBlock::query()->lockForUpdate()->findOrFail($blockId);
+                $model = ContentModelRegistry::query()->lockForUpdate()->findOrFail($blockId);
                 $this->authorization->authorize(ContentAbility::Archive, $actor, $model);
 
                 if ($model->revision !== $expectedRevision) {

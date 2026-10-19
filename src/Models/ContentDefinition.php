@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Nvl\Content\Casts\ContentSchemaCast;
 use Nvl\Content\Database\Factories\ContentDefinitionFactory;
 use Nvl\Content\Schema\ContentSchema;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Support\Config\PackageStorage;
 
@@ -75,11 +76,13 @@ final class ContentDefinition extends Model
         'sort_order' => 0,
     ];
 
+    /** Resolve the configured native table owned by this model. */
     public function getTable(): string
     {
         return ContentConfiguration::table('definitions');
     }
 
+    /** Resolve the actual package source connection. */
     public function getConnectionName(): ?string
     {
         return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
@@ -108,7 +111,7 @@ final class ContentDefinition extends Model
      */
     public function blocks(): HasMany
     {
-        return $this->hasMany(ContentBlock::class, 'definition_id');
+        return $this->hasMany(ContentModelRegistry::modelClass(), 'definition_id');
     }
 
     /**

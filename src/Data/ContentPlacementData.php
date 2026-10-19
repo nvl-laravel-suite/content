@@ -23,6 +23,8 @@ final class ContentPlacementData extends Data
     use DataTransform;
 
     /**
+     * Retain the canonical services and immutable inputs for this workflow.
+     *
      * @param  array<string, mixed>  $overrides
      */
     public function __construct(
@@ -54,6 +56,26 @@ final class ContentPlacementData extends Data
             ? $placement->getRelation('block')
             : null;
 
+        return self::project($placement, $relatedBlock instanceof ContentBlock ? ContentBlockData::fromModel($relatedBlock) : null);
+    }
+
+    /**
+     * Use only after the batch reader has scoped SQL and authorized every canonical host.
+     *
+     * @internal
+     */
+    public static function fromBatchProjection(ContentPlacement $placement): self
+    {
+        $block = $placement->getRelation('block');
+        if (! $block instanceof ContentBlock) {
+            throw new \InvalidArgumentException('Content batch placements require their scoped block.');
+        }
+
+        return self::project($placement, ContentBlockData::fromBatchProjection($block));
+    }
+
+    private static function project(ContentPlacement $placement, ?ContentBlockData $block): self
+    {
         return new self(
             id: $placement->id,
             blockId: $placement->content_block_id,
@@ -67,9 +89,7 @@ final class ContentPlacementData extends Data
             isVisible: $placement->is_visible,
             overrides: is_array($placement->overrides) ? $placement->overrides : [],
             revision: $placement->revision,
-            block: $relatedBlock instanceof ContentBlock
-                ? ContentBlockData::fromModel($relatedBlock)
-                : null,
+            block: $block,
         );
     }
 }

@@ -465,6 +465,28 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Content\\Contracts\\ContentSnapshotIntegrity": {
+            "kind": "interface",
+            "file": "src/Contracts/ContentSnapshotIntegrity.php",
+            "methods": [
+                "assertValid",
+                "digest",
+                "rebind"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\ContentStorage": {
+            "kind": "interface",
+            "file": "src/Contracts/ContentStorage.php",
+            "methods": [
+                "blocks",
+                "connection",
+                "owned"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Content\\Contracts\\CreateContentBlockContract": {
             "kind": "interface",
             "file": "src/Contracts/CreateContentBlockContract.php",
@@ -596,6 +618,28 @@
             "file": "src/Contracts/ListOwnerContentPlacementSummariesContract.php",
             "methods": [
                 "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\OwnershipContentCatalogCopyAccess": {
+            "kind": "interface",
+            "file": "src/Contracts/OwnershipContentCatalogCopyAccess.php",
+            "methods": [
+                "assertAllowed",
+                "canonicalSource"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Contracts\\OwnershipSafeContentReferenceResolver": {
+            "kind": "interface",
+            "file": "src/Contracts/OwnershipSafeContentReferenceResolver.php",
+            "methods": [
+                "alias",
+                "display",
+                "exists",
+                "ownershipRecord"
             ],
             "properties": [],
             "constants": []
@@ -798,6 +842,7 @@
                 "group",
                 "ownerId",
                 "ownerType",
+                "ownershipContext",
                 "tenantId",
                 "version"
             ],
@@ -1376,7 +1421,8 @@
             "file": "database/factories/ContentBlockFactory.php",
             "methods": [
                 "definition",
-                "forDefinition"
+                "forDefinition",
+                "modelName"
             ],
             "properties": [],
             "constants": []
@@ -1625,6 +1671,7 @@
             "file": "src/Events/ContentBlockChanged.php",
             "methods": [
                 "__construct",
+                "ownershipJobEnvelope",
                 "schemaVersion"
             ],
             "properties": [
@@ -1641,6 +1688,7 @@
             "file": "src/Events/ContentPlacementChanged.php",
             "methods": [
                 "__construct",
+                "ownershipJobEnvelope",
                 "schemaVersion"
             ],
             "properties": [
@@ -1942,11 +1990,34 @@
             ],
             "constants": []
         },
+        "Nvl\\Content\\Services\\ContentModelRegistry": {
+            "kind": "class",
+            "file": "src/Services/ContentModelRegistry.php",
+            "methods": [
+                "__construct",
+                "blockClass",
+                "projectionColumns"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Content\\Services\\ContentRenderResources": {
             "kind": "class",
             "file": "src/Services/ContentRenderResources.php",
             "methods": [
                 "reference"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Services\\ContentSnapshotIntegrity": {
+            "kind": "class",
+            "file": "src/Services/ContentSnapshotIntegrity.php",
+            "methods": [
+                "__construct",
+                "assertValid",
+                "digest",
+                "rebind"
             ],
             "properties": [],
             "constants": []

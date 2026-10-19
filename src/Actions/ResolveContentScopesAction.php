@@ -18,6 +18,7 @@ use Nvl\Content\Exceptions\ContentScopeOverflowException;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ContentLocalePolicy;
 use Nvl\Content\Services\ContentLocalizedValues;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 
@@ -28,6 +29,7 @@ use Nvl\Content\Support\ContentConfiguration;
  */
 final readonly class ResolveContentScopesAction implements ResolveContentScopesContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentLocalePolicy $locales,
@@ -66,7 +68,7 @@ final readonly class ResolveContentScopesAction implements ResolveContentScopesC
             ],
         );
 
-        $query = ContentBlock::query()
+        $query = ContentModelRegistry::query()
             ->with(['definition', 'translations'])
             ->published()
             ->where(function (Builder $query) use ($scopes): void {

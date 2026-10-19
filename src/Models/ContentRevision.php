@@ -11,8 +11,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Content\Database\Factories\ContentRevisionFactory;
 use Nvl\Content\Enums\ContentRevisionEvent;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Content\Models\Concerns\OwnsContentChild;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Support\Config\PackageStorage;
+use Nvl\Support\Ownership\Contracts\Ownable;
 
 /**
  * Immutable audit snapshot created by public block mutations.
@@ -31,7 +34,7 @@ use Nvl\Support\Config\PackageStorage;
  *
  * @nvl-consumer-read id
  */
-final class ContentRevision extends Model
+final class ContentRevision extends Model implements Ownable
 {
     use GuardsTenantOwnership;
 
@@ -39,6 +42,7 @@ final class ContentRevision extends Model
     use HasFactory;
 
     use HasUuids;
+    use OwnsContentChild;
 
     public const string TENANT_RESOURCE = 'content.revisions';
 
@@ -52,11 +56,13 @@ final class ContentRevision extends Model
         'actor_id',
     ];
 
+    /** Resolve the configured native table owned by this model. */
     public function getTable(): string
     {
         return ContentConfiguration::table('revisions');
     }
 
+    /** Resolve the actual package source connection. */
     public function getConnectionName(): ?string
     {
         return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
@@ -79,7 +85,7 @@ final class ContentRevision extends Model
      */
     public function block(): BelongsTo
     {
-        return $this->belongsTo(ContentBlock::class, 'content_block_id');
+        return $this->belongsTo(ContentModelRegistry::modelClass(), 'content_block_id');
     }
 
     /**

@@ -1509,3 +1509,14 @@ php artisan nvl:content:doctor --strict
 ## License
 
 NVL Content is open-sourced under the MIT License.
+
+
+### Optional ownership and configured Content models
+
+Ordinary Content installations keep the unscoped base models and require neither Ownership nor Tenancy. An owning application installs `nvl/ownership` and sets `nvl-content.models.block` to its concrete `ContentBlock` subclass. Return `OwnershipDefinition::column(Company::class, 'company_id')` or an exclusive native primary pivot from `ownershipDefinition()`; keep native query/persistence hooks, required casts and UUID identity. Add the actual owner FK or primary pivot in an application migration. There is no inferred actor, default company or generic owner pivot.
+
+Declare host resource keys in `nvl-content.ownership.owner_resources`. Blocks/locales/revisions, placement hosts, block references and parent composition tuples must agree on the primary owner. Use canonical host models and package Actions; raw capability-pivot writes are unsupported. When a host combines `HasContent` and `HasOwnership`, select `HasContent::delete insteadof HasOwnership`; the Content deletion service holds the ownership lease and rolls back cleanup on cancellation.
+
+Run the reviewed `content` adoption participant with explicit mappings for every historical row before enabling traffic. Persisted adoption markers keep prepared/adopted storage closed if its runtime is disabled or removed. Definition code remains an unscoped deployment catalog; its mutations require explicit central execution in an ownership-enabled installation. Dynamic reference resolvers implement `OwnershipSafeContentReferenceResolver` and return the exact persisted native record for the requested identifier.
+
+New snapshots use format 3 with the complete native owner reference and a canonical checksum. Snapshot data is never an admission capability: rendering reloads the canonical owner and applies current authorization. Legacy snapshots require reviewed migration, with no automatic render fallback. `ContentStorage` and `ContentSnapshotIntegrity` are focused package-integration contracts; snapshot hashing alone does not authorize a read, import or migration. Catalog copies verify a current recipient grant, rebind the snapshot identity and require explicit Media mappings; application reference fields are rejected until a dedicated importer provides total target mappings.

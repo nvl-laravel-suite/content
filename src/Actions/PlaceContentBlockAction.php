@@ -19,6 +19,7 @@ use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Services\ContentIdentityGuard;
 use Nvl\Content\Services\ContentMediaSynchronizer;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentPlacementValidator;
@@ -32,6 +33,7 @@ use Nvl\Support\Events\DomainEventDispatcher;
  */
 final readonly class PlaceContentBlockAction implements PlaceContentBlockContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentOwnerRegistry $owners,
@@ -54,7 +56,8 @@ final readonly class PlaceContentBlockAction implements PlaceContentBlockContrac
     ): ContentPlacement {
         $model = $block instanceof ContentBlock
             ? $block->loadMissing(['definition', 'translations'])
-            : ContentBlock::query()->with(['definition', 'translations'])->findOrFail($block);
+            : ContentModelRegistry::query()->with(['definition', 'translations'])->findOrFail($block);
+        $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
         $this->owners->assertGroup($owner, $group);
@@ -77,7 +80,7 @@ final readonly class PlaceContentBlockAction implements PlaceContentBlockContrac
                     $ownerType,
                 ): ContentPlacement {
                     $this->owners->id($owner);
-                    $lockedBlock = ContentBlock::query()
+                    $lockedBlock = ContentModelRegistry::query()
                         ->with(['definition', 'translations'])
                         ->lockForUpdate()
                         ->findOrFail($model->id);

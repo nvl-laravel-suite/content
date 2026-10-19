@@ -20,6 +20,7 @@ use Nvl\Content\Support\ContentConfiguration;
  */
 final readonly class ContentPlacementTree
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentIdentityGuard $identities,
         private ContentOwnerRegistry $owners,
@@ -34,6 +35,7 @@ final readonly class ContentPlacementTree
     public function load(Model&ContentOwner $owner, string $group, bool $lockForUpdate = false): Collection
     {
         $this->identities->group($group);
+        $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
         $maximum = ContentConfiguration::positiveInteger(

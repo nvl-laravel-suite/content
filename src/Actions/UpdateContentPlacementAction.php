@@ -13,10 +13,10 @@ use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Enums\ContentPlacementEvent;
 use Nvl\Content\Events\ContentPlacementChanged;
 use Nvl\Content\Exceptions\StaleContentException;
-use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Services\ContentIdentityGuard;
 use Nvl\Content\Services\ContentMediaSynchronizer;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacementOwnerLock;
 use Nvl\Content\Services\ContentPlacementValidator;
@@ -29,6 +29,7 @@ use Nvl\Support\Events\DomainEventDispatcher;
  */
 final readonly class UpdateContentPlacementAction implements UpdateContentPlacementContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentOwnerRegistry $owners,
@@ -62,7 +63,7 @@ final readonly class UpdateContentPlacementAction implements UpdateContentPlacem
                     $model = ContentPlacement::query()
                         ->lockForUpdate()
                         ->findOrFail($placementId);
-                    $block = ContentBlock::query()
+                    $block = ContentModelRegistry::query()
                         ->with(['definition', 'translations'])
                         ->lockForUpdate()
                         ->findOrFail($model->content_block_id);

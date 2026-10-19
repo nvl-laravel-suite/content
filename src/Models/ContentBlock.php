@@ -19,6 +19,7 @@ use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Schema\ContentSchema;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Filterable\Definitions\FilterDefinition;
 use Nvl\Filterable\Definitions\FilterSchema;
@@ -28,6 +29,8 @@ use Nvl\Filterable\Enums\FilterValueType;
 use Nvl\Media\Contracts\HasNvlMedia;
 use Nvl\Media\Traits\InteractsWithNvlMedia;
 use Nvl\Support\Config\PackageStorage;
+use Nvl\Support\Ownership\Contracts\Ownable;
+use Nvl\Support\Ownership\Traits\HasOwnership;
 use Nvl\Translatable\Contracts\TranslatableModel;
 use Nvl\Translatable\Enums\TranslationMutationPolicy;
 use Nvl\Translatable\RelatedTranslationDefinition;
@@ -65,9 +68,38 @@ use Nvl\Translatable\Translatable;
  *
  * @api
  */
-final class ContentBlock extends Model implements HasNvlMedia, TranslatableModel
+class ContentBlock extends Model implements HasNvlMedia, Ownable, TranslatableModel
 {
     use GuardsTenantOwnership;
+    use HasOwnership;
+
+    /** Central source blocks require an explicit owning subclass capability. */
+    public static function allowsCentralCatalog(): bool
+    {
+        return false;
+    }
+
+    /** Resolve native route binding through the configured root.
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveRouteBinding($value, $field = null): ?ContentBlock
+    {
+        $model = ContentModelRegistry::newInstance();
+
+        return $model->newQuery()->where($field ?? $model->getRouteKeyName(), $value)->first();
+    }
+
+    /** Preserve ownership on explicit trashed bindings.
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveSoftDeletableRouteBinding($value, $field = null): ?ContentBlock
+    {
+        $model = ContentModelRegistry::newInstance();
+
+        return $model->newQuery()->withTrashed()->where($field ?? $model->getRouteKeyName(), $value)->first();
+    }
 
     /** @use HasFactory<ContentBlockFactory> */
     use HasFactory;
@@ -126,11 +158,13 @@ final class ContentBlock extends Model implements HasNvlMedia, TranslatableModel
         );
     }
 
+    /** Resolve the configured native table owned by this model. */
     public function getTable(): string
     {
         return ContentConfiguration::table('blocks');
     }
 
+    /** Resolve the actual package source connection. */
     public function getConnectionName(): ?string
     {
         return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
@@ -166,7 +200,7 @@ final class ContentBlock extends Model implements HasNvlMedia, TranslatableModel
      */
     public function placements(): HasMany
     {
-        return $this->hasMany(ContentPlacement::class);
+        return $this->hasMany(ContentPlacement::class, 'content_block_id');
     }
 
     /**
@@ -174,7 +208,7 @@ final class ContentBlock extends Model implements HasNvlMedia, TranslatableModel
      */
     public function revisions(): HasMany
     {
-        return $this->hasMany(ContentRevision::class)->orderByDesc('revision');
+        return $this->hasMany(ContentRevision::class, 'content_block_id')->orderByDesc('revision');
     }
 
     /**
@@ -193,6 +227,7 @@ final class ContentBlock extends Model implements HasNvlMedia, TranslatableModel
         $query->where('visibility', ContentVisibility::Public->value);
     }
 
+    /** Return the fixed allowlist for public block filters and sorts. */
     public static function filterSchema(): FilterSchema
     {
         return new FilterSchema(

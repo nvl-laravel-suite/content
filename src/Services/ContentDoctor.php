@@ -10,16 +10,16 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Schema\Builder;
-use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Data\ContentDefinitionData;
-use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentDefinition;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Support\ContentRouteConfiguration;
 use Nvl\Media\Models\MediaAssociation;
+use Nvl\Support\Ownership\Contracts\OwnershipReadiness;
 use Throwable;
 
 /**
@@ -142,6 +142,7 @@ final class ContentDoctor
         private CompiledContentDefinitionCache $compiledCache,
         private ContentDefinitionCompilation $compilation,
         private ContentPresetDiagnostics $presetDiagnostics,
+        private OwnershipReadiness $ownershipReadiness,
     ) {}
 
     /**
@@ -233,7 +234,7 @@ final class ContentDoctor
         }
 
         try {
-            $schema = Schema::connection(ContentConfiguration::connection());
+            $schema = ContentModelRegistry::newInstance()->getConnection()->getSchemaBuilder();
 
             foreach (['definitions', 'blocks', 'blocks_i18n', 'placements', 'revisions'] as $key) {
                 $checks["table.{$key}"] = $schema->hasTable(ContentConfiguration::table($key));
@@ -242,6 +243,12 @@ final class ContentDoctor
             $checks['schema.columns'] = $this->requiredColumnsExist($schema);
             $checks['schema.indexes'] = $this->requiredIndexesExist($schema);
             $checks['schema.foreign_keys'] = $this->requiredForeignKeysExist($schema);
+            if (ContentOwnership::declared()) {
+                foreach (['content.blocks', 'content.translations', 'content.revisions', 'content.placements'] as $key) {
+                    $this->ownershipReadiness->assertActive($key);
+                }
+                $checks['schema.ownership'] = true;
+            }
             if (config('nvl-tenancy.enabled') === true) {
                 foreach (['blocks', 'blocks_i18n', 'placements', 'revisions'] as $key) {
                     $checks["tenancy.column.{$key}.tenant_id"] = $schema->hasColumn(
@@ -580,6 +587,12 @@ final class ContentDoctor
             ],
         ];
 
+        if (ContentOwnership::declared()) {
+            unset($requirements['blocks']['content_blocks_scope_key_unique']);
+            $requirements['blocks']['content_owner_scope_key_unique'] = ['columns' => ['owner_scope_key', 'scope', 'scope_key', 'key'], 'unique' => true];
+            $requirements['blocks_i18n']['content_owner_locale_unique'] = ['columns' => ['owner_scope_key', 'content_block_id', 'locale'], 'unique' => true];
+        }
+
         foreach ($requirements as $tableKey => $expectedIndexes) {
             $indexes = $schema->getIndexes(ContentConfiguration::table($tableKey));
 
@@ -674,7 +687,7 @@ final class ContentDoctor
                         return $foreignKey['columns'] === $expected['columns']
                             && $foreignKey['foreign_table'] === $expected['foreign_table']
                             && $foreignKey['foreign_columns'] === $expected['foreign_columns']
-                            && $onDelete === $expected['on_delete'];
+                            && ($onDelete === $expected['on_delete'] || (ContentOwnership::declared() && $expected['on_delete'] === 'cascade' && in_array($onDelete, ['restrict', 'no action'], true)));
                     },
                 );
 
@@ -742,7 +755,7 @@ final class ContentDoctor
             ->whereIn('key', array_keys($sourceVersions))
             ->get()
             ->keyBy('id');
-        $storedVersions = ContentBlock::withTrashed()
+        $storedVersions = ContentModelRegistry::query()->withTrashed()
             ->select(['definition_id', 'definition_version'])
             ->selectRaw('COUNT(*) as pending_count')
             ->groupBy(['definition_id', 'definition_version'])

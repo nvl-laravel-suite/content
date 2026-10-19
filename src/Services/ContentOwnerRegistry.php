@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Services;
 
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
+use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Support\OwnerRegistry;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
-use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 
 /**
  * Declares Content capabilities while preserving native Laravel owner identities.
@@ -25,9 +24,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     /** Retain Content's allowlist, validation and native owner identity boundaries. */
     public function __construct(
         private readonly ContentIdentityGuard $identities,
-        private readonly Repository $configuration,
-        private readonly TenantBoundary $tenancy,
-        private readonly TenantResourceRegistry $tenantResources,
+        private readonly OwnershipBoundary $tenancy,
         private readonly OwnerRegistry $identitiesRegistry,
     ) {}
 
@@ -55,6 +52,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             throw new InvalidArgumentException("Content owner [{$alias}] must use its canonical shared alias [{$reference}].");
         }
 
+        $model = $this->identitiesRegistry->reference($reference, "nvl-content.owners.{$alias}", $alias);
         if (! is_a($model, ContentOwner::class, true)) {
             throw new InvalidArgumentException(
                 "Content owner model [{$model}] must extend Model and implement ContentOwner.",
@@ -69,7 +67,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
         /** @var Model&ContentOwner $owner */
         $owner = new $model;
         $this->groups($owner);
-        $this->identitiesRegistry->reference($reference, "nvl-content.owners.{$alias}", $alias);
+
         $this->models[$alias] = $model;
         ksort($this->models);
     }
@@ -96,7 +94,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     public function type(Model&ContentOwner $owner): string
     {
         foreach ($this->models as $alias => $model) {
-            if ($owner instanceof $model) {
+            if ($owner instanceof $model && (! ContentOwnership::declared() || $owner::class === $model)) {
                 return $owner->getMorphClass();
             }
         }
@@ -133,13 +131,28 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             );
         }
 
-        if ($this->configuration->get('nvl-tenancy.enabled') === true) {
+        if (ContentOwnership::active()) {
             $canonical = $query->findOrFail($identifier);
-            $resource = $this->tenantResources->forModel($canonical);
-            $this->tenancy->assertRecord($canonical, $resource->key);
+            $this->tenancy->assertRecord($owner, ContentOwnership::resource($canonical));
         }
 
         return $id;
+    }
+
+    /**
+     * Reload native owner state before any owned composition authorization.
+     *
+     * @internal
+     */
+    public function canonical(Model&ContentOwner $owner): Model&ContentOwner
+    {
+        if (! ContentOwnership::declared()) {
+            return $owner;
+        }
+        $type = $this->type($owner);
+        $id = $this->id($owner);
+
+        return $this->resolve($type, $id);
     }
 
     /**
@@ -270,9 +283,8 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             );
         }
 
-        if ($this->configuration->get('nvl-tenancy.enabled') === true) {
-            $resource = $this->tenantResources->forModel($owner);
-            $this->tenancy->assertRecord($owner, $resource->key);
+        if (ContentOwnership::active()) {
+            $this->tenancy->assertRecord($owner, ContentOwnership::resource($owner));
         }
 
         return $owner;

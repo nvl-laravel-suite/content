@@ -20,6 +20,7 @@ use Nvl\Content\Models\ContentDefinition;
 use Nvl\Content\Services\CanonicalJson;
 use Nvl\Content\Services\ContentDefinitionMigrationRegistry;
 use Nvl\Content\Services\ContentDefinitionRegistry;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
 
 /**
@@ -29,6 +30,7 @@ use Nvl\Content\Support\ContentConfiguration;
  */
 final readonly class PlanContentDefinitionMigrationsAction implements PlanContentDefinitionMigrationsContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentDefinitionRegistry $definitions,
@@ -36,6 +38,7 @@ final readonly class PlanContentDefinitionMigrationsAction implements PlanConten
         private CanonicalJson $json,
     ) {}
 
+    /** Plan bounded migrations for the admitted owner’s stored block versions. */
     public function execute(
         ContentActorData $actor,
         ?string $definition = null,
@@ -215,7 +218,7 @@ final readonly class PlanContentDefinitionMigrationsAction implements PlanConten
      */
     private function pendingQuery(array $targets): Builder
     {
-        return ContentBlock::withTrashed()
+        return ContentModelRegistry::query()->withTrashed()
             ->where(function (Builder $query) use ($targets): void {
                 foreach ($targets as $definitionId => $definition) {
                     $query->orWhere(function (Builder $definitionQuery) use (

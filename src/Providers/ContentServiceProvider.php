@@ -50,6 +50,8 @@ use Nvl\Content\Contracts\ContentFieldPreset;
 use Nvl\Content\Contracts\ContentFieldTypeAdapter;
 use Nvl\Content\Contracts\ContentOwnerRegistrar;
 use Nvl\Content\Contracts\ContentReferenceResolver;
+use Nvl\Content\Contracts\ContentSnapshotIntegrity;
+use Nvl\Content\Contracts\ContentStorage;
 use Nvl\Content\Contracts\CreateContentBlockContract;
 use Nvl\Content\Contracts\DeleteContentBlockContract;
 use Nvl\Content\Contracts\DeleteContentPlacementContract;
@@ -91,8 +93,9 @@ use Nvl\Content\FieldTypes\ReferenceFieldTypeAdapter;
 use Nvl\Content\FieldTypes\RichTextFieldTypeAdapter;
 use Nvl\Content\FieldTypes\StringFieldTypeAdapter;
 use Nvl\Content\FieldTypes\StructuredFieldTypeAdapter;
-use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Ownership\ContentAdoptionAdapter as OwnershipContentAdoptionAdapter;
+use Nvl\Content\Ownership\ContentResourceRegistrar as OwnershipContentResourceRegistrar;
 use Nvl\Content\Services\CompiledContentDefinitionCache;
 use Nvl\Content\Services\ConfiguredContentAuthorization;
 use Nvl\Content\Services\ContentCatalogCopyRegistry;
@@ -104,19 +107,25 @@ use Nvl\Content\Services\ContentFieldPresetRegistry;
 use Nvl\Content\Services\ContentFieldTypeRegistry;
 use Nvl\Content\Services\ContentJsonSchemaBuilder;
 use Nvl\Content\Services\ContentLocalizedValues;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentOwnerDeletion;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentReferenceRegistry;
 use Nvl\Content\Services\ContentSchemaCompiler;
+use Nvl\Content\Services\ContentSnapshotIntegrity as ServicesContentSnapshotIntegrity;
+use Nvl\Content\Services\ContentStorageRegistry;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Support\ContentOwnerDeletionBridge;
 use Nvl\Content\Support\ContentUriSchemePolicy;
 use Nvl\Content\Tenancy\ContentResourceRegistrar;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Ownership\Services\OwnershipAdoptionRegistry;
 use Nvl\Support\Doctor\PackageDoctorContributor;
 use Nvl\Support\Globals\GlobalNames;
 use Nvl\Support\OwnerRegistry;
+use Nvl\Support\Ownership\Contracts\OwnershipIntegratedProvider;
+use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Support\Providers\TenantServiceProvider;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
@@ -130,13 +139,16 @@ use Symfony\Component\Console\Input\ArgvInput;
 /**
  * Registers the standalone, headless Content package.
  */
-final class ContentServiceProvider extends ServiceProvider
+final class ContentServiceProvider extends ServiceProvider implements OwnershipIntegratedProvider
 {
     use MergesPackageConfiguration;
     use RegistersNamespacedResources;
 
+    /** Register the canonical capabilities without capturing current admission. */
     public function register(): void
     {
+        $this->app->bindIf(ContentSnapshotIntegrity::class, ServicesContentSnapshotIntegrity::class);
+        $this->app->bindIf(ContentStorage::class, ContentStorageRegistry::class);
         $this->app->bindIf(ApplyContentDefinitionMigrationsContract::class, ApplyContentDefinitionMigrationsAction::class);
         $this->app->bindIf(ArchiveContentBlockContract::class, ArchiveContentBlockAction::class);
         $this->app->bindIf(CreateContentBlockContract::class, CreateContentBlockAction::class);
@@ -171,7 +183,8 @@ final class ContentServiceProvider extends ServiceProvider
         ContentOwnerDeletionBridge::clear();
         $this->app->register(TenantServiceProvider::class);
         $this->mergePackageConfiguration(__DIR__.'/../../config/nvl-content.php', 'content');
-        (new ContentResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class));
+        $this->app->singleton(ContentModelRegistry::class);
+        $this->app->booting(fn () => $this->app->make(ContentModelRegistry::class)->prepare());
         $this->app->booted(function (): void {
             if ($this->app->bound(TenantAdoptionRegistry::class)) {
                 (new ContentResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class), $this->app->make(TenantAdoptionRegistry::class));
@@ -229,6 +242,7 @@ final class ContentServiceProvider extends ServiceProvider
         }
     }
 
+    /** Compile the package capabilities and register framework integration. */
     public function boot(
         TypeScriptSourceRegistry $typeScriptSources,
         TranslationResourceRegistry $translationResources,
@@ -241,6 +255,12 @@ final class ContentServiceProvider extends ServiceProvider
         ContentReferenceRegistry $references,
         ContentOwnerDeletion $ownerDeletion,
     ): void {
+        (new ContentResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class));
+        $this->app->make(OwnershipContentResourceRegistrar::class)->register($this->app->make(OwnershipResourceRegistry::class));
+        if ($this->app->bound(OwnershipAdoptionRegistry::class)) {
+            $this->app->make(OwnershipAdoptionRegistry::class)->register('content', OwnershipContentAdoptionAdapter::class);
+        }
+
         $this->app->make(GlobalNames::class)->translations('content', __DIR__.'/../../lang', $this->app->make('translation.loader'));
         $this->publishes([
             __DIR__.'/../../lang' => lang_path('vendor/nvl-content'),
@@ -287,7 +307,7 @@ final class ContentServiceProvider extends ServiceProvider
 
         $translationResources->register(
             key: 'content.blocks',
-            modelClass: ContentBlock::class,
+            modelClass: ContentModelRegistry::modelClass(),
             label: 'Content blocks',
             searchableColumns: ['key', 'scope', 'scope_key', 'status'],
             displayColumns: ['key', 'scope', 'scope_key', 'status', 'revision'],

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Nvl\Content\Services;
 
 use Closure;
-use Illuminate\Container\Container;
 use Illuminate\Support\Collection;
+use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Media\Models\Media;
-use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Media\Services\MediaModelRegistry;
 
 /**
  * Per-composition model and resolver cache; never shared across requests or jobs.
@@ -46,7 +46,7 @@ final class ContentRenderResources
             $this->loadedMedia[$identifier] = true;
         }
 
-        Media::query()
+        MediaModelRegistry::query()
             ->with(['translations', 'imageVariations', 'associations'])
             ->whereIn('id', $missing)
             ->get()
@@ -54,10 +54,10 @@ final class ContentRenderResources
                 $this->media[$media->id] = $media;
             });
 
-        if (Container::getInstance()->make('config')->get('nvl-tenancy.enabled') === true) {
+        if (ContentOwnership::active()) {
             $unresolved = array_diff($missing, array_keys($this->media));
             if ($unresolved !== []) {
-                throw new TenantBoundaryViolation('A Content media reference is outside the active tenant.');
+                throw ContentOwnership::violation('A Content Media reference is outside the admitted owner.');
             }
         }
     }

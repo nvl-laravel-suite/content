@@ -15,6 +15,7 @@ use Nvl\Content\Events\ContentBlockChanged;
 use Nvl\Content\Exceptions\StaleContentException;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ContentMediaSynchronizer;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentRevisionRecorder;
 use Nvl\Support\Events\DomainEventDispatcher;
 
@@ -25,6 +26,7 @@ use Nvl\Support\Events\DomainEventDispatcher;
  */
 final readonly class DeleteContentBlockAction implements DeleteContentBlockContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentMediaSynchronizer $media,
@@ -32,6 +34,7 @@ final readonly class DeleteContentBlockAction implements DeleteContentBlockContr
         private DomainEventDispatcher $domainEvents,
     ) {}
 
+    /** Delete an authorized unplaced block while retaining Media binaries. */
     public function execute(
         ContentBlock|string $block,
         int $expectedRevision,
@@ -39,9 +42,9 @@ final readonly class DeleteContentBlockAction implements DeleteContentBlockContr
     ): void {
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
 
-        DB::connection((new ContentBlock)->getConnectionName())
+        DB::connection(ContentModelRegistry::newInstance()->getConnectionName())
             ->transaction(function () use ($actor, $blockId, $expectedRevision): void {
-                $model = ContentBlock::query()->lockForUpdate()->findOrFail($blockId);
+                $model = ContentModelRegistry::query()->lockForUpdate()->findOrFail($blockId);
                 $this->authorization->authorize(ContentAbility::Delete, $actor, $model);
 
                 if ($model->revision !== $expectedRevision) {

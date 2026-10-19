@@ -9,9 +9,12 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentReferenceResolver;
+use Nvl\Content\Contracts\OwnershipSafeContentReferenceResolver;
 use Nvl\Content\Contracts\TenantSafeContentReferenceResolver;
+use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Content\Validation\ContentValidationContext;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
+use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
@@ -29,7 +32,7 @@ final class ContentReferenceRegistry
         private readonly Container $container,
         private readonly ContentPayloadGuard $guard,
         private readonly Repository $configuration,
-        private readonly TenantBoundary $tenancy,
+        private readonly OwnershipBoundary $tenancy,
         private readonly TenantResourceRegistry $tenantResources,
         private readonly TenantExtensionGuard $extensions,
     ) {}
@@ -56,11 +59,13 @@ final class ContentReferenceRegistry
         ksort($this->resolvers);
     }
 
+    /** Determine whether the named reference capability is registered. */
     public function has(string $alias): bool
     {
         return isset($this->resolvers[$alias]);
     }
 
+    /** Reject reference aliases outside the registered allowlist. */
     public function assertRegistered(string $alias): void
     {
         if (! $this->has($alias)) {
@@ -70,6 +75,7 @@ final class ContentReferenceRegistry
         }
     }
 
+    /** Admit the exact canonical reference before checking availability. */
     public function assertExists(
         string $alias,
         string $identifier,
@@ -144,6 +150,27 @@ final class ContentReferenceRegistry
         string $identifier,
         ContentValidationContext $context,
     ): void {
+        if (ContentOwnership::declared()) {
+            if (! $resolver instanceof OwnershipSafeContentReferenceResolver) {
+                throw new OwnershipViolation('Owned Content references require their canonical record adapter.');
+            }
+            $record = $resolver->ownershipRecord($identifier, $context);
+            if (! $record instanceof Model) {
+                throw new OwnershipViolation('A Content reference is unavailable in the admitted owner.');
+            }
+            $key = $record->getKey();
+            if (! $record->exists || (! is_string($key) && ! is_int($key)) || (string) $key !== $identifier || $record->isDirty($record->getKeyName())) {
+                throw new OwnershipViolation('Content references require the exact requested persisted key.');
+            }
+            $resource = ContentOwnership::resource($record);
+            $this->tenancy->assertRecord($record, $resource);
+            $fresh = $this->tenancy->query($record->newQuery(), $resource)->whereKey($key)->first();
+            if ($fresh === null || $fresh->getKey() !== $key) {
+                throw new OwnershipViolation('Content reference no longer exists in canonical storage.');
+            }
+
+            return;
+        }
         if ($this->configuration->get('nvl-tenancy.enabled') !== true) {
             return;
         }

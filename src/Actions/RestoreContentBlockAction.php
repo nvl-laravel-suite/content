@@ -16,6 +16,7 @@ use Nvl\Content\Events\ContentBlockChanged;
 use Nvl\Content\Exceptions\StaleContentException;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ContentMediaSynchronizer;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentRevisionRecorder;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Support\Events\DomainEventDispatcher;
@@ -27,6 +28,7 @@ use Nvl\Support\Events\DomainEventDispatcher;
  */
 final readonly class RestoreContentBlockAction implements RestoreContentBlockContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentMediaSynchronizer $media,
@@ -34,6 +36,7 @@ final readonly class RestoreContentBlockAction implements RestoreContentBlockCon
         private DomainEventDispatcher $domainEvents,
     ) {}
 
+    /** Restore the exact configured block at its expected revision. */
     public function execute(
         ContentBlock|string $block,
         int $expectedRevision,
@@ -41,9 +44,9 @@ final readonly class RestoreContentBlockAction implements RestoreContentBlockCon
     ): ContentBlock {
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
 
-        return DB::connection((new ContentBlock)->getConnectionName())
+        return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())
             ->transaction(function () use ($actor, $blockId, $expectedRevision): ContentBlock {
-                $model = ContentBlock::withTrashed()
+                $model = ContentModelRegistry::query()->withTrashed()
                     ->with(['definition', 'translations'])
                     ->lockForUpdate()
                     ->findOrFail($blockId);

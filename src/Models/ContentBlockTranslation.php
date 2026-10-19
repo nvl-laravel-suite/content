@@ -10,8 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Content\Database\Factories\ContentBlockTranslationFactory;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Content\Models\Concerns\OwnsContentChild;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Support\Config\PackageStorage;
+use Nvl\Support\Ownership\Contracts\Ownable;
 
 /**
  * Localized field values for one content block.
@@ -27,7 +30,7 @@ use Nvl\Support\Config\PackageStorage;
  *
  * @nvl-consumer-read id
  */
-final class ContentBlockTranslation extends Model
+final class ContentBlockTranslation extends Model implements Ownable
 {
     use GuardsTenantOwnership;
 
@@ -35,17 +38,20 @@ final class ContentBlockTranslation extends Model
     use HasFactory;
 
     use HasUuids;
+    use OwnsContentChild;
 
     public const string TENANT_RESOURCE = 'content.translations';
 
     /** @var list<string> */
     protected $fillable = ['content_block_id', 'locale', 'values'];
 
+    /** Resolve the configured native table owned by this model. */
     public function getTable(): string
     {
         return ContentConfiguration::table('blocks_i18n');
     }
 
+    /** Resolve the actual package source connection. */
     public function getConnectionName(): ?string
     {
         return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
@@ -66,7 +72,7 @@ final class ContentBlockTranslation extends Model
      */
     public function block(): BelongsTo
     {
-        return $this->belongsTo(ContentBlock::class, 'content_block_id');
+        return $this->belongsTo(ContentModelRegistry::modelClass(), 'content_block_id');
     }
 
     /**

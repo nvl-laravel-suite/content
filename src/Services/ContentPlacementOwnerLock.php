@@ -11,14 +11,15 @@ use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Support\Config\PackageOptions;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 
 /**
  * Serializes placement tree mutations on a stable owner-group lock key.
  */
 final readonly class ContentPlacementOwnerLock
 {
-    public function __construct(private Repository $cache, private TenantBoundary $tenancy) {}
+    /** Retain the canonical services and immutable inputs for this workflow. */
+    public function __construct(private Repository $cache, private OwnershipBoundary $tenancy) {}
 
     /**
      * Run one placement tree mutation under its owner-group atomic lock.

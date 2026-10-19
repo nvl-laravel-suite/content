@@ -13,12 +13,14 @@ use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentDefinitionData;
 use Nvl\Content\Data\ContentDefinitionSyncPlanData;
 use Nvl\Content\Enums\ContentAbility;
-use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentDefinition;
+use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Content\Services\CanonicalJson;
+use Nvl\Content\Services\ContentCodeCatalogUsage;
 use Nvl\Content\Services\ContentDefinitionMigrationRegistry;
 use Nvl\Content\Services\ContentDefinitionRegistry;
 use Nvl\Content\Services\ContentDefinitionSyncLock;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentPlatformCatalogGuard;
 
 /**
@@ -28,6 +30,7 @@ use Nvl\Content\Services\ContentPlatformCatalogGuard;
  */
 final readonly class SyncContentDefinitionsAction implements SyncContentDefinitionsContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentDefinitionRegistry $definitions,
@@ -35,8 +38,10 @@ final readonly class SyncContentDefinitionsAction implements SyncContentDefiniti
         private ContentDefinitionSyncLock $syncLock,
         private CanonicalJson $json,
         private ContentPlatformCatalogGuard $platformCatalog,
+        private ContentCodeCatalogUsage $catalogUsage,
     ) {}
 
+    /** Synchronize the deployment-owned definition catalog after central authorization. */
     public function execute(
         ContentActorData $actor,
         bool $dryRun = false,
@@ -167,7 +172,7 @@ final readonly class SyncContentDefinitionsAction implements SyncContentDefiniti
         }
 
         if ($definition->version > $model->version) {
-            $versions = ContentBlock::withTrashed()
+            $versions = ContentOwnership::declared() ? $this->catalogUsage->versions($model->id) : ContentModelRegistry::query()->withTrashed()
                 ->where('definition_id', $model->id)
                 ->distinct()
                 ->pluck('definition_version');

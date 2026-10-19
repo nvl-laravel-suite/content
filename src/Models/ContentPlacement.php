@@ -14,11 +14,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Nvl\Content\Database\Factories\ContentPlacementFactory;
 use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Content\Models\Concerns\OwnsContentChild;
 use Nvl\Content\Relations\StringBelongsTo;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Media\Contracts\HasNvlMedia;
 use Nvl\Media\Traits\InteractsWithNvlMedia;
 use Nvl\Support\Config\PackageStorage;
+use Nvl\Support\Ownership\Contracts\Ownable;
 
 /**
  * Ordered placement of a reusable block within an allowlisted owner.
@@ -43,7 +46,7 @@ use Nvl\Support\Config\PackageStorage;
  *
  * @api
  */
-final class ContentPlacement extends Model implements HasNvlMedia
+final class ContentPlacement extends Model implements HasNvlMedia, Ownable
 {
     use GuardsTenantOwnership;
 
@@ -52,6 +55,7 @@ final class ContentPlacement extends Model implements HasNvlMedia
 
     use HasUuids;
     use InteractsWithNvlMedia;
+    use OwnsContentChild;
 
     public const string TENANT_RESOURCE = 'content.placements';
 
@@ -81,11 +85,13 @@ final class ContentPlacement extends Model implements HasNvlMedia
         'revision' => 1,
     ];
 
+    /** Resolve the configured native table owned by this model. */
     public function getTable(): string
     {
         return ContentConfiguration::table('placements');
     }
 
+    /** Resolve the actual package source connection. */
     public function getConnectionName(): ?string
     {
         return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('content') ?? parent::getConnectionName());
@@ -129,7 +135,7 @@ final class ContentPlacement extends Model implements HasNvlMedia
      */
     public function block(): BelongsTo
     {
-        return $this->belongsTo(ContentBlock::class, 'content_block_id');
+        return $this->belongsTo(ContentModelRegistry::modelClass(), 'content_block_id');
     }
 
     /**

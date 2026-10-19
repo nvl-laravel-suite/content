@@ -28,6 +28,7 @@ use Nvl\Content\Services\ContentOwnerRegistry;
  */
 final readonly class FindContentPlacementAction implements FindContentPlacementContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentOwnerRegistry $owners,
@@ -43,6 +44,7 @@ final readonly class FindContentPlacementAction implements FindContentPlacementC
         string $idOrKey,
         ContentActorData $actor,
     ): ContentPlacementData {
+        $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
         $this->owners->assertGroup($owner, $group);

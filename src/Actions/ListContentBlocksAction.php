@@ -12,6 +12,7 @@ use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentBlockData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Models\ContentBlock;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Filterable\Data\FilterSet;
 use Nvl\Filterable\Services\EloquentFilterApplier;
 
@@ -22,6 +23,7 @@ use Nvl\Filterable\Services\EloquentFilterApplier;
  */
 final readonly class ListContentBlocksAction implements ListContentBlocksContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private EloquentFilterApplier $filters,
@@ -36,7 +38,7 @@ final readonly class ListContentBlocksAction implements ListContentBlocksContrac
         int $perPage = 25,
     ): LengthAwarePaginator {
         $this->authorization->authorize(ContentAbility::List, $actor);
-        $query = ContentBlock::query()->with(['definition', 'translations']);
+        $query = ContentModelRegistry::query()->with(['definition', 'translations']);
 
         if ($this->authorization instanceof ContentBlockQueryScope) {
             $this->authorization->scopeContentBlocks($query, $actor);

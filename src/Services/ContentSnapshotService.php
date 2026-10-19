@@ -19,9 +19,11 @@ use Nvl\Content\Data\RenderedContentBlockData;
 use Nvl\Content\Data\RenderedContentCompositionData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Validation\ContentValueValidator;
+use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 use Nvl\Support\Tenancy\Contracts\TenantContext;
 use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 
@@ -30,6 +32,7 @@ use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
  */
 final readonly class ContentSnapshotService
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentOwnerRegistry $owners,
@@ -57,6 +60,7 @@ final readonly class ContentSnapshotService
         ContentActorData $actor,
         bool $publishing = false,
     ): ContentCompositionSnapshotData {
+        $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
         $this->owners->assertGroup($owner, $group);
@@ -98,6 +102,13 @@ final readonly class ContentSnapshotService
         string $locale,
         ContentActorData $actor,
     ): RenderedContentCompositionData {
+        $native = ContentOwnership::snapshotContext();
+        if ($native !== null || $snapshot->formatVersion >= 3 || $snapshot->ownershipContext !== null) {
+            if ($native === null || $snapshot->formatVersion !== 3 || $snapshot->tenantId !== null
+                || $snapshot->ownershipContext === null || $this->json->hash($native) !== $this->json->hash($snapshot->ownershipContext)) {
+                throw new OwnershipViolation('Content snapshot ownership differs from the admitted native owner.');
+            }
+        }
         $tenantId = $this->snapshotTenantId();
         if ($tenantId !== null && ($snapshot->formatVersion !== 2 || $snapshot->tenantId !== $tenantId)) {
             throw new TenantBoundaryViolation('Content snapshot ownership differs from the active tenant.');
@@ -122,6 +133,7 @@ final readonly class ContentSnapshotService
                 $snapshot->blocks,
                 $snapshot->tenantId,
                 $snapshot->formatVersion,
+                $snapshot->ownershipContext,
             ),
         )) {
             throw new InvalidArgumentException('Content composition snapshot integrity check failed.');
@@ -331,15 +343,18 @@ final readonly class ContentSnapshotService
         $this->assertSize($ownerType, $ownerId, $group, $blocks);
 
         $tenantId = $this->snapshotTenantId();
+        $native = ContentOwnership::snapshotContext();
+        $format = $native !== null ? 3 : ($tenantId === null ? 1 : 2);
 
         return new ContentCompositionSnapshotData(
             ownerType: $ownerType,
             ownerId: $ownerId,
             group: $group,
             blocks: $blocks,
-            version: $this->version($ownerType, $ownerId, $group, $blocks, $tenantId, $tenantId === null ? 1 : 2),
+            version: $this->version($ownerType, $ownerId, $group, $blocks, $tenantId, $format, $native),
             tenantId: $tenantId,
-            formatVersion: $tenantId === null ? 1 : 2,
+            formatVersion: $format,
+            ownershipContext: $native,
         );
     }
 
@@ -491,6 +506,7 @@ final readonly class ContentSnapshotService
 
     /**
      * @param  list<ContentCompositionSnapshotBlockData>  $blocks
+     * @param  array<string,mixed>|null  $ownershipContext
      */
     private function version(
         string $ownerType,
@@ -499,6 +515,7 @@ final readonly class ContentSnapshotService
         array $blocks,
         ?string $tenantId = null,
         int $formatVersion = 1,
+        ?array $ownershipContext = null,
     ): string {
         $payload = [
             'owner_type' => $ownerType,
@@ -506,7 +523,9 @@ final readonly class ContentSnapshotService
             'group' => $group,
             'blocks' => $this->serializeBlocks($blocks),
         ];
-        if ($formatVersion >= 2) {
+        if ($formatVersion >= 3) {
+            $payload = ['format_version' => $formatVersion, 'ownership_context' => $ownershipContext, ...$payload];
+        } elseif ($formatVersion >= 2) {
             $payload = ['format_version' => $formatVersion, 'tenant_id' => $tenantId, ...$payload];
         }
 

@@ -23,6 +23,7 @@ use Nvl\Content\Services\ContentBlockPlacementSynchronizer;
 use Nvl\Content\Services\ContentDefinitionRegistry;
 use Nvl\Content\Services\ContentDefinitionVersionGuard;
 use Nvl\Content\Services\ContentMediaSynchronizer;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentPatch;
 use Nvl\Content\Services\ContentPayloadGuard;
 use Nvl\Content\Services\ContentRevisionRecorder;
@@ -38,6 +39,7 @@ use Nvl\Translatable\Services\TranslationWriter;
  */
 final readonly class UpdateContentBlockAction implements UpdateContentBlockContract
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentDefinitionRegistry $definitions,
@@ -53,13 +55,14 @@ final readonly class UpdateContentBlockAction implements UpdateContentBlockContr
         private DomainEventDispatcher $domainEvents,
     ) {}
 
+    /** Apply an authorized revision-checked block mutation. */
     public function execute(
         ContentBlock|string $block,
         UpdateContentBlockData $data,
         ContentActorData $actor,
     ): ContentBlock {
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
-        $connection = (new ContentBlock)->getConnectionName();
+        $connection = ContentModelRegistry::newInstance()->getConnectionName();
         $inputValues = ContentArrays::stringMap($data->values, 'content block values');
         $inputTranslations = ContentArrays::translations(
             $data->translations,
@@ -78,7 +81,7 @@ final readonly class UpdateContentBlockAction implements UpdateContentBlockContr
             $inputTranslations,
             $inputValues,
         ): ContentBlock {
-            $model = ContentBlock::query()
+            $model = ContentModelRegistry::query()
                 ->with(['definition', 'translations'])
                 ->lockForUpdate()
                 ->findOrFail($blockId);

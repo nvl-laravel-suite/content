@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Tenancy;
 
-use Nvl\Content\Models\ContentBlock;
+use Illuminate\Container\Container;
 use Nvl\Content\Models\ContentBlockTranslation;
 use Nvl\Content\Models\ContentDefinition;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Models\ContentRevision;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Support\Tenancy\Enums\TenantResourceKind;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Support\Tenancy\ValueObjects\TenantResourceDefinition;
@@ -24,7 +25,7 @@ final class ContentResourceRegistrar
         $resources->registerParentResolver('content.placements', ContentTenantParentResolver::class);
         foreach ([
             new TenantResourceDefinition('content.definitions', 'content', ContentDefinition::class, TenantResourceKind::Platform),
-            new TenantResourceDefinition('content.blocks', 'content', ContentBlock::class),
+            new TenantResourceDefinition('content.blocks', 'content', Container::getInstance()->make(ContentModelRegistry::class)->prepare()),
             new TenantResourceDefinition('content.translations', 'content', ContentBlockTranslation::class, TenantResourceKind::Inherited, 'content.blocks', 'block'),
             new TenantResourceDefinition('content.revisions', 'content', ContentRevision::class, TenantResourceKind::Inherited, 'content.blocks', 'block'),
             new TenantResourceDefinition('content.placements', 'content', ContentPlacement::class, TenantResourceKind::Inherited, null, 'owner'),

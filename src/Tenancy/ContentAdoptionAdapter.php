@@ -10,6 +10,7 @@ use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentBlockTranslation;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Models\ContentRevision;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
@@ -52,7 +53,7 @@ final readonly class ContentAdoptionAdapter implements TenantAdoptionAdapter
         $connection->transaction(function () use ($connection, $batch): void {
             foreach ($batch as $assignment) {
                 $ownership = $this->adoption->ownership($assignment, 'content.blocks');
-                $connection->table((new ContentBlock)->getTable())->where('id', $assignment->recordId)->update($ownership);
+                $connection->table(ContentModelRegistry::newInstance()->getTable())->where('id', $assignment->recordId)->update($ownership);
                 $connection->table((new ContentBlockTranslation)->getTable())->where('content_block_id', $assignment->recordId)->update(['tenant_id' => $ownership['tenant_id']]);
                 $connection->table((new ContentRevision)->getTable())->where('content_block_id', $assignment->recordId)->update(['tenant_id' => $ownership['tenant_id']]);
             }
@@ -113,11 +114,11 @@ final readonly class ContentAdoptionAdapter implements TenantAdoptionAdapter
             }
         }
         foreach ([(new ContentBlockTranslation)->getTable(), (new ContentRevision)->getTable()] as $child) {
-            if ($connection->table($child.' as child')->join((new ContentBlock)->getTable().' as block', 'block.id', '=', 'child.content_block_id')->whereColumn('child.tenant_id', '!=', 'block.tenant_id')->exists()) {
+            if ($connection->table($child.' as child')->join(ContentModelRegistry::newInstance()->getTable().' as block', 'block.id', '=', 'child.content_block_id')->whereColumn('child.tenant_id', '!=', 'block.tenant_id')->exists()) {
                 $errors[] = $child.'.ownership';
             }
         }
-        if ($connection->table((new ContentPlacement)->getTable().' as placement')->join((new ContentBlock)->getTable().' as block', 'block.id', '=', 'placement.content_block_id')->whereColumn('placement.tenant_id', '!=', 'block.tenant_id')->exists()) {
+        if ($connection->table((new ContentPlacement)->getTable().' as placement')->join(ContentModelRegistry::newInstance()->getTable().' as block', 'block.id', '=', 'placement.content_block_id')->whereColumn('placement.tenant_id', '!=', 'block.tenant_id')->exists()) {
             $errors[] = 'content.placements.block_ownership';
         }
         foreach ($connection->table((new ContentPlacement)->getTable())->orderBy('id')->get() as $row) {

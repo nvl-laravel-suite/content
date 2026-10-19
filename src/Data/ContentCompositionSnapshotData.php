@@ -21,7 +21,10 @@ final class ContentCompositionSnapshotData extends Data
     use DataTransform;
 
     /**
+     * Retain immutable composition values and their declared durable ownership data.
+     *
      * @param  list<ContentCompositionSnapshotBlockData>  $blocks
+     * @param  array<string,mixed>|null  $ownershipContext
      */
     public function __construct(
         public readonly string $ownerType,
@@ -33,5 +36,6 @@ final class ContentCompositionSnapshotData extends Data
         #[TypeScriptHidden]
         public readonly ?string $tenantId = null,
         public readonly int $formatVersion = 1,
+        public readonly ?array $ownershipContext = null,
     ) {}
 }

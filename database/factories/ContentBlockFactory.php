@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use InvalidArgumentException;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentDefinition;
+use Nvl\Content\Services\ContentModelRegistry;
 
 /**
  * Builds ContentBlock fixture rows and their declared package parents.
@@ -19,6 +20,12 @@ use Nvl\Content\Models\ContentDefinition;
 final class ContentBlockFactory extends Factory
 {
     protected $model = ContentBlock::class;
+
+    /** Resolve the exact configured root. */
+    public function modelName(): string
+    {
+        return ContentModelRegistry::modelClass();
+    }
 
     /**
      * Prepare native parent and owner facts after Laravel expands relationships.

@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Data;
 
+use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Models\ContentBlock;
+use Nvl\Content\Models\ContentBlockTranslation;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
@@ -24,6 +27,8 @@ final class ContentBlockData extends Data
     use DataTransform;
 
     /**
+     * Retain the canonical services and immutable inputs for this workflow.
+     *
      * @param  array<string, mixed>  $values
      * @param  array<string, array<string, mixed>>  $translations
      * @param  array<string, mixed>  $metadata
@@ -55,22 +60,52 @@ final class ContentBlockData extends Data
     public static function fromModel(ContentBlock $block): self
     {
         $block->loadMissing(['definition', 'translations']);
-        $translations = [];
 
-        foreach ($block->translations as $translation) {
-            $locale = $translation->getAttribute('locale');
-            $values = $translation->getAttribute('values');
+        return self::project($block, self::translationValues($block->translations));
+    }
 
-            if (is_string($locale) && is_array($values)) {
-                $translations[$locale] = ContentArrays::stringMap(
-                    $values,
-                    "content translation {$locale}",
-                );
-            }
+    /**
+     * Project only freshly scoped, fully preloaded batch rows without per-record admission SQL.
+     *
+     * @internal
+     */
+    public static function fromBatchProjection(ContentBlock $block): self
+    {
+        if (! $block->relationLoaded('translations') || ! $block->relationLoaded('definition')) {
+            throw new InvalidArgumentException('Content batch projections require preloaded structural and locale facts.');
+        }
+        $translations = $block->getRelation('translations');
+        if (! $translations instanceof Collection) {
+            throw new InvalidArgumentException('Content batch locales must be preloaded collections.');
         }
 
+        return self::project($block, self::translationValues($translations));
+    }
+
+    /** @param Collection<covariant array-key, covariant mixed> $rows
+     * @return array<string,array<string,mixed>>
+     */
+    private static function translationValues(Collection $rows): array
+    {
+        $translations = [];
+        foreach ($rows as $translation) {
+            if (! $translation instanceof ContentBlockTranslation) {
+                throw new InvalidArgumentException('Content locale projections require canonical locale rows.');
+            }
+            $locale = $translation->getAttribute('locale');
+            $values = $translation->getAttribute('values');
+            if (is_string($locale) && is_array($values)) {
+                $translations[$locale] = ContentArrays::stringMap($values, "content translation {$locale}");
+            }
+        }
         ksort($translations);
 
+        return $translations;
+    }
+
+    /** @param array<string,array<string,mixed>> $translations */
+    private static function project(ContentBlock $block, array $translations): self
+    {
         return new self(
             id: $block->id,
             definition: $block->definition->key,

@@ -14,9 +14,12 @@ use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Data\ContentPlacementData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Content\Services\ContentIdentityGuard;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 
 /**
  * Lists bounded placement summaries for an authorized collection of Content owners.
@@ -27,10 +30,12 @@ final readonly class ListOwnerContentPlacementSummariesAction implements ListOwn
 {
     private const int MAXIMUM_OWNERS = 100;
 
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private ContentAuthorization $authorization,
         private ContentOwnerRegistry $owners,
         private ContentIdentityGuard $identities,
+        private OwnershipBoundary $boundary,
     ) {}
 
     /**
@@ -50,6 +55,9 @@ final readonly class ListOwnerContentPlacementSummariesAction implements ListOwn
             return [];
         }
 
+        if (ContentOwnership::declared()) {
+            $normalized = $this->canonicalOwners($normalized);
+        }
         foreach ($normalized as $identity) {
             $this->authorization->authorize(
                 ContentAbility::ListPlacements,
@@ -62,7 +70,9 @@ final readonly class ListOwnerContentPlacementSummariesAction implements ListOwn
             );
         }
 
-        $this->assertPersisted($normalized);
+        if (! ContentOwnership::declared()) {
+            $this->assertPersisted($normalized);
+        }
         $maximum = ContentConfiguration::positiveInteger(
             'nvl-content.placements.maximum_per_group',
             1_000,
@@ -100,7 +110,7 @@ final readonly class ListOwnerContentPlacementSummariesAction implements ListOwn
                 ])
                 ->with([
                     'block' => static function (Relation $query): void {
-                        $query->select([
+                        $query->select(ContentModelRegistry::projectionColumns([
                             'id',
                             'definition_id',
                             'key',
@@ -113,7 +123,7 @@ final readonly class ListOwnerContentPlacementSummariesAction implements ListOwn
                             'definition_version',
                             'revision',
                             'published_at',
-                        ]);
+                        ]));
                     },
                     'block.definition' => static function (Relation $query): void {
                         $query->select(['id', 'key']);
@@ -141,7 +151,7 @@ final readonly class ListOwnerContentPlacementSummariesAction implements ListOwn
             $placementsByOwner = [];
 
             foreach ($placements as $placement) {
-                $placementsByOwner[$placement->owner_id][] = ContentPlacementData::fromModel(
+                $placementsByOwner[$placement->owner_id][] = ContentPlacementData::fromBatchProjection(
                     $placement,
                 );
             }
@@ -252,6 +262,39 @@ final readonly class ListOwnerContentPlacementSummariesAction implements ListOwn
         }
 
         return $owner;
+    }
+
+    /** Canonically reload each native host class once before consuming host authorization facts.
+     * @param  list<array{owner:Model&ContentOwner,type:string,id:string,model:class-string<Model&ContentOwner>}>  $identities
+     * @return list<array{owner:Model&ContentOwner,type:string,id:string,model:class-string<Model&ContentOwner>}>
+     */
+    private function canonicalOwners(array $identities): array
+    {
+        $groups = [];
+        foreach ($identities as $identity) {
+            $groups[$identity['model']][] = $identity['id'];
+        }
+        $loaded = [];
+        foreach ($groups as $class => $ids) {
+            $prototype = new $class;
+            $query = $this->boundary->query($prototype->newQuery(), ContentOwnership::resource($prototype));
+            foreach ($query->whereKey($ids)->get() as $record) {
+                if (! $record instanceof ContentOwner || $record::class !== $class) {
+                    throw new InvalidArgumentException('Content host hydration must retain its canonical capability class.');
+                }
+                $key = $record->getKey();
+                if (! is_int($key) && ! is_string($key)) {
+                    throw new InvalidArgumentException('Canonical Content hosts require native scalar identities.');
+                }
+                $loaded[$class][(string) $key] = $record;
+            }
+        }
+        foreach ($identities as &$identity) {
+            $identity['owner'] = $loaded[$identity['model']][$identity['id']] ?? throw new InvalidArgumentException('A Content host is outside the admitted native owner.');
+        }
+        unset($identity);
+
+        return $identities;
     }
 
     /**

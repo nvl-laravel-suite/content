@@ -20,17 +20,20 @@ use Nvl\Media\Data\MediaActorData;
 use Nvl\Media\Enums\MediaAbility;
 use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Models\Media;
+use Nvl\Media\Services\MediaModelRegistry;
 
 /**
  * Validates media IDs and projects binaries through Media's safe public contracts.
  */
 final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
 {
+    /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(
         private readonly bool $multiple,
         private readonly MediaAuthorization $authorization,
     ) {}
 
+    /** Return the stable public field or resolver alias. */
     public function alias(): string
     {
         return $this->multiple ? 'media_collection' : 'media';
@@ -82,7 +85,7 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
                 continue;
             }
 
-            $media = Media::query()->find($id);
+            $media = MediaModelRegistry::query()->find($id);
 
             if (! $media instanceof Media || ! $media->isAvailable()) {
                 throw new InvalidArgumentException(
@@ -101,6 +104,7 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
         return $this->multiple ? $normalized : ($normalized[0] ?? null);
     }
 
+    /** Resolve admitted Media references into the bounded field projection. */
     public function render(
         mixed $value,
         ContentFieldDefinition $field,
@@ -125,7 +129,7 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
         }
 
         $media = $context->resources?->media($identifiers)
-            ?? Media::query()
+            ?? MediaModelRegistry::query()
                 ->with(['translations', 'imageVariations', 'associations'])
                 ->whereIn('id', $identifiers)
                 ->get()

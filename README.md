@@ -3,12 +3,12 @@
 ## Quickstart
 
 ```sh
-composer require nvl/content:^5.0
+composer require nvl/content:^6.0
 php artisan nvl:install content --dry-run
 php artisan nvl:install content
 ```
 
-Required NVL dependencies: `nvl/core` (`^5.0`), `nvl/filterable` (`^5.0`), `nvl/media` (`^5.0`), `nvl/translatable` (`^5.0`). Register source definitions, views, owners and authorization. Supply a validated FilterSet and ContentActorData; compiled caching is optional and remains disabled until explicitly selected.
+Required NVL dependencies: `nvl/core` (`^6.0`), `nvl/filterable` (`^6.0`), `nvl/media` (`^6.0`), `nvl/translatable` (`^6.0`). Register source definitions, views, owners and authorization. Supply a validated FilterSet and ContentActorData; compiled caching is optional and remains disabled until explicitly selected.
 Review the published common config, select one migration owner, and run schema preflight before existing-table upgrades. The installer does not enable features or run migrations. Follow the detailed installation and capability sections below before invoking a storage/provider operation.
 
 Inject `Nvl\Content\Contracts\ListContentBlocksContract` in a host service. After supplying the trusted inputs described above, the first public call is:
@@ -34,7 +34,7 @@ See the [installation and publishing guide](https://github.com/nvl-laravel-suite
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/content:^5.0` |
+| Installed through | `composer require nvl/content:^6.0` |
 | Module identifier | `nvl/content` |
 | PHP namespace | `Nvl\Content` |
 | Service provider | `Nvl\Content\Providers\ContentServiceProvider` |
@@ -122,7 +122,7 @@ Composer installs these declared dependencies automatically.
 ## Installation
 
 ```bash
-composer require nvl/content:^5.0
+composer require nvl/content:^6.0
 php artisan migrate
 php artisan nvl:content:definitions:sync --dry-run
 php artisan nvl:content:definitions:sync

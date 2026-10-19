@@ -1,10 +1,14 @@
 <?php
 
 declare(strict_types=1);
+
 use Nvl\Content\Definitions\Tables\ContentTables;
+use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ConfiguredContentAuthorization;
 
 return [
+    'models' => ['block' => ContentBlock::class],
+    'ownership' => ['owner_resources' => []],
     'connection' => null,
     'tables' => ['definitions' => ContentTables::Definitions, 'blocks' => ContentTables::Blocks, 'blocks_i18n' => ContentTables::BlocksI18n, 'placements' => ContentTables::Placements, 'revisions' => ContentTables::Revisions],
     'migrations' => ['enabled' => true],

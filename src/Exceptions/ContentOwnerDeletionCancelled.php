@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Exceptions;
 
+use Nvl\Support\Contracts\PackageException;
 use RuntimeException;
 
 /**
@@ -11,7 +12,7 @@ use RuntimeException;
  *
  * @internal
  */
-final class ContentOwnerDeletionCancelled extends RuntimeException
+final class ContentOwnerDeletionCancelled extends RuntimeException implements PackageException
 {
     /** Retain the canonical services and immutable inputs for this workflow. */
     public function __construct(public readonly ?bool $result)

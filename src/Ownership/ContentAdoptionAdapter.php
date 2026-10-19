@@ -57,7 +57,7 @@ final readonly class ContentAdoptionAdapter implements OwnershipAdoptionAdapter
             $child = new ($this->resources->get($childKey)->model);
             $found = false;
             foreach ($schema->getForeignKeys($child->getTable()) as $foreign) {
-                if ($foreign['columns'] === [$column] && $foreign['foreign_table'] === $root->getTable() && $foreign['foreign_columns'] === ['id']) {
+                if ($foreign['columns'] === [$column] && $foreign['foreign_table'] === $root->getConnection()->getTablePrefix().$root->getTable() && $foreign['foreign_columns'] === ['id']) {
                     $found = true;
                     break;
                 }
@@ -78,7 +78,7 @@ final readonly class ContentAdoptionAdapter implements OwnershipAdoptionAdapter
         $childColumns = ['parent_id', 'owner_type', 'owner_id', 'group'];
         $foundParent = false;
         foreach ($schema->getForeignKeys($placement->getTable()) as $foreign) {
-            if ($foreign['columns'] === $childColumns && $foreign['foreign_table'] === $placement->getTable() && $foreign['foreign_columns'] === $identity) {
+            if ($foreign['columns'] === $childColumns && $foreign['foreign_table'] === $placement->getConnection()->getTablePrefix().$placement->getTable() && $foreign['foreign_columns'] === $identity) {
                 $foundParent = true;
                 break;
             }

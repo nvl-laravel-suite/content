@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Nvl\Content\Ownership\ContentOwnership;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Tenancy\Enums\TenantResourceKind;
 use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
@@ -22,7 +22,7 @@ trait GuardsTenantOwnership
     {
         static::addGlobalScope('tenant-boundary', static function (Builder $query): void {
             if (! ContentOwnership::declared()) {
-                Container::getInstance()->make(TenantBoundary::class)->query($query, self::TENANT_RESOURCE);
+                Container::getInstance()->make(OwnershipBoundary::class)->query($query, self::TENANT_RESOURCE);
             }
         });
 
@@ -32,7 +32,7 @@ trait GuardsTenantOwnership
                 return;
             }
             $definition = $container->make(TenantResourceRegistry::class)->get(self::TENANT_RESOURCE);
-            $boundary = $container->make(TenantBoundary::class);
+            $boundary = $container->make(OwnershipBoundary::class);
 
             if ($definition->kind === TenantResourceKind::Root) {
                 $model->forceFill($boundary->attributes(self::TENANT_RESOURCE));
@@ -68,7 +68,7 @@ trait GuardsTenantOwnership
             if ($model->isDirty('tenant_id')) {
                 throw new TenantBoundaryViolation('Persisted Content ownership is immutable.');
             }
-            Container::getInstance()->make(TenantBoundary::class)->assertRecord($model, self::TENANT_RESOURCE);
+            Container::getInstance()->make(OwnershipBoundary::class)->assertRecord($model, self::TENANT_RESOURCE);
         });
     }
 }

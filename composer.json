@@ -98,13 +98,13 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "suggest": {
-        "nvl/tenancy": "Enables enforcing tenant ownership, scoped execution, adoption, and captured tenant queue contexts.",
-        "spatie/typescript-transformer": "Consume the declared TypeScript attributes and metadata (^3.3); Core retains the runtime transformation engine.",
-        "nvl/ownership": "Optional native ownership, reviewed adoption and captured queue admission without Auth or Tenancy."
+        "nvl/ownership": "Adds optional model-declared ownership, isolation, adoption and captured worker contexts.",
+        "nvl/tenancy": "Temporary legacy tenancy bridge for existing tenant installations; native ownership does not require it.",
+        "spatie/typescript-transformer": "Consume the declared TypeScript attributes and metadata (^3.3); Core retains the runtime transformation engine."
     },
     "conflict": {
-        "nvl/tenancy": "<5.0 || >=6.0",
-        "nvl/ownership": "<5.0 || >=6.0"
+        "nvl/ownership": "<5.0 || >=6.0",
+        "nvl/tenancy": "<5.0 || >=6.0"
     },
     "homepage": "https://github.com/nvl-laravel-suite/content",
     "authors": [

@@ -1704,6 +1704,24 @@
             ],
             "constants": []
         },
+        "Nvl\\Content\\Exceptions\\ContentDefinitionCacheException": {
+            "kind": "class",
+            "file": "src/Exceptions/ContentDefinitionCacheException.php",
+            "methods": [
+                "__construct",
+                "context",
+                "invalid",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Content\\Exceptions\\ContentDefinitionMigrationException": {
             "kind": "class",
             "file": "src/Exceptions/ContentDefinitionMigrationException.php",

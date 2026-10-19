@@ -7,7 +7,11 @@ namespace Nvl\Content\Exceptions;
 use Nvl\Content\Enums\ContentResponseCode;
 use Throwable;
 
-/** Signals an invalid explicitly selected compiled-definition cache. @api */
+/**
+ * Signals an invalid explicitly selected compiled-definition cache.
+ *
+ * @api
+ */
 final class ContentDefinitionCacheException extends ContentException
 {
     /** Create a diagnostic failure without exposing cache paths or source content. */

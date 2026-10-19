@@ -33,7 +33,7 @@ final readonly class ContentCodeCatalogUsage
         $values = $this->storage->connection()->table($model->getTable())->where('definition_id', $definitionId)->distinct()->pluck('definition_version');
         $versions = [];
         foreach ($values as $value) {
-            if (! is_int($value) && (! is_string($value) || ! ctype_digit($value))) {
+            if (! is_int($value) && (! is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1)) {
                 throw new OwnershipViolation('Stored Content versions must be native integers.');
             }
             $version = (int) $value;

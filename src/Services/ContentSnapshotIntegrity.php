@@ -22,7 +22,9 @@ final readonly class ContentSnapshotIntegrity implements ContractsContentSnapsho
     /** Reject a snapshot whose canonical checksum has changed. */
     public function assertValid(ContentCompositionSnapshotData $snapshot): void
     {
-        if (! in_array($snapshot->formatVersion,[1,2,3],true)) { throw new OwnershipViolation('Unsupported Content snapshot format.'); }
+        if (! in_array($snapshot->formatVersion, [1, 2, 3], true)) {
+            throw new OwnershipViolation('Unsupported Content snapshot format.');
+        }
         if (! hash_equals($snapshot->version, $this->digest($snapshot))) {
             throw new OwnershipViolation('Content snapshot checksum is invalid.');
         }

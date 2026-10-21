@@ -7,14 +7,11 @@ namespace Nvl\Content\Models\Concerns;
 use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Nvl\Content\Ownership\ContentOwnership;
+use Nvl\Support\Ownership\Compatibility\LegacyModelOwnership;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
-use Nvl\Support\Tenancy\Enums\TenantResourceKind;
-use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
-/** Applies Content's mandatory tenant predicate and immutable ownership stamps. */
+/** Preserves the package model hooks and delegates retained 6.x tenant behavior. */
 trait GuardsTenantOwnership
 {
     /** Register the package-owned query and mutation boundary. */
@@ -27,48 +24,14 @@ trait GuardsTenantOwnership
         });
 
         static::creating(static function (Model $model): void {
-            $container = Container::getInstance();
-            if ($container->make('config')->get('nvl-tenancy.enabled') !== true) {
-                return;
-            }
-            $definition = $container->make(TenantResourceRegistry::class)->get(self::TENANT_RESOURCE);
-            $boundary = $container->make(OwnershipBoundary::class);
-
-            if ($definition->kind === TenantResourceKind::Root) {
-                $model->forceFill($boundary->attributes(self::TENANT_RESOURCE));
-
-                return;
-            }
-
-            if ($definition->kind !== TenantResourceKind::Inherited || $definition->parentRelation === null) {
-                return;
-            }
-
-            $relation = $model->{$definition->parentRelation}();
-            if (! $relation instanceof Relation) {
-                throw new TenantBoundaryViolation('Content child ownership requires a canonical relation.');
-            }
-            $parent = $relation->getResults();
-            if (! $parent instanceof Model) {
-                throw new TenantBoundaryViolation('Content child ownership requires a canonical parent.');
-            }
-            $parentDefinition = $container->make(TenantResourceRegistry::class)->forModel($parent);
-            $boundary->assertRecord($parent, $parentDefinition->key);
-            $tenantId = $parent->getRawOriginal('tenant_id') ?? $parent->getAttribute('tenant_id');
-            if (! is_string($tenantId)) {
-                throw new TenantBoundaryViolation('Content child ownership requires a tenant parent.');
-            }
-            $model->forceFill(['tenant_id' => $tenantId]);
+            Container::getInstance()->make(LegacyModelOwnership::class)->creating($model, self::TENANT_RESOURCE, 'Content');
         });
 
         static::updating(static function (Model $model): void {
             if (ContentOwnership::declared()) {
                 return;
             }
-            if ($model->isDirty('tenant_id')) {
-                throw new TenantBoundaryViolation('Persisted Content ownership is immutable.');
-            }
-            Container::getInstance()->make(OwnershipBoundary::class)->assertRecord($model, self::TENANT_RESOURCE);
+            Container::getInstance()->make(LegacyModelOwnership::class)->updating($model, self::TENANT_RESOURCE, 'Content');
         });
     }
 }

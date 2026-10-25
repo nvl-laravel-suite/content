@@ -6,14 +6,12 @@ namespace Nvl\Content\Data;
 
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Deterministic localized values selected through ordered scope fallback.
  *
  * @api
  */
-#[TypeScript]
 final class ContentScopeResolutionData extends Data
 {
     /**

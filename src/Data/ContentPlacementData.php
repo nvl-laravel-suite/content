@@ -8,16 +8,12 @@ use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Privileged editable placement representation for headless management.
  *
  * @api
  */
-#[TypeScript]
 final class ContentPlacementData extends Data
 {
     use DataTransform;
@@ -38,10 +34,8 @@ final class ContentPlacementData extends Data
         public readonly string $region,
         public readonly int $sortOrder,
         public readonly bool $isVisible,
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $overrides,
         public readonly int $revision,
-        #[TypeScriptOptional]
         public readonly ?ContentBlockData $block = null,
     ) {}
 

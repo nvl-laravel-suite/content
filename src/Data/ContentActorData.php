@@ -7,14 +7,12 @@ namespace Nvl\Content\Data;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Stable actor identity for authorization, revisions, and events.
  *
  * @api
  */
-#[TypeScript]
 final class ContentActorData extends Data
 {
     public function __construct(

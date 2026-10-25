@@ -7,16 +7,12 @@ namespace Nvl\Content\Data\Mutations;
 use Nvl\Content\Validation\ContentObjectRule;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Revision-safe contract for moving, ordering, hiding, or overriding a placement.
  *
  * @api
  */
-#[TypeScript]
 final class UpdateContentPlacementData extends Data
 {
     use DataTransform;
@@ -30,8 +26,6 @@ final class UpdateContentPlacementData extends Data
         public readonly ?string $parentId,
         public readonly int $sortOrder,
         public readonly bool $isVisible,
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $overrides = [],
     ) {}
 

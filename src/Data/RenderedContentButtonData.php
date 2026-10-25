@@ -9,13 +9,10 @@ use Nvl\Content\Enums\ContentLinkRelationship;
 use Nvl\Content\Enums\ContentLinkTarget;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Safe semantic projection of one linked call-to-action.
  */
-#[TypeScript]
 final class RenderedContentButtonData extends Data
 {
     use DataTransform;
@@ -28,7 +25,6 @@ final class RenderedContentButtonData extends Data
         public readonly string $href,
         public readonly ?string $title,
         public readonly ContentLinkTarget $target,
-        #[LiteralTypeScriptType('Array<Nvl.Content.Enums.ContentLinkRelationship>')]
         public readonly array $rel,
         public readonly ContentButtonEmphasis $emphasis,
     ) {}

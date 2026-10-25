@@ -6,15 +6,12 @@ namespace Nvl\Content\Data;
 
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Revision-safe block target in a definition migration plan.
  *
  * @api
  */
-#[TypeScript]
 final class ContentDefinitionMigrationPlanItemData extends Data
 {
     use DataTransform;
@@ -30,7 +27,6 @@ final class ContentDefinitionMigrationPlanItemData extends Data
         public readonly int $toVersion,
         public readonly int $expectedRevision,
         public readonly bool $deleted,
-        #[LiteralTypeScriptType('Array<number>')]
         public readonly array $versions,
     ) {}
 }

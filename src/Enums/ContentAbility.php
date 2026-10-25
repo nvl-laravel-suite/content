@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Enums;
 
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
-
 /**
  * Fine-grained capabilities passed to the consumer-owned authorization policy.
  *
  * @api
  */
-#[TypeScript]
 enum ContentAbility: string
 {
     case ListDefinitions = 'list_definitions';

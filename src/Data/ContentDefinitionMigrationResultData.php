@@ -7,14 +7,12 @@ namespace Nvl\Content\Data;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Atomic definition migration batch result.
  *
  * @api
  */
-#[TypeScript]
 final class ContentDefinitionMigrationResultData extends Data
 {
     use DataTransform;

@@ -7,16 +7,12 @@ namespace Nvl\Content\Data\Mutations;
 use Nvl\Content\Validation\ContentObjectRule;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Validated contract for placing a reusable block on one registered owner.
  *
  * @api
  */
-#[TypeScript]
 final class PlaceContentBlockData extends Data
 {
     use DataTransform;
@@ -26,16 +22,10 @@ final class PlaceContentBlockData extends Data
      */
     public function __construct(
         public readonly string $key,
-        #[TypeScriptOptional]
         public readonly string $region = 'main',
-        #[TypeScriptOptional]
         public readonly ?string $parentId = null,
-        #[TypeScriptOptional]
         public readonly int $sortOrder = 0,
-        #[TypeScriptOptional]
         public readonly bool $isVisible = true,
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $overrides = [],
     ) {}
 

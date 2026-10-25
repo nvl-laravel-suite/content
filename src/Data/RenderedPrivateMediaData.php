@@ -6,12 +6,10 @@ namespace Nvl\Content\Data;
 
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Authorized short-lived projection of a private Media record.
  */
-#[TypeScript]
 final class RenderedPrivateMediaData extends Data
 {
     use DataTransform;

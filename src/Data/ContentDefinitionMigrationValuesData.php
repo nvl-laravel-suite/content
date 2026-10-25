@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Nvl\Content\Data;
 
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\Hidden;
 
 /**
  * Values returned by one deterministic definition migration step.
  *
  * @api
  */
-#[Hidden]
 final class ContentDefinitionMigrationValuesData extends Data
 {
     /**

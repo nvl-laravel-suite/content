@@ -7,15 +7,12 @@ namespace Nvl\Content\Data;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Public-safe renderer-neutral block tree node.
  *
  * @api
  */
-#[TypeScript]
 final class RenderedContentBlockData extends Data
 {
     use DataTransform;
@@ -34,9 +31,7 @@ final class RenderedContentBlockData extends Data
         public readonly int $sortOrder,
         public readonly string $view,
         public readonly string $locale,
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $values,
-        #[LiteralTypeScriptType('Record<string, string>')]
         public readonly array $fieldTypes,
         #[DataCollectionOf(self::class)]
         public readonly array $children = [],

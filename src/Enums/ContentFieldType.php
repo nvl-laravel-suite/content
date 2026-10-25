@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Enums;
 
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
-
 /**
  * Built-in aliases. Registries may add custom field types without changing this enum.
  */
-#[TypeScript]
 enum ContentFieldType: string
 {
     case Text = 'text';

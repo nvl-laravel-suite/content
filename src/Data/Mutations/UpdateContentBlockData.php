@@ -12,16 +12,12 @@ use Nvl\Content\Validation\ContentObjectRule;
 use Nvl\Data\Traits\DataTransform;
 use Nvl\Translatable\Rules\SupportedLocaleMapRule;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Revision-safe patch or explicit replacement contract for editable content.
  *
  * @api
  */
-#[TypeScript]
 final class UpdateContentBlockData extends Data
 {
     use DataTransform;
@@ -33,18 +29,10 @@ final class UpdateContentBlockData extends Data
      */
     public function __construct(
         public readonly int $expectedRevision,
-        #[TypeScriptOptional]
         public readonly ContentMutationMode $mode = ContentMutationMode::Patch,
-        #[TypeScriptOptional]
         public readonly ?ContentVisibility $visibility = null,
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $values = [],
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, Record<string, unknown>>')]
         public readonly array $translations = [],
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $metadata = [],
     ) {}
 

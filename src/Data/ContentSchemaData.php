@@ -8,14 +8,12 @@ use Nvl\Content\Schema\ContentSchema;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Generated-client contract for a compiled Content schema.
  *
  * @api
  */
-#[TypeScript]
 final class ContentSchemaData extends Data
 {
     use DataTransform;

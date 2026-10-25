@@ -7,15 +7,12 @@ namespace Nvl\Content\Data;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Complete block composition grouped into stable regions.
  *
  * @api
  */
-#[TypeScript]
 final class RenderedContentCompositionData extends Data
 {
     use DataTransform;
@@ -31,7 +28,6 @@ final class RenderedContentCompositionData extends Data
         public readonly string $locale,
         #[DataCollectionOf(RenderedContentBlockData::class)]
         public readonly array $blocks,
-        #[LiteralTypeScriptType('Record<string, Array<Nvl.Content.Data.RenderedContentBlockData>>')]
         public readonly array $regions,
         public readonly string $version,
     ) {}

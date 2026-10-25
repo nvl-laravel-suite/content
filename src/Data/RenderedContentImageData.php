@@ -8,12 +8,10 @@ use Nvl\Data\Traits\DataTransform;
 use Nvl\Media\Data\Display\PublicMedia;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Safe semantic projection of an image asset and its content-owned presentation metadata.
  */
-#[TypeScript]
 final class RenderedContentImageData extends Data
 {
     use DataTransform;

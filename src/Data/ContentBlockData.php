@@ -13,15 +13,12 @@ use Nvl\Content\Models\ContentBlockTranslation;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Privileged editable block representation.
  *
  * @api
  */
-#[TypeScript]
 final class ContentBlockData extends Data
 {
     use DataTransform;
@@ -41,11 +38,8 @@ final class ContentBlockData extends Data
         public readonly string $scopeKey,
         public readonly ContentStatus $status,
         public readonly ContentVisibility $visibility,
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $values,
-        #[LiteralTypeScriptType('Record<string, Record<string, unknown>>')]
         public readonly array $translations,
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $metadata,
         public readonly int $definitionVersion,
         public readonly int $revision,

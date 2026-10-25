@@ -6,15 +6,12 @@ namespace Nvl\Content\Data;
 
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Editor-facing contract for one reusable semantic field preset.
  *
  * @api
  */
-#[TypeScript]
 final class ContentFieldPresetData extends Data
 {
     use DataTransform;
@@ -27,7 +24,6 @@ final class ContentFieldPresetData extends Data
         public readonly string $name,
         public readonly ?string $description,
         public readonly ContentFieldDefinitionData $field,
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $jsonSchema,
     ) {}
 }

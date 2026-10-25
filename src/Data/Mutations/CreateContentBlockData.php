@@ -11,16 +11,12 @@ use Nvl\Content\Validation\ContentObjectRule;
 use Nvl\Data\Traits\DataTransform;
 use Nvl\Translatable\Rules\SupportedLocaleMapRule;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Validated contract for creating a reusable draft content block.
  *
  * @api
  */
-#[TypeScript]
 final class CreateContentBlockData extends Data
 {
     use DataTransform;
@@ -33,20 +29,11 @@ final class CreateContentBlockData extends Data
     public function __construct(
         public readonly string $definition,
         public readonly string $key,
-        #[TypeScriptOptional]
         public readonly string $scope = 'global',
-        #[TypeScriptOptional]
         public readonly string $scopeKey = '*',
-        #[TypeScriptOptional]
         public readonly ContentVisibility $visibility = ContentVisibility::Public,
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $values = [],
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, Record<string, unknown>>')]
         public readonly array $translations = [],
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $metadata = [],
     ) {}
 

@@ -8,16 +8,12 @@ use Nvl\Content\Schema\ContentFieldDefinition;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Generated-client contract for one recursive Content schema field.
  *
  * @api
  */
-#[TypeScript]
 final class ContentFieldDefinitionData extends Data
 {
     use DataTransform;
@@ -32,16 +28,11 @@ final class ContentFieldDefinitionData extends Data
         public readonly string $label,
         public readonly bool $required,
         public readonly bool $localized,
-        #[LiteralTypeScriptType('unknown')]
         public readonly mixed $default,
-        #[TypeScriptOptional]
         #[DataCollectionOf(self::class)]
         public readonly array $fields = [],
-        #[TypeScriptOptional]
         public readonly ?self $item = null,
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $settings = [],
-        #[TypeScriptOptional]
         public readonly ?string $preset = null,
     ) {}
 

@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Enums;
 
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
-
 /**
  * Publication lifecycle of a reusable content block.
  *
  * @api
  */
-#[TypeScript]
 enum ContentStatus: string
 {
     case Draft = 'draft';

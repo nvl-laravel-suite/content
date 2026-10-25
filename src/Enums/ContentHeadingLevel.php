@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Enums;
 
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
-
 /**
  * Semantic document-outline level for reusable heading content.
  *
  * @api
  */
-#[TypeScript]
 enum ContentHeadingLevel: string
 {
     case H1 = 'h1';

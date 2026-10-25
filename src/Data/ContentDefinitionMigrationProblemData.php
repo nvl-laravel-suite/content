@@ -6,14 +6,12 @@ namespace Nvl\Content\Data;
 
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Safe reason why one block cannot enter a definition migration batch.
  *
  * @api
  */
-#[TypeScript]
 final class ContentDefinitionMigrationProblemData extends Data
 {
     use DataTransform;

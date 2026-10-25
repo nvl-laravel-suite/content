@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Nvl\Content\Data;
 
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * One exact Content scope in caller-defined fallback order.
  *
  * @api
  */
-#[TypeScript]
 final class ContentScopeData extends Data
 {
     public function __construct(

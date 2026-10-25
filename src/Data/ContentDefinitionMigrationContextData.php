@@ -7,14 +7,12 @@ namespace Nvl\Content\Data;
 use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Enums\ContentVisibility;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\Hidden;
 
 /**
  * Immutable server-side input supplied to one definition migration step.
  *
  * @api
  */
-#[Hidden]
 final class ContentDefinitionMigrationContextData extends Data
 {
     /**

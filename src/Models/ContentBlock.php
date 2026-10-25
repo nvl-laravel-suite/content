@@ -153,7 +153,7 @@ class ContentBlock extends Model implements HasNvlMedia, Ownable, TranslatableMo
             foreignKey: 'content_block_id',
             fields: ['values'],
             locales: $locales !== [] ? $locales : null,
-            mutationPolicy: TranslationMutationPolicy::DomainActionOnly,
+            mutationPolicy: TranslationMutationPolicy::OwningServiceOnly,
             ownershipResource: self::TENANT_RESOURCE,
         );
     }

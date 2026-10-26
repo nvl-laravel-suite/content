@@ -23,14 +23,6 @@
                 "presets",
                 "references",
                 "required_definition_paths",
-                "routes.management.enabled",
-                "routes.management.middleware",
-                "routes.management.name",
-                "routes.management.prefix",
-                "routes.public.enabled",
-                "routes.public.middleware",
-                "routes.public.name",
-                "routes.public.prefix",
                 "scopes.global.key_pattern",
                 "tables.blocks",
                 "tables.blocks_i18n",
@@ -50,6 +42,7 @@
                 "links.allow_relative",
                 "links.allowed_schemes",
                 "media.allow_private_for_private_blocks",
+                "media.enabled",
                 "media.maximum_per_field",
                 "media.private_url_ttl_minutes",
                 "media.require_public_for_public_blocks",
@@ -77,8 +70,7 @@
                 "validation.maximum_snapshot_depth",
                 "validation.maximum_string_length",
                 "validation.reject_unknown_fields",
-                "validation.url_schemes",
-                "view_publishing.allowed_roots"
+                "validation.url_schemes"
             ]
         }
     }

@@ -5,6 +5,7 @@ use Nvl\Content\Definitions\Tables\ContentTables;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ConfiguredContentAuthorization;
 
+/** Common published defaults; advanced defaults remain in the package configuration. */
 return [
     'models' => ['block' => ContentBlock::class],
     'ownership' => ['owner_resources' => []],
@@ -33,5 +34,4 @@ return [
     'field_types' => [],
     'presets' => [],
     'locales' => ['available' => [], 'required_on_publish' => []],
-    'routes' => ['management' => ['enabled' => false, 'prefix' => 'nvl/api/v1/content', 'name' => 'nvl.content.management.', 'middleware' => ['api', 'auth']], 'public' => ['enabled' => false, 'prefix' => 'nvl/api/v1/content', 'name' => 'nvl.content.public.', 'middleware' => ['api', 'throttle:120,1']]],
 ];

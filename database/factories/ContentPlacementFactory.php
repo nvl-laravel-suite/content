@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Ownership\ContentOwnership;
 
 /**
  * Builds ContentPlacement fixture rows and their declared package parents.
@@ -47,8 +48,8 @@ final class ContentPlacementFactory extends Factory
             if ($model->getAttribute('content_block_id') !== null) {
                 $parent = ContentBlock::query()->findOrFail(FactoryGuard::identifier($model->getAttribute('content_block_id')));
                 FactoryGuard::parent($parent, $model);
-                if (config('nvl-tenancy.enabled') === true && $owner->getRawOriginal('tenant_id') !== $parent->getRawOriginal('tenant_id')) {
-                    throw new InvalidArgumentException('Fixture owner and parent tenancy must agree.');
+                if (ContentOwnership::declared() && $owner->getRawOriginal('owner_scope_key') !== $parent->getRawOriginal('owner_scope_key')) {
+                    throw new InvalidArgumentException('Fixture owner and parent ownership must agree.');
                 }
                 FactoryGuard::inherit($model, $parent);
             }

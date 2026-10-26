@@ -69,7 +69,7 @@ final readonly class ContentMediaSynchronizer
     }
 
     /**
-     * Reconcile one stable association target using Media's mutation Actions.
+     * Reconcile one stable association target using Media's mutation services.
      *
      * @param  list<array{id: string, path: string, locale: string|null, order: int}>  $desired
      */

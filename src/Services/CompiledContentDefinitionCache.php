@@ -13,7 +13,11 @@ use Nvl\Content\Exceptions\ContentDefinitionCacheException;
 use Nvl\Content\Support\ContentArrays;
 use Throwable;
 
-/** Publishes and restores bounded scalar compiled definitions with explicit deployment identity. @internal */
+/**
+ * Publishes and restores bounded scalar compiled definitions with explicit deployment identity.
+ *
+ * @internal
+ */
 final readonly class CompiledContentDefinitionCache
 {
     private const int MAXIMUM_BYTES = 16777216;

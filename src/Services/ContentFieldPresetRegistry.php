@@ -9,6 +9,8 @@ use Nvl\Content\Contracts\ContentFieldPreset;
 
 /**
  * Stores the deterministic allowlist of reusable semantic content field presets.
+ *
+ * @internal
  */
 final class ContentFieldPresetRegistry
 {

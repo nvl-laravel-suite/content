@@ -24,6 +24,8 @@ use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 
 /**
  * Captures and re-renders immutable compositions for Templates and other versioned consumers.
+ *
+ * @internal
  */
 final readonly class ContentSnapshotService
 {

@@ -15,6 +15,8 @@ use Nvl\Support\Enums\SystemActor;
 
 /**
  * Secure default authorization adapter backed by an optional application callback.
+ *
+ * @internal
  */
 final class ConfiguredContentAuthorization implements ContentAuthorization
 {

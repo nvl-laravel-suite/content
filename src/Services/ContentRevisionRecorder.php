@@ -15,6 +15,8 @@ use Nvl\Support\Enums\SystemActor;
 
 /**
  * Writes bounded immutable snapshots after each successful block mutation.
+ *
+ * @internal
  */
 final readonly class ContentRevisionRecorder
 {

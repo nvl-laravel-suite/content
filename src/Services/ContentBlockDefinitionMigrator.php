@@ -23,6 +23,8 @@ use Throwable;
  * Applies, validates, and persists one complete definition migration chain.
  *
  * The caller owns the surrounding transaction and row lock.
+ *
+ * @internal
  */
 final readonly class ContentBlockDefinitionMigrator
 {

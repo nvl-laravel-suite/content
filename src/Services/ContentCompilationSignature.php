@@ -6,7 +6,11 @@ namespace Nvl\Content\Services;
 
 use Illuminate\Contracts\Config\Repository;
 
-/** Identifies compiler inputs without scanning files or retaining request context. @internal */
+/**
+ * Identifies compiler inputs without scanning files or retaining request context.
+ *
+ * @internal
+ */
 final readonly class ContentCompilationSignature
 {
     public const string ABI = 'nvl-content-compiled-v1';

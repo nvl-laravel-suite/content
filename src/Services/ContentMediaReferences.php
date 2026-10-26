@@ -11,6 +11,8 @@ use Nvl\Content\Support\ContentArrays;
 
 /**
  * Extracts media references with stable field paths from normalized values.
+ *
+ * @internal
  */
 final class ContentMediaReferences
 {

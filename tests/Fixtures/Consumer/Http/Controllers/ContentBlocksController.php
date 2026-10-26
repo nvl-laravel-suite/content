@@ -95,7 +95,7 @@ final class ContentBlocksController extends ContentController
 
     public function update(Request $request, string $block, ContentActorFactory $actors): JsonResponse
     {
-        /** @var array{expectedRevision:int,mode:ContentMutationMode|string,visibility:ContentVisibility|string|null,values:array<string, mixed>,translations:array<string, array<string, mixed>>,metadata:array<string, mixed>} $data */
+        /** @var array{expected_revision:int,mode:ContentMutationMode|string,visibility:ContentVisibility|string|null,values:array<string, mixed>,translations:array<string, array<string, mixed>>,metadata:array<string, mixed>} $data */
         $data = UpdateContentBlockData::validateAndCreate($request->all())->toArray();
         $actor = $actors->fromRequest($request);
         $updated = $this->content(fn () => app(ContentBlocks::class)->update($block, $data, $actor));
@@ -160,7 +160,7 @@ final class ContentBlocksController extends ContentController
 
     public function updatePlacement(Request $request, string $placement, ContentActorFactory $actors): JsonResponse
     {
-        /** @var array{expectedRevision:int,region:string,parentId:string|null,sortOrder:int,isVisible:bool,overrides:array<string, mixed>} $data */
+        /** @var array{expected_revision:int,region:string,parentId:string|null,sortOrder:int,isVisible:bool,overrides:array<string, mixed>} $data */
         $data = UpdateContentPlacementData::validateAndCreate($request->all())->toArray();
         $actor = $actors->fromRequest($request);
         $updated = $this->content(fn () => app(ContentPlacements::class)->update($placement, $data, $actor));

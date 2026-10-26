@@ -17,6 +17,8 @@ use Nvl\Support\Enums\SystemActor;
 
 /**
  * Validates regions, parents, cycles, and sanitized non-localized overrides.
+ *
+ * @internal
  */
 final readonly class ContentPlacementValidator
 {

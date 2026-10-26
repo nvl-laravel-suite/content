@@ -9,7 +9,11 @@ use Nvl\Support\Ownership\Contracts\OwnershipContext;
 use Nvl\Support\Ownership\Enums\OwnershipContextMode;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 
-/** Restricts mutation of deployment-owned Content definitions to explicit platform execution. */
+/**
+ * Restricts mutation of deployment-owned Content definitions to explicit platform execution.
+ *
+ * @internal
+ */
 final readonly class ContentPlatformCatalogGuard
 {
     /** Create the catalog admission guard. */

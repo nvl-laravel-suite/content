@@ -8,6 +8,8 @@ use Nvl\Content\Support\ContentArrays;
 
 /**
  * JSON Merge Patch semantics with list replacement and explicit null values.
+ *
+ * @internal
  */
 final class ContentPatch
 {

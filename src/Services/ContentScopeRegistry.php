@@ -10,6 +10,8 @@ use Nvl\Content\Support\ContentArrays;
 
 /**
  * Validates block scopes and their opaque keys without hardcoded tenants or sites.
+ *
+ * @api
  */
 final class ContentScopeRegistry
 {

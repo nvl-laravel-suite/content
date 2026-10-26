@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Nvl\Content\Console;
+namespace Nvl\Content\Console\Commands;
 
 use Illuminate\Console\Command;
 use InvalidArgumentException;
@@ -49,7 +49,7 @@ final class MigrateContentDefinitionsCommand extends Command
             $this->line((string) json_encode(['plan' => $plan, 'result' => $result], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
         } else {
             foreach ($plan['ready'] as $target) {
-                $this->line("ready: {$target['definition']}:{$target['blockId']} "."{$target['fromVersion']}->{$target['toVersion']} "."revision {$target['expectedRevision']}");
+                $this->line("ready: {$target['definition']}:{$target['blockId']} "."{$target['fromVersion']}->{$target['toVersion']} "."revision {$target['expected_revision']}");
             }
             foreach ($plan['blocked'] as $problem) {
                 $this->line($this->problem($problem));
@@ -66,7 +66,7 @@ final class MigrateContentDefinitionsCommand extends Command
     }
 
     /** Native Content operation.
-     * @param  array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expectedRevision:int,deleted:bool,code:string,message:string}  $problem
+     * @param  array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expected_revision:int,deleted:bool,code:string,message:string}  $problem
      */
     private function problem(array $problem): string
     {

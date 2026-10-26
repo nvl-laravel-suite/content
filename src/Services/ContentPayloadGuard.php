@@ -9,6 +9,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Enforces limits for metadata and placement overrides outside field schemas.
+ *
+ * @internal
  */
 final class ContentPayloadGuard
 {

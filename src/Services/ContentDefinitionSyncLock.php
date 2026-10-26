@@ -14,6 +14,8 @@ use Nvl\Support\Config\PackageOptions;
 
 /**
  * Serializes definition mirror synchronization across deployment processes.
+ *
+ * @internal
  */
 final readonly class ContentDefinitionSyncLock
 {

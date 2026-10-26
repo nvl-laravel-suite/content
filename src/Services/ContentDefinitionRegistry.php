@@ -15,6 +15,8 @@ use Nvl\Support\Enums\SystemActor;
 
 /**
  * In-memory source of truth for available block definitions.
+ *
+ * @api
  */
 final class ContentDefinitionRegistry
 {

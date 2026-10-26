@@ -16,6 +16,8 @@ use SplFileInfo;
 
 /**
  * Deterministically loads inline, PHP, and JSON definition sources.
+ *
+ * @internal
  */
 final class ContentDefinitionLoader
 {

@@ -9,6 +9,8 @@ use Nvl\Content\Contracts\ContentFieldTypeAdapter;
 
 /**
  * Deterministic registry for built-in and application-provided field types.
+ *
+ * @internal
  */
 final class ContentFieldTypeRegistry
 {

@@ -30,9 +30,9 @@ it('plans and atomically migrates block values translations revisions and events
     $block = app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'legacy-hero', 'scope' => 'site', 'scopeKey' => 'main-site', 'visibility' => ContentVisibility::Public, 'values' => ['enabled' => true], 'translations' => ['en' => ['title' => 'Legacy title']], 'metadata' => ['source' => 'legacy']], $actor);
     downgradeHeroBlockForMigration($block, 'Legacy headline');
     Event::fake([ContentBlockChanged::class]);
-    expect(fn () => app(ContentBlocks::class)->update($block->fresh(), ['expectedRevision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => []], $actor))->toThrow(ContentDefinitionMigrationRequiredException::class);
+    expect(fn () => app(ContentBlocks::class)->update($block->fresh(), ['expected_revision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => []], $actor))->toThrow(ContentDefinitionMigrationRequiredException::class);
     $plan = app(ContentDefinitions::class)->planMigration($actor);
-    expect($plan['totalPending'])->toBe(1)->and($plan['hasMore'])->toBeFalse()->and($plan['blocked'])->toBe([])->and($plan['ready'])->toHaveCount(1)->and($plan['ready'][0]['versions'])->toBe([1, 2])->and($plan['ready'][0]['expectedRevision'])->toBe(1)->and(json_encode($plan, JSON_THROW_ON_ERROR))->not->toContain('Legacy headline');
+    expect($plan['totalPending'])->toBe(1)->and($plan['hasMore'])->toBeFalse()->and($plan['blocked'])->toBe([])->and($plan['ready'])->toHaveCount(1)->and($plan['ready'][0]['versions'])->toBe([1, 2])->and($plan['ready'][0]['expected_revision'])->toBe(1)->and(json_encode($plan, JSON_THROW_ON_ERROR))->not->toContain('Legacy headline');
     $result = app(ContentDefinitions::class)->migrate($plan, $actor);
     $migrated = ContentBlock::query()->with('translations')->findOrFail($block->id);
     expect($result['applied'])->toBeTrue()->and($result['migrated'])->toHaveCount(1)->and($result['migrated'][0]['previousRevision'])->toBe(1)->and($result['migrated'][0]['revision'])->toBe(2)->and($migrated->definition_version)->toBe(2)->and($migrated->revision)->toBe(2)->and($migrated->metadata)->toBe(['source' => 'legacy'])->and($migrated->translations->first()?->values)->toBe(['title' => 'Legacy headline'])->and(ContentRevision::query()->where('content_block_id', $block->id)->where('event', ContentRevisionEvent::Migrated->value)->count())->toBe(1)->and(app(ContentDefinitions::class)->planMigration($actor)['totalPending'])->toBe(0);
@@ -58,7 +58,7 @@ it('returns a stable conflict when the management API receives an old block', fu
     $block = app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'api-old-version', 'scope' => 'site', 'scopeKey' => 'main-site', 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => ['en' => ['title' => 'API old version']], 'metadata' => []], SystemActor::Background);
     downgradeHeroBlockForMigration($block, 'API legacy title');
     expect(Route::has('content.migrations.blocks.update'))->toBeTrue();
-    $this->patchJson("/api/content-migrations/blocks/{$block->id}", ['expectedRevision' => 1])->assertConflict()->assertJsonPath('error.code', 'definition_migration_required')->assertJsonPath('error.context.block_id', $block->id)->assertJsonPath('error.context.stored_version', 1)->assertJsonPath('error.context.current_version', 2);
+    $this->patchJson("/api/content-migrations/blocks/{$block->id}", ['expected_revision' => 1])->assertConflict()->assertJsonPath('error.code', 'definition_migration_required')->assertJsonPath('error.context.block_id', $block->id)->assertJsonPath('error.context.stored_version', 1)->assertJsonPath('error.context.current_version', 2);
 });
 it('rolls back the complete batch when a planned revision becomes stale', function (): void {
     $actor = SystemActor::Background;
@@ -112,7 +112,7 @@ it('migrates soft-deleted blocks without restoring them', function (): void {
     $deleted = ContentBlock::withTrashed()->findOrFail($block->id);
     downgradeHeroBlockForMigration($deleted, 'Deleted legacy headline');
     $plan = app(ContentDefinitions::class)->planMigration($actor);
-    expect($plan['ready'])->toHaveCount(1)->and($plan['ready'][0]['deleted'])->toBeTrue()->and($plan['ready'][0]['expectedRevision'])->toBe(2);
+    expect($plan['ready'])->toHaveCount(1)->and($plan['ready'][0]['deleted'])->toBeTrue()->and($plan['ready'][0]['expected_revision'])->toBe(2);
     app(ContentDefinitions::class)->migrate($plan, $actor);
     $migrated = ContentBlock::withTrashed()->with('translations')->findOrFail($block->id);
     expect($migrated->trashed())->toBeTrue()->and($migrated->definition_version)->toBe(2)->and($migrated->revision)->toBe(3)->and($migrated->translations->first()?->values)->toBe(['title' => 'Deleted legacy headline']);

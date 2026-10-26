@@ -12,6 +12,8 @@ use Nvl\Translatable\RelatedTranslationDefinition;
 
 /**
  * Partitions and deeply merges mixed localized/non-localized structured content values.
+ *
+ * @internal
  */
 final readonly class ContentLocalizedValues
 {

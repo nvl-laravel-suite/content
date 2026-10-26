@@ -15,6 +15,8 @@ use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 
 /**
  * Serializes placement tree mutations on a stable owner-group lock key.
+ *
+ * @internal
  */
 final readonly class ContentPlacementOwnerLock
 {

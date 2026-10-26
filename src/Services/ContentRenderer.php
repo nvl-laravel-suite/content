@@ -21,6 +21,8 @@ use Nvl\Support\Enums\SystemActor;
 
 /**
  * Resolves an owner composition into a deterministic, renderer-neutral block tree.
+ *
+ * @api
  */
 final readonly class ContentRenderer
 {

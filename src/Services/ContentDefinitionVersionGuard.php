@@ -10,6 +10,8 @@ use Nvl\Content\Schema\ContentSchema;
 
 /**
  * Prevents schema-aware writes from silently adopting a newer definition.
+ *
+ * @internal
  */
 final class ContentDefinitionVersionGuard
 {

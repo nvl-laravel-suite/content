@@ -505,7 +505,7 @@ it('exposes explicit authorization contexts for replacement and reorder workflow
     app()->instance(ContentAuthorization::class, $authorization);
     $actor = new GenericUser(['id' => 'workflow-context-editor']);
     $replaced = app(ContentPlacements::class)->replace($owner, 'homepage', $placement->id, $replacement->id, $placement->revision, $actor);
-    app(ContentPlacements::class)->move($owner, 'homepage', ['placements' => [['id' => $replaced->id, 'expectedRevision' => $replaced->revision, 'region' => 'main', 'parentId' => null, 'sortOrder' => 10]]], $actor);
+    app(ContentPlacements::class)->move($owner, 'homepage', ['placements' => [['id' => $replaced->id, 'expected_revision' => $replaced->revision, 'region' => 'main', 'parentId' => null, 'sortOrder' => 10]]], $actor);
     expect($authorization->placeContexts)->toBe([['group' => 'homepage', 'region' => 'main', 'parent_id' => null, 'replaces_placement' => true], ['group' => 'homepage', 'region' => 'main', 'parent_id' => null, 'reorders_placements' => true]]);
 });
 it('validates and atomically applies a complete deterministic placement reorder', function (): void {
@@ -515,7 +515,7 @@ it('validates and atomically applies a complete deterministic placement reorder'
     $first = app(ContentPlacements::class)->place($block, $owner, 'homepage', ['key' => 'first', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
     $second = app(ContentPlacements::class)->place($block, $owner, 'homepage', ['key' => 'second', 'region' => 'main', 'parentId' => null, 'sortOrder' => 10, 'isVisible' => true, 'overrides' => []], $actor);
     $child = app(ContentPlacements::class)->place($block, $owner, 'homepage', ['key' => 'child', 'region' => 'main', 'parentId' => $first->id, 'sortOrder' => 5, 'isVisible' => true, 'overrides' => []], $actor);
-    $data = ['placements' => [['id' => $child->id, 'expectedRevision' => $child->revision, 'region' => 'sidebar', 'parentId' => $first->id, 'sortOrder' => 0], ['id' => $second->id, 'expectedRevision' => $second->revision, 'region' => 'main', 'parentId' => null, 'sortOrder' => 10], ['id' => $first->id, 'expectedRevision' => $first->revision, 'region' => 'sidebar', 'parentId' => null, 'sortOrder' => 5]]];
+    $data = ['placements' => [['id' => $child->id, 'expected_revision' => $child->revision, 'region' => 'sidebar', 'parentId' => $first->id, 'sortOrder' => 0], ['id' => $second->id, 'expected_revision' => $second->revision, 'region' => 'main', 'parentId' => null, 'sortOrder' => 10], ['id' => $first->id, 'expected_revision' => $first->revision, 'region' => 'sidebar', 'parentId' => null, 'sortOrder' => 5]]];
     expect($data['placements'][0])->toBeArray();
     Event::fake([ContentPlacementChanged::class]);
     $orderedPlacements = app(ContentPlacements::class)->move($owner, 'homepage', $data, $actor);
@@ -536,7 +536,7 @@ it('rejects partial duplicate stale cyclic cross-region and oversized reorder pr
     $first = app(ContentPlacements::class)->place($block, $owner, 'homepage', ['key' => 'first', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
     $second = app(ContentPlacements::class)->place($block, $owner, 'homepage', ['key' => 'second', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
     $reorder = app(ContentPlacements::class);
-    $item = static fn (ContentPlacement $placement, ?string $parentId = null, string $region = 'main', ?int $revision = null, int $sortOrder = 0): array => ['id' => $placement->id, 'expectedRevision' => $revision ?? $placement->revision, 'region' => $region, 'parentId' => $parentId, 'sortOrder' => $sortOrder];
+    $item = static fn (ContentPlacement $placement, ?string $parentId = null, string $region = 'main', ?int $revision = null, int $sortOrder = 0): array => ['id' => $placement->id, 'expected_revision' => $revision ?? $placement->revision, 'region' => $region, 'parentId' => $parentId, 'sortOrder' => $sortOrder];
     expect(fn () => $reorder->move($owner, 'homepage', ['placements' => [$item($first)]], $actor))->toThrow(InvalidArgumentException::class)->and(fn () => $reorder->move($owner, 'homepage', ['placements' => [$item($first), $item($first)]], $actor))->toThrow(InvalidArgumentException::class)->and(fn () => $reorder->move($owner, 'homepage', ['placements' => [$item($first, revision: 999), $item($second)]], $actor))->toThrow(StaleContentException::class)->and(fn () => $reorder->move($owner, 'homepage', ['placements' => [$item($first, $second->id), $item($second, $first->id)]], $actor))->toThrow(InvalidArgumentException::class)->and(fn () => $reorder->move($owner, 'homepage', ['placements' => [$item($first), $item($second, $first->id, 'sidebar')]], $actor))->toThrow(InvalidArgumentException::class);
     config()->set('nvl-content.placements.maximum_per_group', 1);
     expect(fn () => $reorder->move($owner, 'homepage', ['placements' => [$item($first), $item($second)]], $actor))->toThrow(ValidationException::class);
@@ -549,7 +549,7 @@ it('revalidates each proposed reorder region against its block definition', func
     $block = app(ContentBlocks::class)->create(['definition' => 'main-only-reorder', 'key' => 'main-only-reorder-block', 'scope' => 'site', 'scopeKey' => 'main-site', 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => [], 'metadata' => []], $actor);
     $owner = TestContentOwner::query()->create(['name' => 'Main-only reorder owner']);
     $placement = app(ContentPlacements::class)->place($block, $owner, 'homepage', ['key' => 'main-only', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
-    expect(fn () => app(ContentPlacements::class)->move($owner, 'homepage', ['placements' => [['id' => $placement->id, 'expectedRevision' => $placement->revision, 'region' => 'sidebar', 'parentId' => null, 'sortOrder' => 0]]], $actor))->toThrow(InvalidArgumentException::class);
+    expect(fn () => app(ContentPlacements::class)->move($owner, 'homepage', ['placements' => [['id' => $placement->id, 'expected_revision' => $placement->revision, 'region' => 'sidebar', 'parentId' => null, 'sortOrder' => 0]]], $actor))->toThrow(InvalidArgumentException::class);
     expect($placement->refresh()->region)->toBe('main')->and($placement->revision)->toBe(1);
 });
 it('authorizes a complete reorder before writing and rolls back any partial batch', function (): void {
@@ -558,7 +558,7 @@ it('authorizes a complete reorder before writing and rolls back any partial batc
     $owner = TestContentOwner::query()->create(['name' => 'Reorder atomic owner']);
     $first = app(ContentPlacements::class)->place($block, $owner, 'homepage', ['key' => 'first', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
     $second = app(ContentPlacements::class)->place($block, $owner, 'homepage', ['key' => 'second', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
-    $proposal = ['placements' => [['id' => $first->id, 'expectedRevision' => 1, 'region' => 'main', 'parentId' => null, 'sortOrder' => 10], ['id' => $second->id, 'expectedRevision' => 1, 'region' => 'main', 'parentId' => null, 'sortOrder' => 20]]];
+    $proposal = ['placements' => [['id' => $first->id, 'expected_revision' => 1, 'region' => 'main', 'parentId' => null, 'sortOrder' => 10], ['id' => $second->id, 'expected_revision' => 1, 'region' => 'main', 'parentId' => null, 'sortOrder' => 20]]];
     $originalAuthorization = app(ContentAuthorization::class);
     $authorization = new class implements ContentAuthorization
     {
@@ -785,7 +785,7 @@ it('rejects reparenting a subtree beyond the placement depth limit', function ()
     app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'subtree-child', 'region' => 'main', 'parentId' => $subtreeRoot->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
     $targetRoot = app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'target-root', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
     $targetChild = app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'target-child', 'region' => 'main', 'parentId' => $targetRoot->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
-    expect(fn () => app(ContentPlacements::class)->update($subtreeRoot, ['expectedRevision' => $subtreeRoot->revision, 'region' => 'main', 'parentId' => $targetChild->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor))->toThrow(InvalidArgumentException::class);
+    expect(fn () => app(ContentPlacements::class)->update($subtreeRoot, ['expected_revision' => $subtreeRoot->revision, 'region' => 'main', 'parentId' => $targetChild->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor))->toThrow(InvalidArgumentException::class);
     expect($subtreeRoot->refresh()->parent_id)->toBeNull();
 });
 it('isolates reference display caches by the complete resolver context', function (): void {
@@ -944,10 +944,10 @@ it('requires publish authorization before exposing a live private block', functi
     };
     app()->instance(ContentAuthorization::class, $authorization);
     $actor = new GenericUser(['id' => 'editor-1']);
-    expect(fn () => app(ContentBlocks::class)->update($block, ['expectedRevision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => [], 'metadata' => []], $actor))->toThrow(AuthorizationException::class);
+    expect(fn () => app(ContentBlocks::class)->update($block, ['expected_revision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => [], 'metadata' => []], $actor))->toThrow(AuthorizationException::class);
     expect($block->refresh()->visibility)->toBe(ContentVisibility::Private)->and($block->revision)->toBe(2)->and($authorization->calls)->toHaveCount(2)->and($authorization->calls[0]['ability'])->toBe(ContentAbility::Update)->and($authorization->calls[0]['context'])->toMatchArray(['definition' => 'hero', 'key' => 'visibility-transition', 'scope' => 'site', 'scope_key' => 'tenant-a', 'current_visibility' => ContentVisibility::Private->value, 'target_visibility' => ContentVisibility::Public->value, 'published' => true])->and($authorization->calls[1]['ability'])->toBe(ContentAbility::Publish)->and($authorization->calls[1]['context']['visibility_transition'])->toBeTrue();
     $authorization->allowPublish = true;
-    $updated = app(ContentBlocks::class)->update($block, ['expectedRevision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => [], 'metadata' => []], $actor);
+    $updated = app(ContentBlocks::class)->update($block, ['expected_revision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => [], 'metadata' => []], $actor);
     expect($updated->visibility)->toBe(ContentVisibility::Public)->and($updated->revision)->toBe(3);
 });
 it('fails closed instead of adopting a pre-existing package table', function (string $tableKey, string $migrationFile): void {

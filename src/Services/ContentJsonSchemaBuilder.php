@@ -12,6 +12,8 @@ use stdClass;
 
 /**
  * Projects compiled Content schemas to interoperable JSON Schema Draft 2020-12 documents.
+ *
+ * @internal
  */
 final class ContentJsonSchemaBuilder
 {

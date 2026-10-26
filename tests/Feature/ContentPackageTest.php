@@ -59,7 +59,7 @@ beforeEach(function (): void {
 it('provides the complete revision-safe block lifecycle through the facade', function (): void {
     $actor = SystemActor::Background;
     $block = app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'facade-lifecycle', 'scope' => 'site', 'scopeKey' => 'main-site', 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => ['en' => ['title' => 'Facade lifecycle']], 'metadata' => []], $actor);
-    $updated = app(ContentBlocks::class)->update($block, ['expectedRevision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => ['source' => 'facade']], $actor);
+    $updated = app(ContentBlocks::class)->update($block, ['expected_revision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => ['source' => 'facade']], $actor);
     $published = app(ContentBlocks::class)->publish($updated, $updated->revision, $actor);
     $archived = app(ContentBlocks::class)->archive($published, $published->revision, $actor);
     app(ContentBlocks::class)->delete($archived, $archived->revision, $actor);
@@ -115,10 +115,10 @@ it('compiles rich semantic presets and deeply localizes their typed values', fun
 });
 it('enforces optimistic concurrency and json schema constraints', function (): void {
     $block = app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'hero', 'scope' => 'site', 'scopeKey' => 'main-site', 'visibility' => ContentVisibility::Public, 'values' => ['layout' => ['columns' => 1]], 'translations' => ['en' => ['title' => 'One']], 'metadata' => []], SystemActor::Background);
-    $updated = app(ContentBlocks::class)->update($block, ['expectedRevision' => 1, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => ['layout' => ['columns' => 3]], 'translations' => [], 'metadata' => []], SystemActor::Background);
+    $updated = app(ContentBlocks::class)->update($block, ['expected_revision' => 1, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => ['layout' => ['columns' => 3]], 'translations' => [], 'metadata' => []], SystemActor::Background);
     expect($updated->revision)->toBe(2)->and($updated->values['layout']['columns'])->toBe(3);
-    expect(fn () => app(ContentBlocks::class)->update($updated, ['expectedRevision' => 1, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => []], SystemActor::Background))->toThrow(StaleContentException::class);
-    expect(fn () => app(ContentBlocks::class)->update($updated, ['expectedRevision' => 2, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => ['layout' => ['columns' => 0]], 'translations' => ['en' => ['title' => 'Invalid']], 'metadata' => []], SystemActor::Background))->toThrow(InvalidArgumentException::class);
+    expect(fn () => app(ContentBlocks::class)->update($updated, ['expected_revision' => 1, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => []], SystemActor::Background))->toThrow(StaleContentException::class);
+    expect(fn () => app(ContentBlocks::class)->update($updated, ['expected_revision' => 2, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => ['layout' => ['columns' => 0]], 'translations' => ['en' => ['title' => 'Invalid']], 'metadata' => []], SystemActor::Background))->toThrow(InvalidArgumentException::class);
     expect(fn () => app(ContentDefinitionRegistry::class)->register(new ContentDefinitionSource(key: 'unsafe-json-reference', name: 'Unsafe JSON reference', description: null, category: 'testing', version: 1, view: null, schema: ['fields' => [['key' => 'payload', 'type' => 'json', 'label' => 'Payload', 'settings' => ['schema' => ['$dynamicRef' => 'https://schemas.example.test/content.json']]]]])))->toThrow(InvalidArgumentException::class);
     expect(fn () => app(ContentDefinitionRegistry::class)->register(new ContentDefinitionSource(key: 'misspelled-setting', name: 'Misspelled setting', description: null, category: 'testing', version: 1, view: null, schema: ['fields' => [['key' => 'title', 'type' => 'text', 'label' => 'Title', 'settings' => ['max_lenght' => 100]]]])))->toThrow(InvalidArgumentException::class);
 });
@@ -160,11 +160,11 @@ it('updates placement trees and rejects stale revisions and cycles', function ()
     $owner = TestContentOwner::query()->create(['name' => 'Tree page']);
     $parent = app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'parent', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
     $child = app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'child', 'region' => 'main', 'parentId' => $parent->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
-    expect(fn () => app(ContentPlacements::class)->update($child, ['expectedRevision' => $child->revision, 'region' => 'sidebar', 'parentId' => $parent->id, 'sortOrder' => 20, 'isVisible' => false, 'overrides' => []], $actor))->toThrow(InvalidArgumentException::class);
-    $updated = app(ContentPlacements::class)->update($child, ['expectedRevision' => $child->revision, 'region' => 'main', 'parentId' => $parent->id, 'sortOrder' => 20, 'isVisible' => false, 'overrides' => ['enabled' => false]], $actor);
+    expect(fn () => app(ContentPlacements::class)->update($child, ['expected_revision' => $child->revision, 'region' => 'sidebar', 'parentId' => $parent->id, 'sortOrder' => 20, 'isVisible' => false, 'overrides' => []], $actor))->toThrow(InvalidArgumentException::class);
+    $updated = app(ContentPlacements::class)->update($child, ['expected_revision' => $child->revision, 'region' => 'main', 'parentId' => $parent->id, 'sortOrder' => 20, 'isVisible' => false, 'overrides' => ['enabled' => false]], $actor);
     expect($updated->revision)->toBe(2)->and($updated->region)->toBe('main')->and($updated->sort_order)->toBe(20)->and($updated->is_visible)->toBeFalse()->and($updated->overrides)->toBe(['enabled' => false]);
-    expect(fn () => app(ContentPlacements::class)->update($updated, ['expectedRevision' => 1, 'region' => 'main', 'parentId' => $parent->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor))->toThrow(StaleContentException::class);
-    expect(fn () => app(ContentPlacements::class)->update($parent, ['expectedRevision' => $parent->revision, 'region' => 'main', 'parentId' => $child->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor))->toThrow(InvalidArgumentException::class);
+    expect(fn () => app(ContentPlacements::class)->update($updated, ['expected_revision' => 1, 'region' => 'main', 'parentId' => $parent->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor))->toThrow(StaleContentException::class);
+    expect(fn () => app(ContentPlacements::class)->update($parent, ['expected_revision' => $parent->revision, 'region' => 'main', 'parentId' => $child->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor))->toThrow(InvalidArgumentException::class);
     Event::assertDispatched(ContentPlacementChanged::class, 3);
 });
 it('loads deterministic definition files and guards custom view destinations', function (): void {
@@ -221,9 +221,9 @@ it('exposes independently configurable authorized management and public APIs', f
     expect(ContentBlock::query()->find($blockId))->toBeInstanceOf(ContentBlock::class);
     $this->getJson('/api/internal/content-manager/blocks?per_page=1')->assertOk()->assertJsonPath('data.0.id', $blockId)->assertJsonPath('meta.per_page', 1)->assertJsonPath('meta.total', 1);
     $this->getJson("/api/internal/content-manager/blocks/{$blockId}")->assertOk()->assertJsonPath('data.id', $blockId)->assertJsonPath('data.revision', 1);
-    $this->putJson("/api/internal/content-manager/blocks/{$blockId}", ['expectedRevision' => 1, 'metadata' => ['source' => 'management-api']])->assertOk()->assertJsonPath('data.revision', 2)->assertJsonPath('data.metadata.source', 'management-api');
-    $this->postJson("/api/internal/content-manager/blocks/{$blockId}/publish", ['expectedRevision' => 2])->assertOk()->assertJsonPath('data.status', 'published')->assertJsonPath('data.revision', 3);
-    $this->putJson("/api/internal/content-manager/blocks/{$blockId}", ['expectedRevision' => 1])->assertConflict()->assertJsonPath('error.code', 'stale_content')->assertJsonPath('error.context.expected_revision', 1)->assertJsonPath('error.context.actual_revision', 3);
+    $this->putJson("/api/internal/content-manager/blocks/{$blockId}", ['expected_revision' => 1, 'metadata' => ['source' => 'management-api']])->assertOk()->assertJsonPath('data.revision', 2)->assertJsonPath('data.metadata.source', 'management-api');
+    $this->postJson("/api/internal/content-manager/blocks/{$blockId}/publish", ['expected_revision' => 2])->assertOk()->assertJsonPath('data.status', 'published')->assertJsonPath('data.revision', 3);
+    $this->putJson("/api/internal/content-manager/blocks/{$blockId}", ['expected_revision' => 1])->assertConflict()->assertJsonPath('error.code', 'stale_content')->assertJsonPath('error.context.expected_revision', 1)->assertJsonPath('error.context.actual_revision', 3);
     $owner = TestContentOwner::query()->create(['name' => 'API page']);
     $placement = $this->postJson("/api/internal/content-manager/owners/page/{$owner->id}/groups/main/blocks/{$blockId}/placements", ['key' => 'hero', 'region' => 'main'])->assertCreated()->assertJsonPath('data.ownerType', TestContentOwner::class)->assertJsonPath('data.ownerId', $owner->id)->assertJsonPath('data.group', 'main');
     $placementId = $placement->json('data.id');
@@ -233,16 +233,16 @@ it('exposes independently configurable authorized management and public APIs', f
     $this->getJson("/api/internal/content-manager/owners/page/{$owner->id}/groups/main/preview?locale=en")->assertOk()->assertJsonPath('data.blocks.0.key', 'hero');
     $this->getJson("/api/site-content/owners/page/{$owner->id}/groups/main/composition?locale=en")->assertOk()->assertJsonPath('data.group', 'main')->assertJsonPath('data.blocks.0.key', 'hero')->assertJsonPath('data.blocks.0.values.title', 'API title');
     expect($placementId)->toBeString();
-    $this->putJson("/api/internal/content-manager/placements/{$placementId}", ['expectedRevision' => 1, 'region' => 'main', 'parentId' => null, 'sortOrder' => 10, 'isVisible' => false])->assertOk()->assertJsonPath('data.revision', 2)->assertJsonPath('data.sortOrder', 10)->assertJsonPath('data.isVisible', false);
-    $this->deleteJson("/api/internal/content-manager/placements/{$placementId}", ['expectedRevision' => 2])->assertOk()->assertJsonPath('data.deleted', true);
-    $this->postJson("/api/internal/content-manager/blocks/{$blockId}/archive", ['expectedRevision' => 3])->assertOk()->assertJsonPath('data.status', 'archived')->assertJsonPath('data.revision', 4);
-    $this->deleteJson("/api/internal/content-manager/blocks/{$blockId}", ['expectedRevision' => 4])->assertOk()->assertJsonPath('data.deleted', true);
-    $this->postJson("/api/internal/content-manager/blocks/{$blockId}/restore", ['expectedRevision' => 5])->assertOk()->assertJsonPath('data.status', 'draft')->assertJsonPath('data.revision', 6);
+    $this->putJson("/api/internal/content-manager/placements/{$placementId}", ['expected_revision' => 1, 'region' => 'main', 'parentId' => null, 'sortOrder' => 10, 'isVisible' => false])->assertOk()->assertJsonPath('data.revision', 2)->assertJsonPath('data.sortOrder', 10)->assertJsonPath('data.isVisible', false);
+    $this->deleteJson("/api/internal/content-manager/placements/{$placementId}", ['expected_revision' => 2])->assertOk()->assertJsonPath('data.deleted', true);
+    $this->postJson("/api/internal/content-manager/blocks/{$blockId}/archive", ['expected_revision' => 3])->assertOk()->assertJsonPath('data.status', 'archived')->assertJsonPath('data.revision', 4);
+    $this->deleteJson("/api/internal/content-manager/blocks/{$blockId}", ['expected_revision' => 4])->assertOk()->assertJsonPath('data.deleted', true);
+    $this->postJson("/api/internal/content-manager/blocks/{$blockId}/restore", ['expected_revision' => 5])->assertOk()->assertJsonPath('data.status', 'draft')->assertJsonPath('data.revision', 6);
 });
 it('keeps patch updates non-destructive by default and resolves nested block values', function (): void {
     $actor = TestContentMember::query()->create(['id' => (string) Str::uuid(), 'name' => 'Member']);
     $block = app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'safe-default-patch', 'scope' => 'site', 'scopeKey' => 'main-site', 'visibility' => ContentVisibility::Public, 'values' => ['layout' => ['columns' => 2], 'enabled' => true], 'translations' => ['en' => ['title' => 'Nested title']], 'metadata' => ['editor' => 'content-team']], $actor);
-    $updated = app(ContentBlocks::class)->update($block, ['expectedRevision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => []], $actor);
+    $updated = app(ContentBlocks::class)->update($block, ['expected_revision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => []], $actor);
     expect($updated->values)->toMatchArray(['layout' => ['columns' => 2], 'enabled' => true])->and($updated->metadata)->toBe(['editor' => 'content-team'])->and($updated->translations)->toHaveCount(1)->and($updated->created_by_id)->toBe($actor->getAuthIdentifier())->and($updated->updated_by_id)->toBe($actor->getAuthIdentifier());
     $published = app(ContentBlocks::class)->publish($updated, $updated->revision, $actor);
     $owner = TestContentOwner::query()->create(['name' => 'Nested page']);
@@ -258,7 +258,7 @@ it('prunes hidden and non-public placement subtrees without promoting children',
     $owner = TestContentOwner::query()->create(['name' => 'Subtree page']);
     $parent = app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'hidden-parent', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
     app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'visible-child', 'region' => 'main', 'parentId' => $parent->id, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
-    app(ContentPlacements::class)->update($parent, ['expectedRevision' => $parent->revision, 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => false, 'overrides' => []], $actor);
+    app(ContentPlacements::class)->update($parent, ['expected_revision' => $parent->revision, 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => false, 'overrides' => []], $actor);
     $live = app(ContentRenderer::class)->render($owner, ['group' => 'default', 'locale' => 'en', 'actor' => $actor]);
     $snapshot = app(ContentSnapshotService::class)->capture($owner, 'default', $actor);
     expect($live['blocks'])->toBe([])->and($live['regions'])->toBe([])->and($snapshot['blocks'])->toBe([]);
@@ -297,7 +297,7 @@ it('binds snapshots to owners and rejects missing parents and cycles', function 
     expect(fn () => app(ContentSnapshotService::class)->render($snapshotFor([$withoutView]), 'en', $actor))->toThrow(InvalidArgumentException::class);
     config()->set('nvl-content.rendering.default_view', 'missing::content-view');
     expect(fn () => app(ContentSnapshotService::class)->render($snapshotFor([$withoutView]), 'en', $actor))->toThrow(InvalidArgumentException::class);
-    app(ContentBlocks::class)->update($block, ['expectedRevision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => ['en' => ['title' => 'Snapshot publish validation']], 'metadata' => []], $actor);
+    app(ContentBlocks::class)->update($block, ['expected_revision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => ['en' => ['title' => 'Snapshot publish validation']], 'metadata' => []], $actor);
     config()->set('nvl-content.rendering.default_view', 'nvl-content::blocks.default');
     expect(app(ContentSnapshotService::class)->capture($owner, 'default', $actor, publishing: true)['blocks'])->toHaveCount(1);
 });

@@ -13,6 +13,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Expands semantic field presets into deterministic recursive Content schemas.
+ *
+ * @api
  */
 final readonly class ContentSchemaCompiler
 {

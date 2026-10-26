@@ -18,6 +18,8 @@ use Throwable;
 
 /**
  * Coordinates owner hard deletion with atomic placement and Media-association cleanup.
+ *
+ * @api
  */
 final readonly class ContentOwnerDeletion
 {

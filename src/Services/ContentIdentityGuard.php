@@ -8,6 +8,8 @@ use InvalidArgumentException;
 
 /**
  * Enforces the portable identifiers persisted by blocks and placements.
+ *
+ * @internal
  */
 final class ContentIdentityGuard
 {

@@ -106,7 +106,7 @@ final class ContentBlocks
     }
 
     /** Apply an authorized revision-checked block mutation.
-     * @param  array{expectedRevision:int,mode?:ContentMutationMode|string,visibility?:ContentVisibility|string|null,values?:array<string, mixed>,translations?:array<string, array<string, mixed>>,metadata?:array<string, mixed>}  $data
+     * @param  array{expected_revision:int,mode?:ContentMutationMode|string,visibility?:ContentVisibility|string|null,values?:array<string, mixed>,translations?:array<string, array<string, mixed>>,metadata?:array<string, mixed>}  $data
      */
     public function update(ContentBlock|string $block, array $data, Authenticatable|SystemActor $actor): ContentBlock
     {
@@ -132,8 +132,8 @@ final class ContentBlocks
             if ($model->status === ContentStatus::Published && $model->visibility === ContentVisibility::Private && $visibility === ContentVisibility::Public) {
                 $this->authorization->authorize(ContentAbility::Publish, $actor, $model, context: [...$authorizationContext, 'visibility_transition' => true]);
             }
-            if ($model->revision !== $data['expectedRevision']) {
-                throw StaleContentException::forRevision($model->id, $data['expectedRevision'], $model->revision);
+            if ($model->revision !== $data['expected_revision']) {
+                throw StaleContentException::forRevision($model->id, $data['expected_revision'], $model->revision);
             }
             $definition = $this->definitions->get($model->definition->key);
             $definitionHash = $this->json->hash($definition);
@@ -341,7 +341,7 @@ final class ContentBlocks
      */
     private static function updateRules(): array
     {
-        return ['expectedRevision' => ['required', 'integer', 'min:1'], 'mode' => ['sometimes', Rule::enum(ContentMutationMode::class)], 'visibility' => ['nullable', Rule::enum(ContentVisibility::class)], 'values' => ['array', new ContentObjectRule], 'translations' => ['array', new ContentObjectRule, new SupportedLocaleMapRule(self::updateContentLocales())], 'translations.*' => ['array', new ContentObjectRule], 'metadata' => ['array', new ContentObjectRule]];
+        return ['expected_revision' => ['required', 'integer', 'min:1'], 'mode' => ['sometimes', Rule::enum(ContentMutationMode::class)], 'visibility' => ['nullable', Rule::enum(ContentVisibility::class)], 'values' => ['array', new ContentObjectRule], 'translations' => ['array', new ContentObjectRule, new SupportedLocaleMapRule(self::updateContentLocales())], 'translations.*' => ['array', new ContentObjectRule], 'metadata' => ['array', new ContentObjectRule]];
     }
 
     /**

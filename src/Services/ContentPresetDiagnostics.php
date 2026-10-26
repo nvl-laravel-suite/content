@@ -9,7 +9,11 @@ use Nvl\Content\Validation\ContentSchemaValidator;
 use Nvl\Support\Doctor\DoctorCheck;
 use Throwable;
 
-/** Validates unused preset schemas through explicit read-only diagnostics. @internal */
+/**
+ * Validates unused preset schemas through explicit read-only diagnostics.
+ *
+ * @internal
+ */
 final readonly class ContentPresetDiagnostics
 {
     /** Retain the registered presets and their native validation collaborators. */

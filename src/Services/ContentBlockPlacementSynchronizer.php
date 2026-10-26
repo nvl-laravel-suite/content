@@ -15,6 +15,8 @@ use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Revalidates dependent placements and their Media references inside a locked block mutation.
+ *
+ * @internal
  */
 final readonly class ContentBlockPlacementSynchronizer
 {

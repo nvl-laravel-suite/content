@@ -6,11 +6,11 @@ namespace Nvl\Content\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
-use Nvl\Content\Console\CacheContentDefinitionsCommand;
-use Nvl\Content\Console\ClearContentDefinitionsCommand;
-use Nvl\Content\Console\ContentDoctorCommand;
-use Nvl\Content\Console\MigrateContentDefinitionsCommand;
-use Nvl\Content\Console\SyncContentDefinitionsCommand;
+use Nvl\Content\Console\Commands\CacheContentDefinitionsCommand;
+use Nvl\Content\Console\Commands\ClearContentDefinitionsCommand;
+use Nvl\Content\Console\Commands\ContentDoctorCommand;
+use Nvl\Content\Console\Commands\MigrateContentDefinitionsCommand;
+use Nvl\Content\Console\Commands\SyncContentDefinitionsCommand;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentDefinitionMigration;
 use Nvl\Content\Contracts\ContentFieldPreset;

@@ -15,6 +15,8 @@ use Nvl\Content\Support\ContentConfiguration;
 
 /**
  * Loads, validates, and prunes bounded owner placement trees.
+ *
+ * @internal
  */
 final readonly class ContentPlacementTree
 {

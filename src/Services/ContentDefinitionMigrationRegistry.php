@@ -9,6 +9,8 @@ use Nvl\Content\Contracts\ContentDefinitionMigration;
 
 /**
  * Holds the single canonical sequential migration chain for each definition.
+ *
+ * @api
  */
 final class ContentDefinitionMigrationRegistry
 {

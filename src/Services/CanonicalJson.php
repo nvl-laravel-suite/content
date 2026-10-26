@@ -9,6 +9,8 @@ use Nvl\Content\Schema\ContentSchema;
 
 /**
  * Stable JSON encoding used for definition hashes and revision snapshots.
+ *
+ * @internal
  */
 final class CanonicalJson
 {

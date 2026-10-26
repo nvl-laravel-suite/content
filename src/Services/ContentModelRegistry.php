@@ -33,7 +33,9 @@ final class ContentModelRegistry
         });
     }
 
-    /** Resolve and freeze the concrete ContentBlock class before resource compilation.
+    /**
+     * Resolve and freeze the concrete ContentBlock class before resource compilation.
+     *
      * @internal
      *
      * @return class-string<ContentBlock>
@@ -51,7 +53,9 @@ final class ContentModelRegistry
         return $this->registration->modelClass();
     }
 
-    /** Resolve the immutable model from native framework entry points.
+    /**
+     * Resolve the immutable model from native framework entry points.
+     *
      * @internal
      *
      * @return class-string<ContentBlock>
@@ -61,7 +65,9 @@ final class ContentModelRegistry
         return Container::getInstance()->make(self::class)->blockClass();
     }
 
-    /** Construct the configured root.
+    /**
+     * Construct the configured root.
+     *
      * @internal
      *
      * @param  array<string,mixed>  $attributes
@@ -73,7 +79,9 @@ final class ContentModelRegistry
         return new $class($attributes);
     }
 
-    /** Persist a package-authored attribute map under the exact source assignment.
+    /**
+     * Persist a package-authored attribute map under the exact source assignment.
+     *
      * @internal
      *
      * @param  array<string, mixed>  $attributes
@@ -102,7 +110,9 @@ final class ContentModelRegistry
         return array_values(array_unique([...$columns, 'owner_scope_key', ...$definition->foreignKey === null ? [] : [$definition->foreignKey]]));
     }
 
-    /** Create the exact configured query.
+    /**
+     * Create the exact configured query.
+     *
      * @internal
      *
      * @return Builder<ContentBlock>

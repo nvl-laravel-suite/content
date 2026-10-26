@@ -69,7 +69,7 @@ it('reconciles override association identity and removes only placement usages w
     $placement = app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'media', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => ['image' => $first->id]], $actor);
     $association = MediaAssociation::query()->where('associable_type', $placement->getMorphClass())->where('associable_id', $placement->id)->sole();
     expect($association->media_id)->toBe($first->id)->and($association->locale)->toBeNull()->and($association->metadata['field_path'])->toBe('image')->and($first->associations()->count())->toBe(2);
-    $placement = app(ContentPlacements::class)->update($placement, ['expectedRevision' => $placement->revision, 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => ['image' => $second->id]], $actor);
+    $placement = app(ContentPlacements::class)->update($placement, ['expected_revision' => $placement->revision, 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => ['image' => $second->id]], $actor);
     expect($first->associations()->count())->toBe(1)->and($second->associations()->sole()->associable_id)->toBe($placement->id);
     app(ContentPlacements::class)->delete($placement, $placement->revision, $actor);
     expect($second->associations()->count())->toBe(0)->and($first->associations()->sole()->associable_id)->toBe($block->id)->and(Media::query()->count())->toBe(2);
@@ -197,7 +197,7 @@ it('keeps retained soft-deleted owner placements valid during reusable block mut
     $retainedOwner->delete();
     expect(fn () => $owners->resolve('soft-page', $retainedOwner->id))->toThrow(InvalidArgumentException::class, 'does not exist');
     if ($operation === 'update') {
-        app(ContentBlocks::class)->update($block, ['expectedRevision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => ['reviewed' => true]], $actor);
+        app(ContentBlocks::class)->update($block, ['expected_revision' => $block->revision, 'mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => ['reviewed' => true]], $actor);
     } elseif ($operation === 'publish') {
         app(ContentBlocks::class)->publish($block, $block->revision, $actor);
     } else {

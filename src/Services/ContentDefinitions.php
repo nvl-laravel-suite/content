@@ -127,7 +127,7 @@ final class ContentDefinitions
     }
 
     /** Plan bounded migrations for the admitted owner’s stored block versions.
-     * @return array{definition:string|null,limit:int,totalPending:int,hasMore:bool,ready:list<array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expectedRevision:int,deleted:bool,versions:list<int>}>,blocked:list<array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expectedRevision:int,deleted:bool,code:string,message:string}>}
+     * @return array{definition:string|null,limit:int,totalPending:int,hasMore:bool,ready:list<array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expected_revision:int,deleted:bool,versions:list<int>}>,blocked:list<array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expected_revision:int,deleted:bool,code:string,message:string}>}
      */
     public function planMigration(Authenticatable|SystemActor $actor, ?string $definition = null, ?int $limit = null): array
     {
@@ -152,7 +152,7 @@ final class ContentDefinitions
             if (! $this->migrations->hasPath($current['key'], $block->definition_version, $current['version'])) {
                 $code = $block->definition_version > $current['version'] ? 'future_version' : 'missing_migration';
                 $message = $block->definition_version > $current['version'] ? "Stored version {$block->definition_version} exceeds current version {$current['version']}." : "No complete migration path exists from {$block->definition_version} "."to {$current['version']}.";
-                $blocked[] = ['blockId' => $block->id, 'blockKey' => $block->key, 'definition' => $current['key'], 'fromVersion' => $block->definition_version, 'toVersion' => $current['version'], 'expectedRevision' => $block->revision, 'deleted' => $block->trashed(), 'code' => $code, 'message' => $message];
+                $blocked[] = ['blockId' => $block->id, 'blockKey' => $block->key, 'definition' => $current['key'], 'fromVersion' => $block->definition_version, 'toVersion' => $current['version'], 'expected_revision' => $block->revision, 'deleted' => $block->trashed(), 'code' => $code, 'message' => $message];
 
                 continue;
             }
@@ -160,7 +160,7 @@ final class ContentDefinitions
             foreach ($this->migrations->path($current['key'], $block->definition_version, $current['version']) as $migration) {
                 $versions[] = $migration->toVersion();
             }
-            $ready[] = ['blockId' => $block->id, 'blockKey' => $block->key, 'definition' => $current['key'], 'fromVersion' => $block->definition_version, 'toVersion' => $current['version'], 'expectedRevision' => $block->revision, 'deleted' => $block->trashed(), 'versions' => $versions];
+            $ready[] = ['blockId' => $block->id, 'blockKey' => $block->key, 'definition' => $current['key'], 'fromVersion' => $block->definition_version, 'toVersion' => $current['version'], 'expected_revision' => $block->revision, 'deleted' => $block->trashed(), 'versions' => $versions];
         }
 
         return ['definition' => $definition, 'limit' => $batchLimit, 'totalPending' => $totalPending, 'hasMore' => $totalPending > $blocks->count(), 'ready' => $ready, 'blocked' => $blocked];
@@ -218,7 +218,7 @@ final class ContentDefinitions
     }
 
     /** Migrate reviewed block versions under their actual source locks.
-     * @param  array{definition:string|null,limit:int,totalPending:int,hasMore:bool,ready:list<array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expectedRevision:int,deleted:bool,versions:list<int>}>,blocked:list<array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expectedRevision:int,deleted:bool,code:string,message:string}>}  $plan
+     * @param  array{definition:string|null,limit:int,totalPending:int,hasMore:bool,ready:list<array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expected_revision:int,deleted:bool,versions:list<int>}>,blocked:list<array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expected_revision:int,deleted:bool,code:string,message:string}>}  $plan
      * @return array{applied:bool,migrated:list<array{blockId:string,definition:string,fromVersion:int,toVersion:int,previousRevision:int,revision:int}>}
      */
     public function migrate(array $plan, Authenticatable|SystemActor $actor): array
@@ -247,8 +247,8 @@ final class ContentDefinitions
             foreach ($targets as $target) {
                 $block = ContentModelRegistry::query()->withTrashed()->with(['definition', 'translations'])->lockForUpdate()->findOrFail($target['blockId']);
                 $this->authorization->authorize(ContentAbility::MigrateDefinitions, $actor, block: $block, context: ['definition' => $target['definition'], 'from_version' => $target['fromVersion'], 'to_version' => $target['toVersion'], 'apply' => true]);
-                if ($block->revision !== $target['expectedRevision']) {
-                    throw StaleContentException::forRevision($block->id, $target['expectedRevision'], $block->revision);
+                if ($block->revision !== $target['expected_revision']) {
+                    throw StaleContentException::forRevision($block->id, $target['expected_revision'], $block->revision);
                 }
                 if ($block->definition->key !== $target['definition'] || $block->definition_version !== $target['fromVersion']) {
                     throw new InvalidArgumentException("Content migration target [{$block->id}] no longer matches its plan.");

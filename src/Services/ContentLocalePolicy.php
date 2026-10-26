@@ -12,6 +12,8 @@ use Nvl\Translatable\Support\LocaleCode;
 
 /**
  * Resolves Content's effective locale allowlist and request-scoped default.
+ *
+ * @internal
  */
 final readonly class ContentLocalePolicy
 {

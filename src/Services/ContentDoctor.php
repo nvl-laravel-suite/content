@@ -23,6 +23,8 @@ use Throwable;
 
 /**
  * Performs non-mutating installation and configuration diagnostics.
+ *
+ * @internal
  */
 final class ContentDoctor
 {

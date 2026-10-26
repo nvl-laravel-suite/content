@@ -8,6 +8,9 @@ use Illuminate\Contracts\Container\Container;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentCatalogCopyAccess;
 
+/**
+ * @api
+ */
 final class ContentCatalogCopyRegistry
 {
     /** @var array<string,class-string<ContentCatalogCopyAccess>> */

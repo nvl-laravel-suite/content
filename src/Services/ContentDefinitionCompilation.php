@@ -8,7 +8,11 @@ use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Validation\ContentSchemaValidator;
 use Nvl\Content\Validation\ContentValueValidator;
 
-/** Compiles source definitions without mutating the running host registry. @internal */
+/**
+ * Compiles source definitions without mutating the running host registry.
+ *
+ * @internal
+ */
 final readonly class ContentDefinitionCompilation
 {
     /** Retain the registered compiler collaborators for an isolated compilation. */

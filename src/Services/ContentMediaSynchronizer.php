@@ -22,6 +22,8 @@ use Nvl\Support\Enums\SystemActor;
 
 /**
  * Keeps Media associations aligned with normalized field IDs without owning binaries.
+ *
+ * @internal
  */
 final readonly class ContentMediaSynchronizer
 {

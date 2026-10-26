@@ -15,6 +15,8 @@ use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 
 /**
  * Declares Content capabilities while preserving native Laravel owner identities.
+ *
+ * @internal
  */
 final class ContentOwnerRegistry implements ContentOwnerRegistrar
 {

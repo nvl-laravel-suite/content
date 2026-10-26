@@ -72,7 +72,7 @@ final class ContentPlacements
     /**
      * Update one placement while preserving its owner and group identity.
      *
-     * @param  array{expectedRevision:int,region:string,parentId?:string|null,sortOrder:int,isVisible:bool,overrides?:array<string, mixed>}  $data
+     * @param  array{expected_revision:int,region:string,parentId?:string|null,sortOrder:int,isVisible:bool,overrides?:array<string, mixed>}  $data
      */
     public function update(ContentPlacement|string $placement, array $data, Authenticatable|SystemActor $actor): ContentPlacement
     {
@@ -90,8 +90,8 @@ final class ContentPlacements
             $owner = $this->owners->resolve($model->owner_type, $model->owner_id);
             $this->owners->assertGroup($owner, $model->group);
             $this->authorization->authorize(ContentAbility::Place, $actor, $model->block, $owner, ['group' => $model->group, 'region' => $data['region'], 'parent_id' => $data['parentId']]);
-            if ($model->revision !== $data['expectedRevision']) {
-                throw StaleContentException::forRevision($model->id, $data['expectedRevision'], $model->revision);
+            if ($model->revision !== $data['expected_revision']) {
+                throw StaleContentException::forRevision($model->id, $data['expected_revision'], $model->revision);
             }
             ContentPlacement::query()->where('owner_type', $model->owner_type)->where('owner_id', $model->owner_id)->where('group', $model->group)->lockForUpdate()->get(['id']);
             $overrides = $this->validator->validate($model->block, $owner, $model->owner_type, $model->owner_id, $model->group, $data['region'], $data['parentId'], $data['overrides'], $actor, $model->id);
@@ -106,7 +106,7 @@ final class ContentPlacements
     /**
      * Apply one complete revision-safe tree proposal and return the fresh editor.
      *
-     * @param  array{placements:list<array{id:string,expectedRevision:int,region:string,parentId?:string|null,sortOrder:int}>}  $data
+     * @param  array{placements:list<array{id:string,expected_revision:int,region:string,parentId?:string|null,sortOrder:int}>}  $data
      * @return array<int,ContentPlacement>
      */
     public function move(Model $owner, string $group, array $data, Authenticatable|SystemActor $actor): array
@@ -141,7 +141,7 @@ final class ContentPlacements
                 $this->authorization->authorize(ContentAbility::Place, $actor, $block, $owner, ['group' => $group, 'region' => $item['region'], 'parent_id' => $item['parentId'], 'reorders_placements' => true]);
             }
             foreach ($placements as $placement) {
-                $expected = $proposal[$placement->id]['expectedRevision'];
+                $expected = $proposal[$placement->id]['expected_revision'];
                 if ($placement->revision !== $expected) {
                     throw StaleContentException::forRevision($placement->id, $expected, $placement->revision);
                 }
@@ -172,8 +172,8 @@ final class ContentPlacements
     }
 
     /**
-     * @param  array{placements:list<array{id:string,expectedRevision:int,region:string,parentId?:string|null,sortOrder:int}>}  $data
-     * @return array<string, array{id:string,expectedRevision:int,region:string,parentId:string|null,sortOrder:int}>
+     * @param  array{placements:list<array{id:string,expected_revision:int,region:string,parentId?:string|null,sortOrder:int}>}  $data
+     * @return array<string, array{id:string,expected_revision:int,region:string,parentId:string|null,sortOrder:int}>
      */
     private function reorderContentPlacementsNormalizeProposal(array $data, int $maximum): array
     {
@@ -278,7 +278,7 @@ final class ContentPlacements
      */
     private static function updateRules(): array
     {
-        return ['expectedRevision' => ['required', 'integer', 'min:1'], 'region' => ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_.-]*$/'], 'parentId' => ['nullable', 'uuid'], 'sortOrder' => ['required', 'integer', 'min:0'], 'isVisible' => ['required', 'boolean'], 'overrides' => ['array', new ContentObjectRule]];
+        return ['expected_revision' => ['required', 'integer', 'min:1'], 'region' => ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_.-]*$/'], 'parentId' => ['nullable', 'uuid'], 'sortOrder' => ['required', 'integer', 'min:0'], 'isVisible' => ['required', 'boolean'], 'overrides' => ['array', new ContentObjectRule]];
     }
 
     /**

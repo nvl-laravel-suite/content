@@ -563,7 +563,6 @@
             "file": "src/Models/ContentBlock.php",
             "methods": [
                 "allowsCentralCatalog",
-                "bootHasOwnership",
                 "definition",
                 "delete",
                 "fresh",
@@ -645,7 +644,6 @@
             "file": "src/Models/ContentBlockTranslation.php",
             "methods": [
                 "block",
-                "bootHasOwnership",
                 "delete",
                 "fresh",
                 "getConnectionName",
@@ -701,7 +699,6 @@
             "file": "src/Models/ContentPlacement.php",
             "methods": [
                 "block",
-                "bootHasOwnership",
                 "children",
                 "delete",
                 "fresh",
@@ -743,7 +740,6 @@
             "file": "src/Models/ContentRevision.php",
             "methods": [
                 "block",
-                "bootHasOwnership",
                 "delete",
                 "fresh",
                 "getConnectionName",
@@ -845,6 +841,42 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Content\\Services\\ContentCatalogCopyRegistry": {
+            "kind": "class",
+            "file": "src/Services/ContentCatalogCopyRegistry.php",
+            "methods": [
+                "__construct",
+                "register",
+                "resolve"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Services\\ContentDefinitionMigrationRegistry": {
+            "kind": "class",
+            "file": "src/Services/ContentDefinitionMigrationRegistry.php",
+            "methods": [
+                "hasPath",
+                "identifiers",
+                "path",
+                "register"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Services\\ContentDefinitionRegistry": {
+            "kind": "class",
+            "file": "src/Services/ContentDefinitionRegistry.php",
+            "methods": [
+                "__construct",
+                "all",
+                "get",
+                "register",
+                "restoreCompiled"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Content\\Services\\ContentDefinitions": {
             "kind": "class",
             "file": "src/Services/ContentDefinitions.php",
@@ -866,6 +898,16 @@
                 "__construct",
                 "blockClass",
                 "projectionColumns"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Services\\ContentOwnerDeletion": {
+            "kind": "class",
+            "file": "src/Services/ContentOwnerDeletion.php",
+            "methods": [
+                "__construct",
+                "execute"
             ],
             "properties": [],
             "constants": []
@@ -910,6 +952,37 @@
             "file": "src/Services/ContentRenderResources.php",
             "methods": [
                 "reference"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Services\\ContentRenderer": {
+            "kind": "class",
+            "file": "src/Services/ContentRenderer.php",
+            "methods": [
+                "__construct",
+                "render"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Services\\ContentSchemaCompiler": {
+            "kind": "class",
+            "file": "src/Services/ContentSchemaCompiler.php",
+            "methods": [
+                "__construct",
+                "compile",
+                "compilePreset"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Content\\Services\\ContentScopeRegistry": {
+            "kind": "class",
+            "file": "src/Services/ContentScopeRegistry.php",
+            "methods": [
+                "assert",
+                "assertRegistered"
             ],
             "properties": [],
             "constants": []

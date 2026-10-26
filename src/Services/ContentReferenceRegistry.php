@@ -16,6 +16,8 @@ use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 
 /**
  * Allowlist for schema-declared references.
+ *
+ * @internal
  */
 final class ContentReferenceRegistry
 {

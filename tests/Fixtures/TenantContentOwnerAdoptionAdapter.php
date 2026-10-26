@@ -44,12 +44,7 @@ final readonly class TenantContentOwnerAdoptionAdapter implements TenantAdoption
         $schema = $this->connection()->getSchemaBuilder();
         $table = (new TenantContentOwner)->getTable();
 
-        return new TenantVerification(
-            $schema->hasColumns($table, ['id', 'tenant_id', 'name'])
-                && $schema->hasIndex($table, ['tenant_id', 'id'], 'unique')
-                ? []
-                : ['test.content-owners.schema'],
-        );
+        return new TenantVerification($schema->hasColumns($table, ['id', 'tenant_id', 'name']) && $schema->hasIndex($table, ['tenant_id', 'id'], 'unique') ? [] : ['test.content-owners.schema']);
     }
 
     public function activate(TenantAdoptionPlan $plan): void {}

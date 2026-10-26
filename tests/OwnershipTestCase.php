@@ -10,10 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Nvl\Content\Actions\SyncContentDefinitionsAction;
-use Nvl\Content\Data\ContentActorData;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Providers\ContentServiceProvider;
+use Nvl\Content\Services\ContentDefinitions;
 use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Tests\Fixtures\OwnershipActor;
 use Nvl\Content\Tests\Fixtures\OwnershipCompany;
@@ -21,7 +20,6 @@ use Nvl\Content\Tests\Fixtures\OwnershipContentBlock;
 use Nvl\Content\Tests\Fixtures\OwnershipContentOwner;
 use Nvl\Content\Tests\Fixtures\OwnershipContentOwnerAdapter;
 use Nvl\Content\Tests\Fixtures\OwnershipMedia;
-use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Media\Providers\MediaServiceProvider;
 use Nvl\Ownership\Contracts\CentralAccess;
 use Nvl\Ownership\Contracts\OwnerAccess;
@@ -32,6 +30,7 @@ use Nvl\Ownership\Services\OwnershipAdoptionRegistry;
 use Nvl\Ownership\Services\OwnershipRunner;
 use Nvl\Ownership\ValueObjects\OwnershipMapping;
 use Nvl\Ownership\ValueObjects\OwnershipOperation;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Support\Ownership\Services\OwnershipStorageTables;
 use Nvl\Support\Ownership\ValueObjects\OwnershipResourceDefinition;
@@ -39,6 +38,7 @@ use Nvl\Support\Providers\LocaleServiceProvider;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Orchestra\Testbench\TestCase;
+use Spatie\LaravelData\LaravelDataServiceProvider;
 
 /** Exercises committed ownership and audit behavior without NVL Tenancy or Auth providers. */
 abstract class OwnershipTestCase extends TestCase
@@ -54,7 +54,7 @@ abstract class OwnershipTestCase extends TestCase
     /** @return list<class-string> */
     protected function getPackageProviders($app): array
     {
-        return [LocaleServiceProvider::class, SupportServiceProvider::class, TranslatableServiceProvider::class, DataServiceProvider::class, OwnershipServiceProvider::class, MediaServiceProvider::class, ContentServiceProvider::class];
+        return [LocaleServiceProvider::class, SupportServiceProvider::class, TranslatableServiceProvider::class, LaravelDataServiceProvider::class, OwnershipServiceProvider::class, MediaServiceProvider::class, ContentServiceProvider::class];
     }
 
     /** @return class-string<ContentBlock> */
@@ -66,29 +66,7 @@ abstract class OwnershipTestCase extends TestCase
     /** Configure owned package roots before immutable resource registration. */
     protected function defineEnvironment($app): void
     {
-        $app['config']->set([
-            'database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:',
-            'nvl-core.owners' => [OwnershipCompany::class, OwnershipActor::class],
-            'nvl-ownership.enabled' => true, 'nvl-ownership.migrations.enabled' => false,
-            'nvl-ownership.central_operations' => ['content-definitions'],
-            'nvl-tenancy.enabled' => false,
-            'nvl-content.models.block' => $this->blockClass(),
-            'nvl-content.ownership.owner_resources' => ['fixture.content-owners'],
-            'nvl-content.authorization.callback' => static fn (): bool => true,
-            'nvl-content.locales.available' => ['en', 'bg'],
-            'nvl-content.locales.required_on_publish' => ['en'],
-            'nvl-content.owners' => ['subjects' => OwnershipContentOwner::class],
-            'nvl-content.definitions' => ['copy' => ['name' => 'Copy', 'version' => 1, 'allowed_regions' => ['main'], 'schema' => ['fields' => [['key' => 'text', 'type' => 'text', 'label' => 'Text', 'localized' => true]]]]],
-            'nvl-media.models.media' => OwnershipMedia::class,
-            'nvl-media.migrations.enabled' => false,
-            'nvl-translatable.locales' => ['en', 'bg'],
-            'nvl-comments.moderation.new_status' => 'approved',
-            'nvl-comments.mutation_lock.enabled' => false,
-            'nvl-content.migrations.enabled' => false,
-            'nvl-media.deduplication_lock.store' => 'array',
-            'nvl-media.routes.api_enabled' => false,
-            'auth.providers.users.model' => OwnershipActor::class,
-        ]);
+        $app['config']->set(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:', 'nvl-core.owners' => [OwnershipCompany::class, OwnershipActor::class], 'nvl-ownership.enabled' => true, 'nvl-ownership.migrations.enabled' => false, 'nvl-ownership.central_operations' => ['content-definitions'], 'nvl-tenancy.enabled' => false, 'nvl-content.models.block' => $this->blockClass(), 'nvl-content.ownership.owner_resources' => ['fixture.content-owners'], 'nvl-content.authorization.callback' => static fn (): bool => true, 'nvl-content.locales.available' => ['en', 'bg'], 'nvl-content.locales.required_on_publish' => ['en'], 'nvl-content.owners' => ['subjects' => OwnershipContentOwner::class], 'nvl-content.definitions' => ['copy' => ['name' => 'Copy', 'version' => 1, 'allowed_regions' => ['main'], 'schema' => ['fields' => [['key' => 'text', 'type' => 'text', 'label' => 'Text', 'localized' => true]]]]], 'nvl-media.models.media' => OwnershipMedia::class, 'nvl-media.migrations.enabled' => false, 'nvl-translatable.locales' => ['en', 'bg'], 'nvl-comments.moderation.new_status' => 'approved', 'nvl-comments.mutation_lock.enabled' => false, 'nvl-content.migrations.enabled' => false, 'nvl-media.deduplication_lock.store' => 'array', 'nvl-media.routes.api_enabled' => false, 'auth.providers.users.model' => OwnershipActor::class]);
         if (getenv('NVL_OWNERSHIP_TEST_DRIVER') === 'pgsql') {
             $database = getenv('NVL_OWNERSHIP_TEST_DATABASE');
             if (! is_string($database) || preg_match('/^nvl_own_test_[a-z0-9_]+$/D', $database) !== 1) {
@@ -141,7 +119,7 @@ abstract class OwnershipTestCase extends TestCase
         foreach (glob(__DIR__.'/../database/migrations/*.php') ?: [] as $path) {
             (require $path)->up();
         }
-        $definitionTable = (new ($this->blockClass()))->getTable();
+        $definitionTable = (new ($this->blockClass())())->getTable();
         $schema->table($definitionTable, static function (Blueprint $table): void {
             $table->unsignedBigInteger('company_id')->nullable();
             $table->foreign('company_id')->references('id')->on('content_owned_companies');
@@ -160,7 +138,6 @@ abstract class OwnershipTestCase extends TestCase
                 config(['nvl-ownership.connection' => $configured]);
             }
         }
-
         $this->app->bind(OwnerAccess::class, static fn () => new class implements OwnerAccess
         {
             public function assertCanEnter(Authenticatable $actor, Model $owner): void {}
@@ -190,7 +167,7 @@ abstract class OwnershipTestCase extends TestCase
             }
         });
         $this->adoptOwnership();
-        $this->app->make(OwnershipRunner::class)->central('content-definitions', OwnershipActor::firstOrFail(), fn () => $this->app->make(SyncContentDefinitionsAction::class)->execute(ContentActorData::system()));
+        $this->app->make(OwnershipRunner::class)->central('content-definitions', OwnershipActor::firstOrFail(), fn () => $this->app->make(ContentDefinitions::class)->sync(SystemActor::Background));
     }
 
     /** Activate this fixture graph after its source tables and host policies exist. */

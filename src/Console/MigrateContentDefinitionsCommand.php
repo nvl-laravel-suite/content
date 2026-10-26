@@ -6,9 +6,8 @@ namespace Nvl\Content\Console;
 
 use Illuminate\Console\Command;
 use InvalidArgumentException;
-use Nvl\Content\Content;
-use Nvl\Content\Data\ContentActorData;
-use Nvl\Content\Data\ContentDefinitionMigrationProblemData;
+use Nvl\Content\Services\ContentDefinitions;
+use Nvl\Support\Enums\SystemActor;
 
 /**
  * Plans or atomically applies one bounded definition migration batch.
@@ -25,76 +24,52 @@ final class MigrateContentDefinitionsCommand extends Command
     /** @var string */
     protected $description = 'Plan or migrate stored blocks to their current content definition versions';
 
-    public function handle(Content $content): int
+    /** Native Content operation. */
+    public function handle(ContentDefinitions $content): int
     {
         $format = $this->option('format');
         $definition = $this->option('definition');
         $limit = $this->option('limit');
-
         if (! in_array($format, ['text', 'json'], true)) {
-            throw new InvalidArgumentException(
-                'The content definition migration format must be text or json.',
-            );
+            throw new InvalidArgumentException('The content definition migration format must be text or json.');
         }
-
         if ($definition !== null && $definition === '') {
-            throw new InvalidArgumentException(
-                'The content definition migration key must be a non-empty string.',
-            );
+            throw new InvalidArgumentException('The content definition migration key must be a non-empty string.');
         }
-
         if ($limit !== null && preg_match('/^[1-9][0-9]*$/', $limit) !== 1) {
-            throw new InvalidArgumentException(
-                'The content definition migration limit must be a positive integer.',
-            );
+            throw new InvalidArgumentException('The content definition migration limit must be a positive integer.');
         }
-
-        $actor = ContentActorData::system();
-        $plan = $content->planDefinitionMigrations(
-            actor: $actor,
-            definition: $definition,
-            limit: $limit !== null ? (int) $limit : null,
-        );
+        $actor = SystemActor::Background;
+        $plan = app(ContentDefinitions::class)->planMigration(actor: $actor, definition: $definition, limit: $limit !== null ? (int) $limit : null);
         $result = null;
-
-        if ($plan->blocked === [] && ! (bool) $this->option('dry-run')) {
-            $result = $content->applyDefinitionMigrations($plan, $actor);
+        if ($plan['blocked'] === [] && ! (bool) $this->option('dry-run')) {
+            $result = app(ContentDefinitions::class)->migrate($plan, $actor);
         }
-
         if ($format === 'json') {
-            $this->line((string) json_encode([
-                'plan' => $plan->toArray(),
-                'result' => $result?->toArray(),
-            ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+            $this->line((string) json_encode(['plan' => $plan, 'result' => $result], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
         } else {
-            foreach ($plan->ready as $target) {
-                $this->line(
-                    "ready: {$target->definition}:{$target->blockId} ".
-                    "{$target->fromVersion}->{$target->toVersion} ".
-                    "revision {$target->expectedRevision}",
-                );
+            foreach ($plan['ready'] as $target) {
+                $this->line("ready: {$target['definition']}:{$target['blockId']} "."{$target['fromVersion']}->{$target['toVersion']} "."revision {$target['expectedRevision']}");
             }
-
-            foreach ($plan->blocked as $problem) {
+            foreach ($plan['blocked'] as $problem) {
                 $this->line($this->problem($problem));
             }
-
             if ($result !== null) {
-                $this->info('migrated: '.count($result->migrated));
+                $this->info('migrated: '.count($result['migrated']));
             }
-
-            if ($plan->hasMore) {
+            if ($plan['hasMore']) {
                 $this->warn('More pending blocks remain; run another batch after this one.');
             }
         }
 
-        return $plan->blocked === [] ? self::SUCCESS : self::FAILURE;
+        return $plan['blocked'] === [] ? self::SUCCESS : self::FAILURE;
     }
 
-    private function problem(ContentDefinitionMigrationProblemData $problem): string
+    /** Native Content operation.
+     * @param  array{blockId:string,blockKey:string,definition:string,fromVersion:int,toVersion:int,expectedRevision:int,deleted:bool,code:string,message:string}  $problem
+     */
+    private function problem(array $problem): string
     {
-        return "blocked: {$problem->definition}:{$problem->blockId} ".
-            "{$problem->fromVersion}->{$problem->toVersion} ".
-            "[{$problem->code}] {$problem->message}";
+        return "blocked: {$problem['definition']}:{$problem['blockId']} "."{$problem['fromVersion']}->{$problem['toVersion']} "."[{$problem['code']}] {$problem['message']}";
     }
 }

@@ -1,7 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
 use Nvl\Content\Definitions\Tables\ContentTables;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Services\ConfiguredContentAuthorization;

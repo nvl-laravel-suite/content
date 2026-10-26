@@ -18,12 +18,10 @@ final class ContentArrays
     public static function stringMap(array $value, string $label): array
     {
         $normalized = [];
-
         foreach ($value as $key => $item) {
             if (! is_string($key)) {
                 throw new InvalidArgumentException("{$label} must be a JSON object.");
             }
-
             $normalized[$key] = $item;
         }
 
@@ -37,14 +35,10 @@ final class ContentArrays
     public static function translations(array $value, string $label): array
     {
         $normalized = [];
-
         foreach ($value as $locale => $values) {
             if (! is_string($locale) || ! is_array($values)) {
-                throw new InvalidArgumentException(
-                    "{$label} must map locale strings to JSON objects.",
-                );
+                throw new InvalidArgumentException("{$label} must map locale strings to JSON objects.");
             }
-
             $normalized[$locale] = self::stringMap($values, "{$label}.{$locale}");
         }
 

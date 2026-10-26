@@ -39,7 +39,6 @@ final class ContentPlacementFactory extends Factory
             if (! $expandRelationships) {
                 return;
             }
-
             $owner = FactoryGuard::owner($model, 'owner_type', 'owner_id');
             if (! $owner instanceof ContentOwner || ! in_array($model->group, $owner->contentGroups(), true)) {
                 throw new InvalidArgumentException('Content placement fixtures require a native owner composition group.');
@@ -63,15 +62,7 @@ final class ContentPlacementFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'content_block_id' => ContentBlock::factory(),
-            'owner_type' => null,
-            'owner_id' => null,
-            'group' => 'default',
-            'key' => $this->faker->unique()->slug(3),
-            'region' => 'main',
-            'revision' => 1,
-        ];
+        return ['content_block_id' => ContentBlock::factory(), 'owner_type' => null, 'owner_id' => null, 'group' => 'default', 'key' => $this->faker->unique()->slug(3), 'region' => 'main', 'revision' => 1];
     }
 
     /**
@@ -83,9 +74,7 @@ final class ContentPlacementFactory extends Factory
     {
         FactoryGuard::parent($parent, new ContentPlacement);
 
-        return $this->state([
-            'content_block_id' => $parent->getKey(),
-        ]);
+        return $this->state(['content_block_id' => $parent->getKey()]);
     }
 
     /**
@@ -97,9 +86,6 @@ final class ContentPlacementFactory extends Factory
     {
         FactoryGuard::parent($owner, new ContentPlacement);
 
-        return $this->state([
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => (string) FactoryGuard::identifier($owner->getKey()),
-        ]);
+        return $this->state(['owner_type' => $owner->getMorphClass(), 'owner_id' => (string) FactoryGuard::identifier($owner->getKey())]);
     }
 }

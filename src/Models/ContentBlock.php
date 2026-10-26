@@ -17,17 +17,10 @@ use Nvl\Content\Casts\ContentSchemaCast;
 use Nvl\Content\Database\Factories\ContentBlockFactory;
 use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Enums\ContentVisibility;
-use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
-use Nvl\Filterable\Definitions\FilterDefinition;
-use Nvl\Filterable\Definitions\FilterSchema;
-use Nvl\Filterable\Definitions\SortDefinition;
-use Nvl\Filterable\Enums\FilterOperator;
-use Nvl\Filterable\Enums\FilterValueType;
-use Nvl\Media\Contracts\HasNvlMedia;
-use Nvl\Media\Traits\InteractsWithNvlMedia;
 use Nvl\Support\Config\PackageStorage;
 use Nvl\Support\Ownership\Contracts\Ownable;
 use Nvl\Support\Ownership\Traits\HasOwnership;
@@ -40,7 +33,6 @@ use Nvl\Translatable\Translatable;
  * Reusable localized content values for one definition and scope.
  *
  * @property string $id
- * @property string|null $tenant_id
  * @property string $definition_id
  * @property string $key
  * @property string $scope
@@ -68,9 +60,8 @@ use Nvl\Translatable\Translatable;
  *
  * @api
  */
-class ContentBlock extends Model implements HasNvlMedia, Ownable, TranslatableModel
+class ContentBlock extends Model implements Ownable, TranslatableModel
 {
-    use GuardsTenantOwnership;
     use HasOwnership;
 
     /** Central source blocks require an explicit owning subclass capability. */
@@ -105,57 +96,23 @@ class ContentBlock extends Model implements HasNvlMedia, Ownable, TranslatableMo
     use HasFactory;
 
     use HasUuids;
-    use InteractsWithNvlMedia;
     use SoftDeletes;
     use Translatable;
 
-    public const string TENANT_RESOURCE = 'content.blocks';
+    public const string OWNERSHIP_RESOURCE = 'content.blocks';
 
     /** @var list<string> */
-    protected $fillable = [
-        'definition_id',
-        'key',
-        'scope',
-        'scope_key',
-        'status',
-        'visibility',
-        'values',
-        'metadata',
-        'definition_version',
-        'definition_hash',
-        'definition_schema',
-        'definition_view',
-        'revision',
-        'published_by_type',
-        'published_by_id',
-        'published_at',
-        'created_by_type',
-        'created_by_id',
-        'updated_by_type',
-        'updated_by_id',
-    ];
+    protected $fillable = ['definition_id', 'key', 'scope', 'scope_key', 'status', 'visibility', 'values', 'metadata', 'definition_version', 'definition_hash', 'definition_schema', 'definition_view', 'revision', 'published_by_type', 'published_by_id', 'published_at', 'created_by_type', 'created_by_id', 'updated_by_type', 'updated_by_id'];
 
     /** @var array<string, mixed> */
-    protected $attributes = [
-        'scope' => 'global',
-        'scope_key' => '*',
-        'status' => 'draft',
-        'visibility' => 'public',
-        'revision' => 1,
-    ];
+    protected $attributes = ['scope' => 'global', 'scope_key' => '*', 'status' => 'draft', 'visibility' => 'public', 'revision' => 1];
 
+    /** Native Content operation. */
     protected function defineTranslations(): RelatedTranslationDefinition
     {
         $locales = ContentConfiguration::stringList('nvl-content.locales.available');
 
-        return new RelatedTranslationDefinition(
-            translationModel: ContentBlockTranslation::class,
-            foreignKey: 'content_block_id',
-            fields: ['values'],
-            locales: $locales !== [] ? $locales : null,
-            mutationPolicy: TranslationMutationPolicy::OwningServiceOnly,
-            ownershipResource: self::TENANT_RESOURCE,
-        );
+        return new RelatedTranslationDefinition(translationModel: ContentBlockTranslation::class, foreignKey: 'content_block_id', fields: ['values'], locales: $locales !== [] ? $locales : null, mutationPolicy: TranslationMutationPolicy::OwningServiceOnly, ownershipResource: ContentOwnership::declared() ? self::OWNERSHIP_RESOURCE : null);
     }
 
     /** Resolve the configured native table owned by this model. */
@@ -175,16 +132,7 @@ class ContentBlock extends Model implements HasNvlMedia, Ownable, TranslatableMo
      */
     protected function casts(): array
     {
-        return [
-            'status' => ContentStatus::class,
-            'visibility' => ContentVisibility::class,
-            'values' => 'array',
-            'metadata' => 'array',
-            'definition_version' => 'integer',
-            'definition_schema' => ContentSchemaCast::class,
-            'revision' => 'integer',
-            'published_at' => 'immutable_datetime',
-        ];
+        return ['status' => ContentStatus::class, 'visibility' => ContentVisibility::class, 'values' => 'array', 'metadata' => 'array', 'definition_version' => 'integer', 'definition_schema' => ContentSchemaCast::class, 'revision' => 'integer', 'published_at' => 'immutable_datetime'];
     }
 
     /**
@@ -225,44 +173,6 @@ class ContentBlock extends Model implements HasNvlMedia, Ownable, TranslatableMo
     public function scopePublic(Builder $query): void
     {
         $query->where('visibility', ContentVisibility::Public->value);
-    }
-
-    /** Return the fixed allowlist for public block filters and sorts. */
-    public static function filterSchema(): FilterSchema
-    {
-        return new FilterSchema(
-            filters: [
-                new FilterDefinition('definition', 'definition_id'),
-                new FilterDefinition('key', 'key'),
-                new FilterDefinition(
-                    alias: 'scope',
-                    column: 'scope',
-                    operators: [FilterOperator::Equals, FilterOperator::In],
-                ),
-                new FilterDefinition('scope_key', 'scope_key'),
-                new FilterDefinition(
-                    alias: 'status',
-                    column: 'status',
-                    type: FilterValueType::Enum,
-                    operators: [FilterOperator::Equals, FilterOperator::In],
-                    enumValues: array_column(ContentStatus::cases(), 'value'),
-                ),
-                new FilterDefinition(
-                    alias: 'visibility',
-                    column: 'visibility',
-                    type: FilterValueType::Enum,
-                    enumValues: array_column(ContentVisibility::cases(), 'value'),
-                ),
-            ],
-            sorts: [
-                new SortDefinition('key', 'key'),
-                new SortDefinition('updated', 'updated_at'),
-                new SortDefinition('published', 'published_at'),
-                new SortDefinition('id', 'id'),
-            ],
-            defaultSorts: ['-updated', 'key'],
-            tieBreakerSort: 'id',
-        );
     }
 
     /**

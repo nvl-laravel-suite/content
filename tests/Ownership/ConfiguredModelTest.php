@@ -3,9 +3,7 @@
 declare(strict_types=1);
 use Illuminate\Config\Repository;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Nvl\Content\Actions\CreateContentBlockAction;
-use Nvl\Content\Data\ContentActorData;
-use Nvl\Content\Data\Mutations\CreateContentBlockData;
+use Nvl\Content\Services\ContentBlocks;
 use Nvl\Content\Services\ContentDoctor;
 use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Tests\Fixtures\OwnershipActor;
@@ -14,18 +12,17 @@ use Nvl\Content\Tests\Fixtures\OwnershipContentBlock;
 use Nvl\Content\Tests\Fixtures\UnsafeQueryContentBlock;
 use Nvl\Content\Tests\OwnershipTestCase;
 use Nvl\Ownership\Services\OwnershipRunner;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\OwnerRegistry;
 use Nvl\Support\Ownership\Exceptions\OwnershipConfigurationInvalid;
 
 uses(OwnershipTestCase::class);
 it('uses the configured block root and canonical dependent ownership', function (): void {
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function (): void {
-        $block = app(CreateContentBlockAction::class)->execute(CreateContentBlockData::from(['definition' => 'copy', 'key' => 'copy', 'translations' => ['en' => ['text' => 'Private copy']]]), ContentActorData::system());
-        expect($block::class)->toBe(OwnershipContentBlock::class)->and(ContentModelRegistry::query()->count())->toBe(1)
-            ->and($block->translations->first()->block::class)->toBe(OwnershipContentBlock::class);
+        $block = app(ContentBlocks::class)->create(['definition' => 'copy', 'key' => 'copy', 'translations' => ['en' => ['text' => 'Private copy']]], SystemActor::Background);
+        expect($block::class)->toBe(OwnershipContentBlock::class)->and(ContentModelRegistry::query()->count())->toBe(1)->and($block->translations->first()->block::class)->toBe(OwnershipContentBlock::class);
     });
 });
-
 it('rejects configured subclasses that remove native query admission', function (): void {
     $map = Relation::morphMap();
     Relation::morphMap([], false);

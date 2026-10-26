@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Content\Database\Factories\ContentRevisionFactory;
 use Nvl\Content\Enums\ContentRevisionEvent;
-use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Models\Concerns\OwnsContentChild;
 use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
@@ -21,7 +20,6 @@ use Nvl\Support\Ownership\Contracts\Ownable;
  * Immutable audit snapshot created by public block mutations.
  *
  * @property string $id
- * @property string|null $tenant_id
  * @property string $content_block_id
  * @property int $revision
  * @property ContentRevisionEvent $event
@@ -36,25 +34,16 @@ use Nvl\Support\Ownership\Contracts\Ownable;
  */
 final class ContentRevision extends Model implements Ownable
 {
-    use GuardsTenantOwnership;
-
     /** @use HasFactory<ContentRevisionFactory> */
     use HasFactory;
 
     use HasUuids;
     use OwnsContentChild;
 
-    public const string TENANT_RESOURCE = 'content.revisions';
+    public const string OWNERSHIP_RESOURCE = 'content.revisions';
 
     /** @var list<string> */
-    protected $fillable = [
-        'content_block_id',
-        'revision',
-        'event',
-        'snapshot',
-        'actor_type',
-        'actor_id',
-    ];
+    protected $fillable = ['content_block_id', 'revision', 'event', 'snapshot', 'actor_type', 'actor_id'];
 
     /** Resolve the configured native table owned by this model. */
     public function getTable(): string
@@ -73,11 +62,7 @@ final class ContentRevision extends Model implements Ownable
      */
     protected function casts(): array
     {
-        return [
-            'revision' => 'integer',
-            'event' => ContentRevisionEvent::class,
-            'snapshot' => 'array',
-        ];
+        return ['revision' => 'integer', 'event' => ContentRevisionEvent::class, 'snapshot' => 'array'];
     }
 
     /**

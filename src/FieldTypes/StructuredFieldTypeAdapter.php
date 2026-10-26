@@ -13,11 +13,10 @@ use Nvl\Content\Validation\ContentValidationContext;
  */
 final class StructuredFieldTypeAdapter extends AbstractFieldTypeAdapter
 {
-    public function __construct(
-        private readonly string $type,
-        private readonly bool $list,
-    ) {}
+    /** Native Content operation. */
+    public function __construct(private readonly string $type, private readonly bool $list) {}
 
+    /** Native Content operation. */
     public function alias(): string
     {
         return $this->type;
@@ -26,23 +25,14 @@ final class StructuredFieldTypeAdapter extends AbstractFieldTypeAdapter
     /**
      * @return array<array-key, mixed>|null
      */
-    public function normalize(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): ?array {
+    public function normalize(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): ?array
+    {
         if ($value === null) {
             return null;
         }
-
-        if (! is_array($value)
-            || ($this->list && ! array_is_list($value))
-            || (! $this->list && $value !== [] && array_is_list($value))) {
+        if (! is_array($value) || $this->list && ! array_is_list($value) || ! $this->list && $value !== [] && array_is_list($value)) {
             $shape = $this->list ? 'a list' : 'an object';
-
-            throw new InvalidArgumentException(
-                "Content field [{$context->path}] must be {$shape}.",
-            );
+            throw new InvalidArgumentException("Content field [{$context->path}] must be {$shape}.");
         }
 
         return $value;

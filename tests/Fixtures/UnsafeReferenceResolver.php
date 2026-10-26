@@ -22,10 +22,8 @@ final class UnsafeReferenceResolver implements ContentReferenceResolver
         return true;
     }
 
-    public function display(
-        string $identifier,
-        ContentValidationContext $context,
-    ): array {
+    public function display(string $identifier, ContentValidationContext $context): array
+    {
         return ['id' => 'spoofed', 'title' => 'Unsafe'];
     }
 }

@@ -7,8 +7,8 @@ namespace Nvl\Content\Tests\Fixtures;
 use Closure;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Foundation\MaintenanceMode;
-use Nvl\Content\Actions\SyncContentDefinitionsAction;
-use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Services\ContentDefinitions;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Tenancy\Contracts\PlatformAccess;
 use Nvl\Tenancy\Contracts\TenantDirectory;
 use Nvl\Tenancy\Enums\TenantStatus;
@@ -89,10 +89,7 @@ final readonly class TenantScenario
         }
         $coordinator->activate($plan, $operation);
         app(MaintenanceMode::class)->deactivate();
-        app(TenantRunner::class)->platform(
-            new PlatformOperation('content.fixture.definitions', 'test', 'pest'),
-            static fn () => app(SyncContentDefinitionsAction::class)->execute(ContentActorData::system()),
-        );
+        app(TenantRunner::class)->platform(new PlatformOperation('content.fixture.definitions', 'test', 'pest'), static fn () => app(ContentDefinitions::class)->sync(SystemActor::Background));
 
         return new self;
     }

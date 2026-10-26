@@ -14,11 +14,7 @@ final class ContentTenancyFixtureServiceProvider extends ServiceProvider
 {
     public function boot(TenantResourceRegistry $resources, TenantAdoptionRegistry $adoptions): void
     {
-        $resources->register(new TenantResourceDefinition(
-            'test.content-owners',
-            'content-test-owners',
-            TenantContentOwner::class,
-        ));
+        $resources->register(new TenantResourceDefinition('test.content-owners', 'content-test-owners', TenantContentOwner::class));
         $adoptions->register('content-test-owners', TenantContentOwnerAdoptionAdapter::class);
     }
 }

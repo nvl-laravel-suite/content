@@ -6,8 +6,8 @@ namespace Nvl\Content\Console;
 
 use Illuminate\Console\Command;
 use InvalidArgumentException;
-use Nvl\Content\Content;
-use Nvl\Content\Data\ContentActorData;
+use Nvl\Content\Services\ContentDefinitions;
+use Nvl\Support\Enums\SystemActor;
 
 /**
  * Reports or applies source definition synchronization.
@@ -22,29 +22,19 @@ final class SyncContentDefinitionsCommand extends Command
     /** @var string */
     protected $description = 'Synchronize source-controlled content definitions into the database mirror';
 
-    public function handle(Content $content): int
+    /** Native Content operation. */
+    public function handle(ContentDefinitions $content): int
     {
         $format = $this->option('format');
-
         if (! is_string($format) || ! in_array($format, ['text', 'json'], true)) {
-            throw new InvalidArgumentException(
-                'The content definition sync format must be text or json.',
-            );
+            throw new InvalidArgumentException('The content definition sync format must be text or json.');
         }
-
-        $plan = $content->syncDefinitions(
-            ContentActorData::system(),
-            (bool) $this->option('dry-run'),
-        );
-
+        $plan = app(ContentDefinitions::class)->sync(SystemActor::Background, (bool) $this->option('dry-run'));
         if ($format === 'json') {
-            $this->line((string) json_encode(
-                $plan->toArray(),
-                JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR,
-            ));
+            $this->line((string) json_encode($plan, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
         } else {
             foreach (['create', 'update', 'unchanged', 'orphan'] as $operation) {
-                foreach ($plan->{$operation} as $key) {
+                foreach ($plan[$operation] as $key) {
                     $this->line("{$operation}: {$key}");
                 }
             }

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Contracts;
 
-use Nvl\Support\Tenancy\ValueObjects\TenantId;
+use Illuminate\Database\Eloquent\Model;
 
+/** Revalidates the current recipient and exact native central source grant. */
 interface ContentCatalogCopyAccess
 {
-    public function assertAllowed(string $ownerId, string $group, string $grantId, TenantId $destination): void;
+    public function canonicalSource(string $ownerId, string $group, string $grantId, bool $lock = false): Model;
 }

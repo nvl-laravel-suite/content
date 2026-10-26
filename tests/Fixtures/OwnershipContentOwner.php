@@ -21,7 +21,9 @@ use Nvl\Support\Ownership\ValueObjects\OwnershipDefinition;
  */
 class OwnershipContentOwner extends Model implements ContentOwner, Ownable
 {
-    use HasContent, HasOwnership { HasContent::delete insteadof HasOwnership; }
+    use HasContent, HasOwnership {
+        HasContent::delete insteadof HasOwnership;
+    }
     use HasUuids;
 
     public const array CONTENT_GROUPS = ['main'];

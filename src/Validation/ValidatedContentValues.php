@@ -13,8 +13,5 @@ final readonly class ValidatedContentValues
      * @param  array<string, mixed>  $values
      * @param  array<string, array<string, mixed>>  $translations
      */
-    public function __construct(
-        public array $values,
-        public array $translations,
-    ) {}
+    public function __construct(public array $values, public array $translations) {}
 }

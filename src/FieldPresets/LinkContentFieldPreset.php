@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nvl\Content\FieldPresets;
 
-use Nvl\Content\Data\RenderedContentLinkData;
 use Nvl\Content\Enums\ContentLinkTarget;
 use Nvl\Content\Schema\ContentFieldDefinition;
 use Nvl\Content\Validation\ContentValidationContext;
@@ -45,37 +44,22 @@ final class LinkContentFieldPreset extends AbstractNavigationalContentFieldPrese
      */
     public function definition(): array
     {
-        return [
-            'type' => 'object',
-            'fields' => $this->navigationFields(),
-        ];
+        return ['type' => 'object', 'fields' => $this->navigationFields()];
     }
 
     /**
      * Project the recursively rendered preset value to its semantic contract.
+     *
+     * @return array<string,mixed>|null
      */
-    public function render(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): ?RenderedContentLinkData {
-        if (! is_array($value)
-            || ! is_string($value['label'] ?? null)
-            || ! is_string($value['href'] ?? null)) {
+    public function render(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): ?array
+    {
+        if (! is_array($value) || ! is_string($value['label'] ?? null) || ! is_string($value['href'] ?? null)) {
             return null;
         }
-
-        $target = is_string($value['target'] ?? null)
-            ? ContentLinkTarget::tryFrom($value['target'])
-            : null;
+        $target = is_string($value['target'] ?? null) ? ContentLinkTarget::tryFrom($value['target']) : null;
         $target ??= ContentLinkTarget::SameContext;
 
-        return new RenderedContentLinkData(
-            label: $value['label'],
-            href: $value['href'],
-            title: is_string($value['title'] ?? null) ? $value['title'] : null,
-            target: $target,
-            rel: $this->secureRel($target, $this->relationshipValues($value['rel'] ?? [])),
-        );
+        return ['label' => $value['label'], 'href' => $value['href'], 'title' => is_string($value['title'] ?? null) ? $value['title'] : null, 'target' => $target, 'rel' => $this->secureRel($target, $this->relationshipValues($value['rel'] ?? []))];
     }
 }

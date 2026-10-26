@@ -32,14 +32,15 @@ final readonly class OwnershipContentOwnerAdapter implements OwnershipAdoptionAd
         $rows = $model->getConnection()->table($model->getTable())->when($cursor !== null, static fn ($q) => $q->where('id', '>', $cursor))->orderBy('id')->limit($limit)->get();
         $lastId = null;
         foreach ($rows as $row) {
-            if (! is_string($row->id) || (! is_int($row->company_id) && ! is_string($row->company_id))) {
+            if (! is_string($row->id) || ! is_int($row->company_id) && ! is_string($row->company_id)) {
                 throw new \RuntimeException('Host mappings require their native scalar facts.');
             }
             $lastId = $row->id;
             $owner = $this->mappings->forRecord($plan, 'fixture.content-owners', $row->id)->requireOwner();
             if ($owner->key !== (string) $row->company_id) {
                 throw new \RuntimeException('Host owner mapping cannot relabel a native company.');
-            }$model->getConnection()->table($model->getTable())->where('id', $row->id)->update(['owner_scope_key' => $owner->scopeKey()]);
+            }
+            $model->getConnection()->table($model->getTable())->where('id', $row->id)->update(['owner_scope_key' => $owner->scopeKey()]);
         }
 
         return new OwnershipBackfillResult($rows->count() === $limit ? $lastId : null, $rows->count());

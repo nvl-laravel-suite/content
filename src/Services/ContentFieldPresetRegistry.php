@@ -21,30 +21,18 @@ final class ContentFieldPresetRegistry
     public function register(ContentFieldPreset $preset): void
     {
         $alias = $preset->alias();
-
         if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
             throw new InvalidArgumentException("Content field preset alias [{$alias}] is invalid.");
         }
-
         if (isset($this->presets[$alias])) {
-            throw new InvalidArgumentException(
-                "Content field preset [{$alias}] is already registered.",
-            );
+            throw new InvalidArgumentException("Content field preset [{$alias}] is already registered.");
         }
-
         if (trim($preset->name()) === '' || mb_strlen($preset->name()) > 191) {
-            throw new InvalidArgumentException(
-                "Content field preset [{$alias}] requires a valid name.",
-            );
+            throw new InvalidArgumentException("Content field preset [{$alias}] requires a valid name.");
         }
-
-        if ($preset->description() !== null
-            && mb_strlen($preset->description()) > 65_000) {
-            throw new InvalidArgumentException(
-                "Content field preset [{$alias}] has an oversized description.",
-            );
+        if ($preset->description() !== null && mb_strlen($preset->description()) > 65000) {
+            throw new InvalidArgumentException("Content field preset [{$alias}] has an oversized description.");
         }
-
         $this->presets[$alias] = $preset;
         ksort($this->presets);
     }
@@ -54,10 +42,7 @@ final class ContentFieldPresetRegistry
      */
     public function get(string $alias): ContentFieldPreset
     {
-        return $this->presets[$alias]
-            ?? throw new InvalidArgumentException(
-                "Content field preset [{$alias}] is not registered.",
-            );
+        return $this->presets[$alias] ?? throw new InvalidArgumentException("Content field preset [{$alias}] is not registered.");
     }
 
     /**

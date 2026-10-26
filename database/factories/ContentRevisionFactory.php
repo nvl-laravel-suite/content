@@ -36,7 +36,6 @@ final class ContentRevisionFactory extends Factory
             if (! $expandRelationships) {
                 return;
             }
-
             if ($model->getAttribute('content_block_id') !== null) {
                 $parent = ContentBlock::query()->findOrFail(FactoryGuard::identifier($model->getAttribute('content_block_id')));
                 FactoryGuard::parent($parent, $model);
@@ -47,22 +46,7 @@ final class ContentRevisionFactory extends Factory
                     $translations[$translation->locale] = $translation->values;
                 }
                 ksort($translations);
-                $model->snapshot = [
-                    'definition_id' => $parent->definition_id,
-                    'key' => $parent->key,
-                    'scope' => $parent->scope,
-                    'scope_key' => $parent->scope_key,
-                    'status' => $parent->status->value,
-                    'visibility' => $parent->visibility->value,
-                    'values' => $parent->values ?? [],
-                    'translations' => $translations,
-                    'metadata' => $parent->metadata ?? [],
-                    'definition_version' => $parent->definition_version,
-                    'definition_hash' => $parent->definition_hash,
-                    'definition_schema' => $parent->definition_schema->toArray(),
-                    'definition_view' => $parent->definition_view,
-                    'revision' => $parent->revision,
-                ];
+                $model->snapshot = ['definition_id' => $parent->definition_id, 'key' => $parent->key, 'scope' => $parent->scope, 'scope_key' => $parent->scope_key, 'status' => $parent->status->value, 'visibility' => $parent->visibility->value, 'values' => $parent->values ?? [], 'translations' => $translations, 'metadata' => $parent->metadata ?? [], 'definition_version' => $parent->definition_version, 'definition_hash' => $parent->definition_hash, 'definition_schema' => $parent->definition_schema->toArray(), 'definition_view' => $parent->definition_view, 'revision' => $parent->revision];
             }
         });
     }
@@ -74,12 +58,7 @@ final class ContentRevisionFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'content_block_id' => ContentBlock::factory(),
-            'revision' => 1,
-            'event' => 'created',
-            'snapshot' => [],
-        ];
+        return ['content_block_id' => ContentBlock::factory(), 'revision' => 1, 'event' => 'created', 'snapshot' => []];
     }
 
     /**
@@ -91,8 +70,6 @@ final class ContentRevisionFactory extends Factory
     {
         FactoryGuard::parent($parent, new ContentRevision);
 
-        return $this->state([
-            'content_block_id' => $parent->getKey(),
-        ]);
+        return $this->state(['content_block_id' => $parent->getKey()]);
     }
 }

@@ -20,15 +20,8 @@ final class ContentPatch
     {
         foreach ($patch as $key => $value) {
             $existing = $current[$key] ?? null;
-
-            if (is_array($value)
-                && ! array_is_list($value)
-                && is_array($existing)
-                && ! array_is_list($existing)) {
-                $current[$key] = $this->merge(
-                    ContentArrays::stringMap($existing, "content patch current.{$key}"),
-                    ContentArrays::stringMap($value, "content patch.{$key}"),
-                );
+            if (is_array($value) && ! array_is_list($value) && is_array($existing) && ! array_is_list($existing)) {
+                $current[$key] = $this->merge(ContentArrays::stringMap($existing, "content patch current.{$key}"), ContentArrays::stringMap($value, "content patch.{$key}"));
             } else {
                 $current[$key] = $value;
             }

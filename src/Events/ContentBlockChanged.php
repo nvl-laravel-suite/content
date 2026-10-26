@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Events;
 
-use Nvl\Content\Data\ContentActorData;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Nvl\Content\Enums\ContentRevisionEvent;
 use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Support\Contracts\DomainEvent;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipQueuedJob;
 use Nvl\Support\Ownership\ValueObjects\OwnershipJobEnvelope;
 
@@ -19,15 +21,14 @@ use Nvl\Support\Ownership\ValueObjects\OwnershipJobEnvelope;
 final class ContentBlockChanged implements DomainEvent, OwnershipQueuedJob
 {
     /** Retain the canonical services and immutable inputs for this workflow. */
-    public function __construct(
-        public readonly string $blockId,
-        public readonly ContentRevisionEvent $event,
-        public readonly int $revision,
-        public readonly ContentActorData $actor,
-        public readonly int $schemaVersion = 1,
-    ) {
+    public function __construct(public readonly string $blockId, public readonly ContentRevisionEvent $event, public readonly int $revision, Authenticatable|SystemActor $actor, public readonly int $schemaVersion = 1)
+    {
+        $this->actor = ['type' => $actor instanceof SystemActor ? 'system' : ($actor instanceof Model ? $actor->getMorphClass() : $actor::class), 'id' => $actor instanceof SystemActor ? null : $actor->getAuthIdentifier(), 'system' => $actor instanceof SystemActor];
         $this->ownershipEnvelope = ContentOwnership::envelope();
     }
+
+    /** @var array{type:string,id:mixed,system:bool} */
+    public readonly array $actor;
 
     private readonly OwnershipJobEnvelope $ownershipEnvelope;
 

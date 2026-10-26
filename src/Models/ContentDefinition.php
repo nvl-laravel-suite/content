@@ -50,31 +50,10 @@ final class ContentDefinition extends Model
     use HasUuids;
 
     /** @var list<string> */
-    protected $fillable = [
-        'key',
-        'name',
-        'description',
-        'category',
-        'version',
-        'view',
-        'schema',
-        'defaults',
-        'allowed_scopes',
-        'allowed_regions',
-        'is_active',
-        'sort_order',
-        'source_hash',
-        'synced_at',
-        'orphaned_at',
-    ];
+    protected $fillable = ['key', 'name', 'description', 'category', 'version', 'view', 'schema', 'defaults', 'allowed_scopes', 'allowed_regions', 'is_active', 'sort_order', 'source_hash', 'synced_at', 'orphaned_at'];
 
     /** @var array<string, mixed> */
-    protected $attributes = [
-        'category' => 'content',
-        'version' => 1,
-        'is_active' => true,
-        'sort_order' => 0,
-    ];
+    protected $attributes = ['category' => 'content', 'version' => 1, 'is_active' => true, 'sort_order' => 0];
 
     /** Resolve the configured native table owned by this model. */
     public function getTable(): string
@@ -93,17 +72,7 @@ final class ContentDefinition extends Model
      */
     protected function casts(): array
     {
-        return [
-            'version' => 'integer',
-            'schema' => ContentSchemaCast::class,
-            'defaults' => 'array',
-            'allowed_scopes' => 'array',
-            'allowed_regions' => 'array',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
-            'synced_at' => 'immutable_datetime',
-            'orphaned_at' => 'immutable_datetime',
-        ];
+        return ['version' => 'integer', 'schema' => ContentSchemaCast::class, 'defaults' => 'array', 'allowed_scopes' => 'array', 'allowed_regions' => 'array', 'is_active' => 'boolean', 'sort_order' => 'integer', 'synced_at' => 'immutable_datetime', 'orphaned_at' => 'immutable_datetime'];
     }
 
     /**

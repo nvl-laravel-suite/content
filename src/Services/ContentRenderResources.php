@@ -33,27 +33,19 @@ final class ContentRenderResources
      */
     public function preloadMedia(array $identifiers): void
     {
-        $missing = array_values(array_diff(
-            array_values(array_unique($identifiers)),
-            array_keys($this->loadedMedia),
-        ));
-
+        $missing = array_values(array_diff(array_values(array_unique($identifiers)), array_keys($this->loadedMedia)));
         if ($missing === []) {
             return;
         }
-
+        if (config('nvl-content.media.enabled', false) !== true || ! class_exists(MediaModelRegistry::class)) {
+            throw new \InvalidArgumentException('Content Media fields require the enabled nvl/media adapter.');
+        }
         foreach ($missing as $identifier) {
             $this->loadedMedia[$identifier] = true;
         }
-
-        MediaModelRegistry::query()
-            ->with(['translations', 'imageVariations', 'associations'])
-            ->whereIn('id', $missing)
-            ->get()
-            ->each(function (Media $media): void {
-                $this->media[$media->id] = $media;
-            });
-
+        MediaModelRegistry::query()->with(['translations', 'imageVariations', 'associations'])->whereIn('id', $missing)->get()->each(function (Media $media): void {
+            $this->media[$media->id] = $media;
+        });
         if (ContentOwnership::active()) {
             $unresolved = array_diff($missing, array_keys($this->media));
             if ($unresolved !== []) {

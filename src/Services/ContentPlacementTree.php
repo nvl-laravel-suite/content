@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Services;
 
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
-use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Enums\ContentStatus;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Models\ContentPlacement;
@@ -21,49 +19,29 @@ use Nvl\Content\Support\ContentConfiguration;
 final readonly class ContentPlacementTree
 {
     /** Retain the canonical services and immutable inputs for this workflow. */
-    public function __construct(
-        private ContentIdentityGuard $identities,
-        private ContentOwnerRegistry $owners,
-        private Repository $configuration,
-    ) {}
+    public function __construct(private ContentIdentityGuard $identities, private ContentOwnerRegistry $owners) {}
 
     /**
      * Load and validate one complete owner group tree.
      *
      * @return Collection<int, ContentPlacement>
      */
-    public function load(Model&ContentOwner $owner, string $group, bool $lockForUpdate = false): Collection
+    public function load(Model $owner, string $group, bool $lockForUpdate = false): Collection
     {
         $this->identities->group($group);
         $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
-        $maximum = ContentConfiguration::positiveInteger(
-            'nvl-content.placements.maximum_per_group',
-            1_000,
-        );
-        $query = $owner->contentPlacements()
-            ->with(['block.definition', 'block.translations'])
-            ->whereHas('block')
-            ->where('group', $group)
-            ->orderBy('region')
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->limit($maximum + 1);
-
+        $maximum = ContentConfiguration::positiveInteger('nvl-content.placements.maximum_per_group', 1000);
+        $query = ContentPlacement::query()->where('owner_type', $owner->getMorphClass())->where('owner_id', $ownerId)->with(['block.definition', 'block.translations'])->whereHas('block')->where('group', $group)->orderBy('region')->orderBy('sort_order')->orderBy('id')->limit($maximum + 1);
         if ($lockForUpdate) {
             $query->lockForUpdate()->with(['block' => $this->lockBlocks(...)]);
         }
-
         /** @var Collection<int, ContentPlacement> $placements */
         $placements = $query->get();
-
         if ($placements->count() > $maximum) {
-            throw new InvalidArgumentException(
-                "Content composition exceeds the {$maximum} placement limit.",
-            );
+            throw new InvalidArgumentException("Content composition exceeds the {$maximum} placement limit.");
         }
-
         $this->assertValid($placements, $ownerType, $ownerId, $group);
 
         return $placements;
@@ -74,12 +52,8 @@ final readonly class ContentPlacementTree
      *
      * @param  Collection<int, ContentPlacement>  $placements
      */
-    public function assertValidProposal(
-        Collection $placements,
-        string $ownerType,
-        string $ownerId,
-        string $group,
-    ): void {
+    public function assertValidProposal(Collection $placements, string $ownerType, string $ownerId, string $group): void
+    {
         $this->identities->owner($ownerType, $ownerId);
         $this->identities->group($group);
         $this->assertValid($placements, $ownerType, $ownerId, $group);
@@ -99,86 +73,41 @@ final readonly class ContentPlacementTree
         /** @var array<string, bool> $memo */
         $memo = [];
 
-        return $placements->filter(
-            fn (ContentPlacement $placement): bool => $this->isEligible(
-                $placement,
-                $byId,
-                $memo,
-                $publicOnly,
-            ),
-        )->values();
+        return $placements->filter(fn (ContentPlacement $placement): bool => $this->isEligible($placement, $byId, $memo, $publicOnly))->values();
     }
 
     /**
      * @param  Collection<int, ContentPlacement>  $placements
      */
-    private function assertValid(
-        Collection $placements,
-        string $ownerType,
-        string $ownerId,
-        string $group,
-    ): void {
+    private function assertValid(Collection $placements, string $ownerType, string $ownerId, string $group): void
+    {
         /** @var Collection<string, ContentPlacement> $byId */
         $byId = $placements->keyBy('id');
-        $maximumDepth = ContentConfiguration::positiveInteger(
-            'nvl-content.placements.maximum_depth',
-            50,
-        );
-
+        $maximumDepth = ContentConfiguration::positiveInteger('nvl-content.placements.maximum_depth', 50);
         if ($byId->count() !== $placements->count()) {
             throw new InvalidArgumentException('Content placement IDs must be unique.');
         }
-
         foreach ($placements as $placement) {
             $block = $placement->block;
-            if ($this->configuration->get('nvl-tenancy.enabled') === true
-                && (! is_string($placement->tenant_id)
-                || ! is_string($block->tenant_id)
-                || $placement->tenant_id !== $block->tenant_id)) {
-                throw new InvalidArgumentException('Content placement and block ownership must match.');
+            if ($placement->owner_type !== $ownerType || $placement->owner_id !== $ownerId || $placement->group !== $group) {
+                throw new InvalidArgumentException('Content placement tree contains a foreign owner group.');
             }
-
-            if ($placement->owner_type !== $ownerType
-                || $placement->owner_id !== $ownerId
-                || $placement->group !== $group) {
-                throw new InvalidArgumentException(
-                    'Content placement tree contains a foreign owner group.',
-                );
-            }
-
             $visited = [$placement->id => true];
             $cursor = $placement;
-
             for ($depth = 1; $cursor->parent_id !== null; $depth++) {
                 if ($depth >= $maximumDepth) {
-                    throw new InvalidArgumentException(
-                        "Content placement depth exceeds {$maximumDepth} levels.",
-                    );
+                    throw new InvalidArgumentException("Content placement depth exceeds {$maximumDepth} levels.");
                 }
-
                 $parent = $byId->get($cursor->parent_id);
-
                 if (! $parent instanceof ContentPlacement) {
-                    throw new InvalidArgumentException(
-                        "Content placement [{$cursor->id}] references a missing parent.",
-                    );
+                    throw new InvalidArgumentException("Content placement [{$cursor->id}] references a missing parent.");
                 }
-
                 if ($parent->region !== $placement->region) {
-                    throw new InvalidArgumentException(
-                        'Nested content placements must remain in their parent region.',
-                    );
+                    throw new InvalidArgumentException('Nested content placements must remain in their parent region.');
                 }
-
-                if ($this->configuration->get('nvl-tenancy.enabled') === true
-                    && $parent->tenant_id !== $placement->tenant_id) {
-                    throw new InvalidArgumentException('Nested content placements must share tenant ownership.');
-                }
-
                 if (isset($visited[$parent->id])) {
                     throw new InvalidArgumentException('Content placement cycles are not allowed.');
                 }
-
                 $visited[$parent->id] = true;
                 $cursor = $parent;
             }
@@ -199,26 +128,16 @@ final readonly class ContentPlacementTree
      * @param  Collection<string, ContentPlacement>  $byId
      * @param  array<string, bool>  $memo
      */
-    private function isEligible(
-        ContentPlacement $placement,
-        Collection $byId,
-        array &$memo,
-        bool $publicOnly,
-    ): bool {
+    private function isEligible(ContentPlacement $placement, Collection $byId, array &$memo, bool $publicOnly): bool
+    {
         if (array_key_exists($placement->id, $memo)) {
             return $memo[$placement->id];
         }
-
         $block = $placement->block;
-        $eligible = $placement->is_visible
-            && (! $publicOnly
-                || $block->status === ContentStatus::Published
-                && $block->visibility === ContentVisibility::Public);
-
+        $eligible = $placement->is_visible && (! $publicOnly || $block->status === ContentStatus::Published && $block->visibility === ContentVisibility::Public);
         if ($eligible && $placement->parent_id !== null) {
             $parent = $byId->get($placement->parent_id);
-            $eligible = $parent instanceof ContentPlacement
-                && $this->isEligible($parent, $byId, $memo, $publicOnly);
+            $eligible = $parent instanceof ContentPlacement && $this->isEligible($parent, $byId, $memo, $publicOnly);
         }
 
         return $memo[$placement->id] = $eligible;

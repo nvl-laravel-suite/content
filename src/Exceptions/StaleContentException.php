@@ -8,22 +8,13 @@ use Nvl\Content\Enums\ContentResponseCode;
 
 /**
  * @api
-
  * Optimistic concurrency conflict.
  */
 final class StaleContentException extends ContentException
 {
+    /** Native Content operation. */
     public static function forRevision(string $resourceId, int $expected, int $actual): self
     {
-        return new self(
-            message: "Content resource [{$resourceId}] changed from revision {$expected} to {$actual}.",
-            responseCode: ContentResponseCode::StaleContent,
-            suggestedStatus: 409,
-            publicContext: [
-                'resource_id' => $resourceId,
-                'expected_revision' => $expected,
-                'actual_revision' => $actual,
-            ],
-        );
+        return new self(message: "Content resource [{$resourceId}] changed from revision {$expected} to {$actual}.", responseCode: ContentResponseCode::StaleContent, suggestedStatus: 409, publicContext: ['resource_id' => $resourceId, 'expected_revision' => $expected, 'actual_revision' => $actual]);
     }
 }

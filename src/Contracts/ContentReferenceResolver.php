@@ -13,8 +13,10 @@ use Nvl\Content\Validation\ContentValidationContext;
  */
 interface ContentReferenceResolver
 {
+    /** Native Content operation. */
     public function alias(): string;
 
+    /** Native Content operation. */
     public function exists(string $identifier, ContentValidationContext $context): bool;
 
     /**

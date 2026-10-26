@@ -16,7 +16,9 @@ use Nvl\Support\Ownership\Traits\HasOwnership;
  */
 trait OwnsContentChild
 {
-    use HasOwnership { save as private saveOwned; }
+    use HasOwnership {
+        save as private saveOwned;
+    }
 
     /** @param array<string,mixed> $options */
     public function save(array $options = []): bool

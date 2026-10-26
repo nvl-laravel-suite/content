@@ -24,22 +24,13 @@ final class ContentModelRegistry
     private readonly ConfiguredModelRegistration $registration;
 
     /** Retain deployment configuration and the shared identity registry. */
-    public function __construct(
-        Repository $configuration,
-        OwnerRegistry $identities,
-    ) {
-        $this->registration = new ConfiguredModelRegistration(
-            $configuration,
-            $identities,
-            'nvl-content.models.block',
-            ContentBlock::class,
-            'content.blocks',
-            static function (string $class): void {
-                if (! in_array($class::ownershipDefinition()->strategy, ['unscoped', 'column', 'pivot'], true)) {
-                    throw new OwnershipConfigurationInvalid('ContentBlock roots require a native column or concrete primary pivot.');
-                }
-            },
-        );
+    public function __construct(Repository $configuration, OwnerRegistry $identities)
+    {
+        $this->registration = new ConfiguredModelRegistration($configuration, $identities, 'nvl-content.models.block', ContentBlock::class, 'content.blocks', static function (string $class): void {
+            if (! in_array($class::ownershipDefinition()->strategy, ['unscoped', 'column', 'pivot'], true)) {
+                throw new OwnershipConfigurationInvalid('ContentBlock roots require a native column or concrete primary pivot.');
+            }
+        });
     }
 
     /** Resolve and freeze the concrete ContentBlock class before resource compilation.
@@ -108,7 +99,7 @@ final class ContentModelRegistry
             return $columns;
         }
 
-        return array_values(array_unique([...$columns, 'owner_scope_key', ...($definition->foreignKey === null ? [] : [$definition->foreignKey])]));
+        return array_values(array_unique([...$columns, 'owner_scope_key', ...$definition->foreignKey === null ? [] : [$definition->foreignKey]]));
     }
 
     /** Create the exact configured query.

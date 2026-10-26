@@ -33,15 +33,10 @@ trait HasContent
     public function contentGroups(): array
     {
         if (defined(static::class.'::CONTENT_GROUPS')) {
-            return self::validatedContentGroups(
-                constant(static::class.'::CONTENT_GROUPS'),
-            );
+            return self::validatedContentGroups(constant(static::class.'::CONTENT_GROUPS'));
         }
-
         if (defined(static::class.'::CONTENT_GROUP')) {
-            return [self::validatedContentGroup(
-                constant(static::class.'::CONTENT_GROUP'),
-            )];
+            return [self::validatedContentGroup(constant(static::class.'::CONTENT_GROUP'))];
         }
 
         return [];
@@ -53,13 +48,9 @@ trait HasContent
     private static function validatedContentGroups(mixed $groups): array
     {
         if (! is_array($groups) || ! array_is_list($groups)) {
-            throw new InvalidArgumentException(
-                'CONTENT_GROUPS must be a list of composition group strings.',
-            );
+            throw new InvalidArgumentException('CONTENT_GROUPS must be a list of composition group strings.');
         }
-
         $validated = [];
-
         foreach ($groups as $group) {
             $validated[] = self::validatedContentGroup($group);
         }
@@ -70,9 +61,7 @@ trait HasContent
     private static function validatedContentGroup(mixed $group): string
     {
         if (! is_string($group)) {
-            throw new InvalidArgumentException(
-                'Content composition groups must be strings.',
-            );
+            throw new InvalidArgumentException('Content composition groups must be strings.');
         }
 
         return $group;
@@ -83,16 +72,11 @@ trait HasContent
      */
     public function delete(): ?bool
     {
-        if (! $this instanceof ContentOwner
-            || ! $this->exists
-            || (method_exists($this, 'isForceDeleting') && $this->isForceDeleting() !== true)) {
+        if (! $this instanceof ContentOwner || ! $this->exists || method_exists($this, 'isForceDeleting') && $this->isForceDeleting() !== true) {
             return parent::delete();
         }
 
-        return ContentOwnerDeletionBridge::delete(
-            $this,
-            fn (): ?bool => parent::delete(),
-        );
+        return ContentOwnerDeletionBridge::delete($this, fn (): ?bool => parent::delete());
     }
 
     /**
@@ -106,12 +90,6 @@ trait HasContent
     {
         $related = new ContentPlacement;
 
-        return new StringMorphMany(
-            $related->newQuery(),
-            $this,
-            $related->qualifyColumn('owner_type'),
-            $related->qualifyColumn('owner_id'),
-            $this->getKeyName(),
-        );
+        return new StringMorphMany($related->newQuery(), $this, $related->qualifyColumn('owner_type'), $related->qualifyColumn('owner_id'), $this->getKeyName());
     }
 }

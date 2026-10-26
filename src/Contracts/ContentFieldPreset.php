@@ -39,20 +39,12 @@ interface ContentFieldPreset
     /**
      * Normalize one recursively validated base or localized preset partition.
      */
-    public function normalize(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): mixed;
+    public function normalize(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): mixed;
 
     /**
      * Validate one complete schema-aware merged semantic value.
      */
-    public function validate(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): void;
+    public function validate(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): void;
 
     /**
      * Add semantic constraints and annotations to the generated JSON Schema fragment.
@@ -60,17 +52,10 @@ interface ContentFieldPreset
      * @param  array<string, mixed>  $schema
      * @return array<string, mixed>
      */
-    public function jsonSchema(
-        array $schema,
-        ContentFieldDefinition $field,
-    ): array;
+    public function jsonSchema(array $schema, ContentFieldDefinition $field): array;
 
     /**
      * Project the recursively rendered preset value to its semantic contract.
      */
-    public function render(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): mixed;
+    public function render(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): mixed;
 }

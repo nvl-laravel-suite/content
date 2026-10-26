@@ -16,16 +16,10 @@ use Nvl\Content\Schema\ContentSchema;
  */
 final class ContentSchemaCast implements CastsAttributes
 {
-    public function get(
-        Model $model,
-        string $key,
-        mixed $value,
-        array $attributes,
-    ): ContentSchema {
-        $decoded = is_string($value)
-            ? json_decode($value, true, flags: JSON_THROW_ON_ERROR)
-            : $value;
-
+    /** Native Content operation. */
+    public function get(Model $model, string $key, mixed $value, array $attributes): ContentSchema
+    {
+        $decoded = is_string($value) ? json_decode($value, true, flags: JSON_THROW_ON_ERROR) : $value;
         if (! is_array($decoded)) {
             throw new InvalidArgumentException("The [{$key}] attribute must contain a content schema.");
         }
@@ -36,25 +30,13 @@ final class ContentSchemaCast implements CastsAttributes
     /**
      * @return array<string, string>
      */
-    public function set(
-        Model $model,
-        string $key,
-        mixed $value,
-        array $attributes,
-    ): array {
+    public function set(Model $model, string $key, mixed $value, array $attributes): array
+    {
         if (! $value instanceof ContentSchema && ! is_array($value)) {
             throw new InvalidArgumentException("The [{$key}] attribute must be a content schema.");
         }
+        $schema = $value instanceof ContentSchema ? $value : ContentSchema::fromArray($value);
 
-        $schema = $value instanceof ContentSchema
-            ? $value
-            : ContentSchema::fromArray($value);
-
-        return [
-            $key => json_encode(
-                $schema->toArray(),
-                JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
-            ),
-        ];
+        return [$key => json_encode($schema->toArray(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)];
     }
 }

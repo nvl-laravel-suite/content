@@ -36,7 +36,6 @@ final class ContentBlockTranslationFactory extends Factory
             if (! $expandRelationships) {
                 return;
             }
-
             if ($model->getAttribute('content_block_id') !== null) {
                 $parent = ContentBlock::query()->findOrFail(FactoryGuard::identifier($model->getAttribute('content_block_id')));
                 FactoryGuard::parent($parent, $model);
@@ -52,11 +51,7 @@ final class ContentBlockTranslationFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'content_block_id' => ContentBlock::factory(),
-            'locale' => 'en',
-            'values' => [],
-        ];
+        return ['content_block_id' => ContentBlock::factory(), 'locale' => 'en', 'values' => []];
     }
 
     /**
@@ -68,8 +63,6 @@ final class ContentBlockTranslationFactory extends Factory
     {
         FactoryGuard::parent($parent, new ContentBlockTranslation);
 
-        return $this->state([
-            'content_block_id' => $parent->getKey(),
-        ]);
+        return $this->state(['content_block_id' => $parent->getKey()]);
     }
 }

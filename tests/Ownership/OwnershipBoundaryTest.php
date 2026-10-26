@@ -2,22 +2,21 @@
 
 declare(strict_types=1);
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
-use Nvl\Content\Actions\ListOwnerContentPlacementSummariesAction;
-use Nvl\Content\Actions\PlaceContentBlockAction;
 use Nvl\Content\Contracts\ContentAuthorization;
-use Nvl\Content\Data\ContentActorData;
-use Nvl\Content\Data\Mutations\PlaceContentBlockData;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Events\ContentBlockChanged;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Services\ContentModelRegistry;
+use Nvl\Content\Services\ContentPlacements;
+use Nvl\Content\Services\ContentReader;
 use Nvl\Content\Services\ContentReferenceRegistry;
 use Nvl\Content\Services\ContentSnapshotService;
 use Nvl\Content\Tests\Fixtures\OwnershipActor;
@@ -27,6 +26,8 @@ use Nvl\Content\Tests\Fixtures\OwnershipReferenceResolver;
 use Nvl\Content\Tests\OwnershipTestCase;
 use Nvl\Content\Validation\ContentValidationContext;
 use Nvl\Ownership\Services\OwnershipRunner;
+use Nvl\Support\Enums\PublicActor;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipQueuedJob;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 
@@ -59,11 +60,11 @@ it('binds immutable snapshots to the full native owner and rejects foreign autho
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(8), OwnershipActor::firstOrFail(), function () use (&$snapshot): void {
         $host = Scenario::host();
         Scenario::place(Scenario::block(), $host);
-        $snapshot = app(ContentSnapshotService::class)->capture($host, 'main', ContentActorData::system());
-        expect($snapshot->formatVersion)->toBe(3)->and($snapshot->ownershipContext['owner']['key'])->toBe('8');
+        $snapshot = app(ContentSnapshotService::class)->capture($host, 'main', SystemActor::Background);
+        expect($snapshot['formatVersion'])->toBe(3)->and($snapshot['ownershipContext']['owner']['key'])->toBe('8');
     });
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function () use ($snapshot): void {
-        expect(fn () => app(ContentSnapshotService::class)->render($snapshot, 'en', ContentActorData::system()))->toThrow(OwnershipViolation::class);
+        expect(fn () => app(ContentSnapshotService::class)->render($snapshot, 'en', SystemActor::Background))->toThrow(OwnershipViolation::class);
     });
 });
 it('deletes an owned host and its canonical placements atomically through composed traits', function (): void {
@@ -73,7 +74,6 @@ it('deletes an owned host and its canonical placements atomically through compos
         expect($host->delete())->toBeTrue()->and(ContentPlacement::query()->count())->toBe(0);
     });
 });
-
 it('preserves cancellation and rolls placement cleanup back with native host deletion', function (): void {
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function (): void {
         $host = Scenario::host();
@@ -88,8 +88,7 @@ it('captures native owner authority on scalar committed Content events', functio
         $events[] = $event;
     });
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), fn () => Scenario::block());
-    expect($events)->toHaveCount(1)->and($events[0])->toBeInstanceOf(OwnershipQueuedJob::class)
-        ->and($events[0]->ownershipJobEnvelope()->data['owner']['key'])->toBe('7')->and(serialize($events))->not->toContain('Private copy');
+    expect($events)->toHaveCount(1)->and($events[0])->toBeInstanceOf(OwnershipQueuedJob::class)->and($events[0]->ownershipJobEnvelope()->data['owner']['key'])->toBe('7')->and(serialize($events))->not->toContain('Private copy');
 });
 it('keeps native Content summaries bounded for one and twenty five canonical hosts', function (): void {
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function (): void {
@@ -103,7 +102,7 @@ it('keeps native Content summaries bounded for one and twenty five canonical hos
         $measure = function (array $hosts): int {
             DB::enableQueryLog();
             DB::flushQueryLog();
-            $result = app(ListOwnerContentPlacementSummariesAction::class)->execute($hosts, 'main', ContentActorData::system());
+            $result = app(ContentReader::class)->summaries($hosts, 'main', SystemActor::Background);
             $count = count(DB::getQueryLog());
             DB::disableQueryLog();
             expect($result)->toHaveCount(count($hosts));
@@ -114,7 +113,6 @@ it('keeps native Content summaries bounded for one and twenty five canonical hos
         expect($measure($hosts))->toBeLessThanOrEqual($one + 2);
     });
 });
-
 it('authorizes canonical host facts rather than forged batch handles', function (): void {
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function (): void {
         $host = Scenario::host();
@@ -124,17 +122,16 @@ it('authorizes canonical host facts rather than forged batch handles', function 
         $host->name = 'public';
         app()->instance(ContentAuthorization::class, new class implements ContentAuthorization
         {
-            public function authorize(ContentAbility $ability, ContentActorData $actor, ?ContentBlock $block = null, ?Model $owner = null, array $context = []): void
+            public function authorize(ContentAbility $ability, Authenticatable|SystemActor|PublicActor $actor, ?ContentBlock $block = null, ?Model $owner = null, array $context = []): void
             {
                 if ($ability === ContentAbility::ListPlacements && $owner?->getAttribute('name') === 'private') {
                     throw new AuthorizationException('Private host');
                 }
             }
         });
-        expect(fn () => app(ListOwnerContentPlacementSummariesAction::class)->execute([$host], 'main', ContentActorData::system()))->toThrow(AuthorizationException::class);
+        expect(fn () => app(ContentReader::class)->summaries([$host], 'main', SystemActor::Background))->toThrow(AuthorizationException::class);
     });
 });
-
 it('retains canonical host and composition identity in raw placement parent writes', function (): void {
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function (): void {
         $block = Scenario::block();
@@ -148,7 +145,7 @@ it('deletes owned placement trees from leaves before removing their canonical ho
         $block = Scenario::block();
         $host = Scenario::host();
         $parent = Scenario::place($block, $host);
-        app(PlaceContentBlockAction::class)->execute($block, $host, 'main', PlaceContentBlockData::from(['key' => 'child', 'region' => 'main', 'parentId' => $parent->id]), ContentActorData::system());
+        app(ContentPlacements::class)->place($block, $host, 'main', ['key' => 'child', 'region' => 'main', 'parentId' => $parent->id], SystemActor::Background);
         expect($host->delete())->toBeTrue()->and(ContentPlacement::query()->count())->toBe(0);
     });
 });
@@ -158,7 +155,7 @@ it('requires reference adapters to return the exact requested persisted key', fu
         OwnershipReferenceResolver::$record = $host;
         $registry = app(ContentReferenceRegistry::class);
         $registry->register('owned-reference', OwnershipReferenceResolver::class);
-        $context = new ContentValidationContext(ContentActorData::system(), 'en', 'reference', ContentVisibility::Private);
+        $context = new ContentValidationContext(SystemActor::Background, 'en', 'reference', ContentVisibility::Private);
         expect(fn () => $registry->display('owned-reference', (string) Str::uuid(), $context))->toThrow(OwnershipViolation::class);
     });
 });

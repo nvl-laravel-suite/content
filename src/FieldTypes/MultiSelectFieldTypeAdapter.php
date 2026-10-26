@@ -14,6 +14,7 @@ use Nvl\Content\Validation\ContentValidationContext;
  */
 final class MultiSelectFieldTypeAdapter extends AbstractFieldTypeAdapter
 {
+    /** Native Content operation. */
     public function alias(): string
     {
         return 'multi_select';
@@ -22,38 +23,23 @@ final class MultiSelectFieldTypeAdapter extends AbstractFieldTypeAdapter
     /**
      * @return list<string>|null
      */
-    public function normalize(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): ?array {
+    public function normalize(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): ?array
+    {
         if ($value === null) {
             return null;
         }
-
         if (! is_array($value) || ! array_is_list($value)) {
             throw new InvalidArgumentException("Content field [{$context->path}] must be a list.");
         }
-
-        $maximum = $field->setting(
-            'max_items',
-            ContentConfiguration::positiveInteger('nvl-content.validation.maximum_items', 500),
-        );
-
+        $maximum = $field->setting('max_items', ContentConfiguration::positiveInteger('nvl-content.validation.maximum_items', 500));
         if (! is_int($maximum) || count($value) > $maximum) {
             throw new InvalidArgumentException("Content field [{$context->path}] has too many values.");
         }
-
         $options = $field->setting('options', []);
-        $allowed = ! is_array($options)
-            ? []
-            : (array_is_list($options) ? $options : array_keys($options));
-
+        $allowed = ! is_array($options) ? [] : (array_is_list($options) ? $options : array_keys($options));
         foreach ($value as $item) {
             if (! is_string($item) || ! in_array($item, $allowed, true)) {
-                throw new InvalidArgumentException(
-                    "Content field [{$context->path}] contains an unavailable option.",
-                );
+                throw new InvalidArgumentException("Content field [{$context->path}] contains an unavailable option.");
             }
         }
 

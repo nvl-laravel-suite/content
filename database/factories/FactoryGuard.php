@@ -29,7 +29,7 @@ final class FactoryGuard
     /** Require a scalar native identifier before lookup or morph serialization. */
     public static function identifier(mixed $key): int|string
     {
-        if ((! is_string($key) && ! is_int($key)) || $key === '') {
+        if (! is_string($key) && ! is_int($key) || $key === '') {
             throw new InvalidArgumentException('Factory identities require a non-empty native scalar identifier.');
         }
 
@@ -40,8 +40,7 @@ final class FactoryGuard
     public static function parent(Model $parent, Model $child): void
     {
         $key = $parent->getKey();
-        if (! $parent->exists || (! is_string($key) && ! is_int($key))
-            || $key === '' || $parent->getRawOriginal($parent->getKeyName()) !== $key) {
+        if (! $parent->exists || ! is_string($key) && ! is_int($key) || $key === '' || $parent->getRawOriginal($parent->getKeyName()) !== $key) {
             throw new InvalidArgumentException('Factory parents require an unchanged persisted native identifier.');
         }
         if ($parent->getConnection() !== $child->getConnection()) {
@@ -59,7 +58,7 @@ final class FactoryGuard
     {
         $type = $child->getAttribute($typeColumn);
         $key = $child->getAttribute($idColumn);
-        if (! is_string($type) || $type === '' || (! is_string($key) && ! is_int($key)) || $key === '') {
+        if (! is_string($type) || $type === '' || ! is_string($key) && ! is_int($key) || $key === '') {
             throw new InvalidArgumentException('This factory requires forOwner() with a persisted real host model.');
         }
         $class = Relation::getMorphedModel($type) ?? $type;
@@ -75,15 +74,13 @@ final class FactoryGuard
         if ($owner->getMorphClass() !== $type) {
             throw new InvalidArgumentException('Factory owners require their native morph identity.');
         }
-
         if (config('nvl-tenancy.enabled') === true) {
             $container = Container::getInstance();
             $registry = $container->make(TenantResourceRegistry::class);
             $resource = $registry->forModel($child);
             if ($resource->kind === TenantResourceKind::Inherited && $resource->parentResource === null) {
                 $resolver = $container->make($registry->parentResolver($resource->key));
-                if (! $resolver instanceof TenantParentResolver
-                    || ($resolver->types()[$type] ?? null) !== $owner::class) {
+                if (! $resolver instanceof TenantParentResolver || ($resolver->types()[$type] ?? null) !== $owner::class) {
                     throw new TenantBoundaryViolation('Factory owners require the native tenant parent allowlist.');
                 }
             }
@@ -121,8 +118,7 @@ final class FactoryGuard
     public static function recipient(TenantId $recipient): void
     {
         $container = Container::getInstance();
-        if ($container->make(TenantContext::class)->snapshot()->mode !== TenantContextMode::Platform
-            || $container->make(TenantDirectory::class)->find($recipient)->status !== TenantStatus::Active) {
+        if ($container->make(TenantContext::class)->snapshot()->mode !== TenantContextMode::Platform || $container->make(TenantDirectory::class)->find($recipient)->status !== TenantStatus::Active) {
             throw new TenantBoundaryViolation('Catalog fixtures require platform context and an active recipient.');
         }
     }

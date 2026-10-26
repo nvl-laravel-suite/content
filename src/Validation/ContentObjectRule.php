@@ -12,9 +12,10 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 final class ContentObjectRule implements ValidationRule
 {
+    /** Native Content operation. */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (! is_array($value) || ($value !== [] && array_is_list($value))) {
+        if (! is_array($value) || $value !== [] && array_is_list($value)) {
             $fail("The {$attribute} field must be a JSON object.");
         }
     }

@@ -4,22 +4,20 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Tests\Fixtures;
 
-use Nvl\Content\Actions\CreateContentBlockAction;
-use Nvl\Content\Actions\PlaceContentBlockAction;
-use Nvl\Content\Data\ContentActorData;
-use Nvl\Content\Data\Mutations\CreateContentBlockData;
-use Nvl\Content\Data\Mutations\PlaceContentBlockData;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Services\ContentBlocks;
+use Nvl\Content\Services\ContentPlacements;
 use Nvl\Ownership\Services\OwnershipWriter;
 use Nvl\Ownership\ValueObjects\OwnershipAssignment;
+use Nvl\Support\Enums\SystemActor;
 
 /** Creates canonical mutable content records through real package workflows. */
 final class OwnershipContentScenario
 {
     public static function block(string $key = 'copy'): ContentBlock
     {
-        return app(CreateContentBlockAction::class)->execute(CreateContentBlockData::from(['definition' => 'copy', 'key' => $key, 'translations' => ['en' => ['text' => 'Private copy']]]), ContentActorData::system());
+        return app(ContentBlocks::class)->create(['definition' => 'copy', 'key' => $key, 'translations' => ['en' => ['text' => 'Private copy']]], SystemActor::Background);
     }
 
     public static function host(): OwnershipContentOwner
@@ -34,6 +32,6 @@ final class OwnershipContentScenario
 
     public static function place(ContentBlock $block, OwnershipContentOwner $host): ContentPlacement
     {
-        return app(PlaceContentBlockAction::class)->execute($block, $host, 'main', PlaceContentBlockData::from(['key' => 'body', 'region' => 'main']), ContentActorData::system());
+        return app(ContentPlacements::class)->place($block, $host, 'main', ['key' => 'body', 'region' => 'main'], SystemActor::Background);
     }
 }

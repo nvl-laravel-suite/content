@@ -13,20 +13,18 @@ use Nvl\Content\Validation\ContentValidationContext;
  */
 final class BooleanFieldTypeAdapter extends AbstractFieldTypeAdapter
 {
+    /** Native Content operation. */
     public function alias(): string
     {
         return 'boolean';
     }
 
-    public function normalize(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): ?bool {
+    /** Native Content operation. */
+    public function normalize(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): ?bool
+    {
         if ($value === null || is_bool($value)) {
             return $value;
         }
-
         throw new InvalidArgumentException("Content field [{$context->path}] must be boolean.");
     }
 }

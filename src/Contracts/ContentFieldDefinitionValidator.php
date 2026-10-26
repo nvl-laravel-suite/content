@@ -13,5 +13,6 @@ use Nvl\Content\Schema\ContentFieldDefinition;
  */
 interface ContentFieldDefinitionValidator
 {
+    /** Native Content operation. */
     public function validateDefinition(ContentFieldDefinition $field): void;
 }

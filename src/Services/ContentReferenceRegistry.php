@@ -4,20 +4,15 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Services;
 
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentReferenceResolver;
 use Nvl\Content\Contracts\OwnershipSafeContentReferenceResolver;
-use Nvl\Content\Contracts\TenantSafeContentReferenceResolver;
 use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Content\Validation\ContentValidationContext;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
-use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
-use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Allowlist for schema-declared references.
@@ -28,14 +23,7 @@ final class ContentReferenceRegistry
     private array $resolvers = [];
 
     /** Create the reference allowlist and its tenant-safety boundary. */
-    public function __construct(
-        private readonly Container $container,
-        private readonly ContentPayloadGuard $guard,
-        private readonly Repository $configuration,
-        private readonly OwnershipBoundary $tenancy,
-        private readonly TenantResourceRegistry $tenantResources,
-        private readonly TenantExtensionGuard $extensions,
-    ) {}
+    public function __construct(private readonly Container $container, private readonly ContentPayloadGuard $guard, private readonly OwnershipBoundary $tenancy) {}
 
     /** Register one stable reference alias and compatible resolver class. */
     public function register(string $alias, string $resolver): void
@@ -43,18 +31,12 @@ final class ContentReferenceRegistry
         if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
             throw new InvalidArgumentException("Content reference alias [{$alias}] is invalid.");
         }
-
         if (isset($this->resolvers[$alias])) {
             throw new InvalidArgumentException("Content reference [{$alias}] is already registered.");
         }
-
-        $resolver = $this->extensions->assertCompatible(
-            extension: $resolver,
-            baseContract: ContentReferenceResolver::class,
-            tenantContract: TenantSafeContentReferenceResolver::class,
-            label: 'Content reference resolver',
-        );
-
+        if (! is_a($resolver, ContentReferenceResolver::class, true)) {
+            throw new InvalidArgumentException('Content reference resolvers must implement ContentReferenceResolver.');
+        }
         $this->resolvers[$alias] = $resolver;
         ksort($this->resolvers);
     }
@@ -69,40 +51,28 @@ final class ContentReferenceRegistry
     public function assertRegistered(string $alias): void
     {
         if (! $this->has($alias)) {
-            throw new InvalidArgumentException(
-                "Content reference type [{$alias}] is not registered.",
-            );
+            throw new InvalidArgumentException("Content reference type [{$alias}] is not registered.");
         }
     }
 
     /** Admit the exact canonical reference before checking availability. */
-    public function assertExists(
-        string $alias,
-        string $identifier,
-        ContentValidationContext $context,
-    ): void {
+    public function assertExists(string $alias, string $identifier, ContentValidationContext $context): void
+    {
         $resolver = $this->resolver($alias);
         $this->assertTenantRecord($resolver, $identifier, $context);
-
         if (! $resolver->exists($identifier, $context)) {
-            throw new InvalidArgumentException(
-                "Content reference [{$alias}:{$identifier}] does not exist or is unavailable.",
-            );
+            throw new InvalidArgumentException("Content reference [{$alias}:{$identifier}] does not exist or is unavailable.");
         }
     }
 
     /**
      * @return array<string, mixed>|null
      */
-    public function display(
-        string $alias,
-        string $identifier,
-        ContentValidationContext $context,
-    ): ?array {
+    public function display(string $alias, string $identifier, ContentValidationContext $context): ?array
+    {
         $resolver = $this->resolver($alias);
         $this->assertTenantRecord($resolver, $identifier, $context);
         $display = $resolver->display($identifier, $context);
-
         if ($display !== null) {
             $this->guard->referenceDisplay($display);
         }
@@ -130,13 +100,12 @@ final class ContentReferenceRegistry
         return $this->resolvers;
     }
 
+    /** Native Content operation. */
     private function resolver(string $alias): ContentReferenceResolver
     {
         $this->assertRegistered($alias);
-        $class = $this->resolvers[$alias]
-            ?? throw new InvalidArgumentException("Content reference type [{$alias}] is unavailable.");
+        $class = $this->resolvers[$alias] ?? throw new InvalidArgumentException("Content reference type [{$alias}] is unavailable.");
         $resolver = $this->container->make($class);
-
         if (! $resolver instanceof ContentReferenceResolver || $resolver->alias() !== $alias) {
             throw new InvalidArgumentException("Content reference resolver [{$class}] is invalid.");
         }
@@ -145,11 +114,8 @@ final class ContentReferenceRegistry
     }
 
     /** Deny legacy or foreign dynamic resolvers before existence/display output is consumed. */
-    private function assertTenantRecord(
-        ContentReferenceResolver $resolver,
-        string $identifier,
-        ContentValidationContext $context,
-    ): void {
+    private function assertTenantRecord(ContentReferenceResolver $resolver, string $identifier, ContentValidationContext $context): void
+    {
         if (ContentOwnership::declared()) {
             if (! $resolver instanceof OwnershipSafeContentReferenceResolver) {
                 throw new OwnershipViolation('Owned Content references require their canonical record adapter.');
@@ -159,7 +125,7 @@ final class ContentReferenceRegistry
                 throw new OwnershipViolation('A Content reference is unavailable in the admitted owner.');
             }
             $key = $record->getKey();
-            if (! $record->exists || (! is_string($key) && ! is_int($key)) || (string) $key !== $identifier || $record->isDirty($record->getKeyName())) {
+            if (! $record->exists || ! is_string($key) && ! is_int($key) || (string) $key !== $identifier || $record->isDirty($record->getKeyName())) {
                 throw new OwnershipViolation('Content references require the exact requested persisted key.');
             }
             $resource = ContentOwnership::resource($record);
@@ -171,17 +137,5 @@ final class ContentReferenceRegistry
 
             return;
         }
-        if ($this->configuration->get('nvl-tenancy.enabled') !== true) {
-            return;
-        }
-        if (! $resolver instanceof TenantSafeContentReferenceResolver) {
-            throw new TenantBoundaryViolation('A tenant Content reference resolver must expose its canonical record.');
-        }
-        $record = $resolver->tenantRecord($identifier, $context);
-        if (! $record instanceof Model) {
-            throw new TenantBoundaryViolation('A Content reference is unavailable in the active tenant.');
-        }
-        $resource = $this->tenantResources->forModel($record);
-        $this->tenancy->assertRecord($record, $resource->key);
     }
 }

@@ -20,17 +20,13 @@ final class ContentDoctorCommand extends Command
     /** @var string */
     protected $description = 'Inspect the NVL Content installation without changing state';
 
+    /** Native Content operation. */
     public function handle(ContentDoctor $doctor): int
     {
-
         $format = $this->option('format');
-
         if (! is_string($format) || ! in_array($format, ['text', 'json'], true)) {
-            throw new InvalidArgumentException(
-                'The content doctor format must be text or json.',
-            );
+            throw new InvalidArgumentException('The content doctor format must be text or json.');
         }
-
         $checks = $doctor->inspect();
         $healthy = $checks['healthy'];
         if ($this->option('strict')) {
@@ -40,16 +36,11 @@ final class ContentDoctorCommand extends Command
                 }
             }
         }
-
         if ($format === 'json') {
             $this->line((string) json_encode($checks, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
         } else {
             foreach ($checks as $check => $value) {
-                $this->line(sprintf(
-                    '%-34s %s',
-                    $check,
-                    json_encode($value, JSON_THROW_ON_ERROR),
-                ));
+                $this->line(sprintf('%-34s %s', $check, json_encode($value, JSON_THROW_ON_ERROR)));
             }
         }
 

@@ -15,28 +15,24 @@ final class ContentFieldTypeRegistry
     /** @var array<string, ContentFieldTypeAdapter> */
     private array $adapters = [];
 
+    /** Native Content operation. */
     public function register(ContentFieldTypeAdapter $adapter): void
     {
         $alias = $adapter->alias();
-
         if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
             throw new InvalidArgumentException("Content field type alias [{$alias}] is invalid.");
         }
-
         if (isset($this->adapters[$alias])) {
             throw new InvalidArgumentException("Content field type [{$alias}] is already registered.");
         }
-
         $this->adapters[$alias] = $adapter;
         ksort($this->adapters);
     }
 
+    /** Native Content operation. */
     public function get(string $alias): ContentFieldTypeAdapter
     {
-        return $this->adapters[$alias]
-            ?? throw new InvalidArgumentException(
-                "Content field type [{$alias}] is not registered.",
-            );
+        return $this->adapters[$alias] ?? throw new InvalidArgumentException("Content field type [{$alias}] is not registered.");
     }
 
     /**

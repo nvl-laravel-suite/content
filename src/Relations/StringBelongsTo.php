@@ -34,7 +34,6 @@ final class StringBelongsTo extends BelongsTo
             $query->from($query->getModel()->getTable().' as '.$hash = $this->getRelationCountHash());
             $query->getModel()->setTable($hash);
         }
-
         $grammar = $query->getQuery()->getGrammar();
         $foreign = $grammar->wrap($this->getQualifiedForeignKeyName());
         $owner = $grammar->wrap($query->qualifyColumn($this->ownerKey));
@@ -44,8 +43,6 @@ final class StringBelongsTo extends BelongsTo
             default => 'CHAR',
         };
 
-        return $query->select($columns)->whereRaw(new TextColumnComparison(
-            "CAST({$foreign} AS {$type})", "CAST({$owner} AS {$type})",
-        ));
+        return $query->select($columns)->whereRaw(new TextColumnComparison("CAST({$foreign} AS {$type})", "CAST({$owner} AS {$type})"));
     }
 }

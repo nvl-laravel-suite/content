@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Content\Database\Factories\ContentBlockTranslationFactory;
-use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Models\Concerns\OwnsContentChild;
 use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
@@ -20,7 +19,6 @@ use Nvl\Support\Ownership\Contracts\Ownable;
  * Localized field values for one content block.
  *
  * @property string $id
- * @property string|null $tenant_id
  * @property string $content_block_id
  * @property string $locale
  * @property array<string, mixed> $values
@@ -32,15 +30,13 @@ use Nvl\Support\Ownership\Contracts\Ownable;
  */
 final class ContentBlockTranslation extends Model implements Ownable
 {
-    use GuardsTenantOwnership;
-
     /** @use HasFactory<ContentBlockTranslationFactory> */
     use HasFactory;
 
     use HasUuids;
     use OwnsContentChild;
 
-    public const string TENANT_RESOURCE = 'content.translations';
+    public const string OWNERSHIP_RESOURCE = 'content.translations';
 
     /** @var list<string> */
     protected $fillable = ['content_block_id', 'locale', 'values'];

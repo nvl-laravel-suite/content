@@ -14,17 +14,12 @@ use Nvl\Content\Validation\ContentValidationContext;
  */
 interface ContentFieldTypeAdapter
 {
+    /** Native Content operation. */
     public function alias(): string;
 
-    public function normalize(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): mixed;
+    /** Native Content operation. */
+    public function normalize(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): mixed;
 
-    public function render(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): mixed;
+    /** Native Content operation. */
+    public function render(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): mixed;
 }

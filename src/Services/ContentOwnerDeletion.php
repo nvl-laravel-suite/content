@@ -9,10 +9,10 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use InvalidArgumentException;
-use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Exceptions\ContentOwnerDeletionCancelled;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Ownership\ContentOwnership;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipModelPersistence;
 use Throwable;
 
@@ -22,71 +22,56 @@ use Throwable;
 final readonly class ContentOwnerDeletion
 {
     /** Retain the canonical services and immutable inputs for this workflow. */
-    public function __construct(
-        private ContentOwnerRegistry $owners,
-        private ContentIdentityGuard $identities,
-        private ContentPlacementOwnerLock $locks,
-        private ContentMediaSynchronizer $media,
-        private OwnershipModelPersistence $persistence,
-    ) {}
+    public function __construct(private ContentOwnerRegistry $owners, private ContentIdentityGuard $identities, private ContentPlacementOwnerLock $locks, private ContentMediaSynchronizer $media, private OwnershipModelPersistence $persistence) {}
 
     /**
      * Delete an owner and its Content usages under every declared composition lock.
      *
      * @param  Closure(): (bool|null)  $delete
      */
-    public function execute(Model&ContentOwner $owner, Closure $delete): ?bool
+    public function execute(Model $owner, Closure $delete): ?bool
     {
+        $ownerKey = $owner->getKey();
+        if (! is_int($ownerKey) && ! is_string($ownerKey)) {
+            throw new InvalidArgumentException('Content owners require a scalar identity.');
+        }
         try {
             $ownerType = $this->owners->type($owner);
         } catch (InvalidArgumentException $exception) {
-            if (! $owner->contentPlacements()->exists()) {
+            if (! ContentPlacement::query()->where('owner_type', $owner->getMorphClass())->where('owner_id', (string) $ownerKey)->exists()) {
                 return $delete();
             }
-
             throw $exception;
         }
         $ownerId = $this->owners->id($owner);
         $this->identities->owner($ownerType, $ownerId);
         $groups = $this->owners->groups($owner);
-
-        foreach ($owner->contentPlacements()->distinct()->pluck('group') as $group) {
+        foreach (ContentPlacement::query()->where('owner_type', $owner->getMorphClass())->where('owner_id', (string) $ownerKey)->distinct()->pluck('group') as $group) {
             if (! is_string($group)) {
                 throw new InvalidArgumentException('Persisted Content placement groups must be strings.');
             }
-
             $this->identities->group($group);
             $groups[] = $group;
         }
-
         $groups = array_values(array_unique($groups));
         sort($groups);
 
-        return $this->withLocks($ownerType, $ownerId, $groups, function () use ($owner, $delete): ?bool {
+        return $this->withLocks($ownerType, $ownerId, $groups, function () use ($owner, $ownerKey, $delete): ?bool {
             $connection = $owner->getConnection();
             $contentConnection = (new ContentPlacement)->getConnection();
-
             if ($connection->getName() !== $contentConnection->getName()) {
-                if ($owner->contentPlacements()->exists()) {
-                    throw new InvalidArgumentException(
-                        'Content owners with placements must be deleted on the same named database connection as Content.',
-                    );
+                if (ContentPlacement::query()->where('owner_type', $owner->getMorphClass())->where('owner_id', (string) $ownerKey)->exists()) {
+                    throw new InvalidArgumentException('Content owners with placements must be deleted on the same named database connection as Content.');
                 }
 
                 return $delete();
             }
-
             $existed = $owner->exists;
-
             try {
-                $perform = function () use ($owner, $delete, $connection): ?bool {
-                    return $connection->transaction(function () use ($owner, $delete): ?bool {
-                        $owner->newQuery()
-                            ->withoutGlobalScope(SoftDeletingScope::class)
-                            ->whereKey($owner->getKey())
-                            ->lockForUpdate()
-                            ->firstOrFail();
-                        $placements = $owner->contentPlacements()->orderBy('id')->lockForUpdate()->get();
+                $perform = function () use ($owner, $ownerKey, $delete, $connection): ?bool {
+                    return $connection->transaction(function () use ($owner, $ownerKey, $delete): ?bool {
+                        $owner->newQuery()->withoutGlobalScope(SoftDeletingScope::class)->whereKey($owner->getKey())->lockForUpdate()->firstOrFail();
+                        $placements = ContentPlacement::query()->where('owner_type', $owner->getMorphClass())->where('owner_id', (string) $ownerKey)->orderBy('id')->lockForUpdate()->get();
                         if (ContentOwnership::declared()) {
                             $this->deleteOwnedPlacements($placements);
                             $deleted = $delete();
@@ -97,14 +82,11 @@ final readonly class ContentOwnerDeletion
                             return true;
                         }
                         $deleted = $delete();
-
                         if ($deleted !== true) {
                             return $deleted;
                         }
-
                         foreach ($placements as $placement) {
-                            $this->media->detachAll($placement);
-
+                            $this->media->detachAll($placement, SystemActor::Background);
                             if ($placement->delete() !== true) {
                                 throw new InvalidArgumentException('Content placement deletion was canceled.');
                             }
@@ -143,7 +125,7 @@ final readonly class ContentOwnerDeletion
                 throw new InvalidArgumentException('Content placement deletion requires an acyclic canonical tree.');
             }
             foreach ($leaves as $placement) {
-                $this->media->detachAll($placement);
+                $this->media->detachAll($placement, SystemActor::Background);
                 if ($placement->delete() !== true) {
                     throw new InvalidArgumentException('Content placement deletion was canceled.');
                 }
@@ -162,13 +144,6 @@ final readonly class ContentOwnerDeletion
     {
         $group = array_shift($groups);
 
-        return $group === null
-            ? $callback()
-            : $this->locks->run(
-                $ownerType,
-                $ownerId,
-                $group,
-                fn (): ?bool => $this->withLocks($ownerType, $ownerId, $groups, $callback),
-            );
+        return $group === null ? $callback() : $this->locks->run($ownerType, $ownerId, $group, fn (): ?bool => $this->withLocks($ownerType, $ownerId, $groups, $callback));
     }
 }

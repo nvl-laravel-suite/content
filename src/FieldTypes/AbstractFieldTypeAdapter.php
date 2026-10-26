@@ -13,11 +13,9 @@ use Nvl\Content\Validation\ContentValidationContext;
  */
 abstract class AbstractFieldTypeAdapter implements ContentFieldTypeAdapter
 {
-    public function render(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): mixed {
+    /** Native Content operation. */
+    public function render(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): mixed
+    {
         return $value;
     }
 }

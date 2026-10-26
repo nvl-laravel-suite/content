@@ -13,11 +13,7 @@ use Throwable;
 final readonly class ContentPresetDiagnostics
 {
     /** Retain the registered presets and their native validation collaborators. */
-    public function __construct(
-        private ContentFieldPresetRegistry $presets,
-        private ContentSchemaCompiler $compiler,
-        private ContentSchemaValidator $schemas,
-    ) {}
+    public function __construct(private ContentFieldPresetRegistry $presets, private ContentSchemaCompiler $compiler, private ContentSchemaValidator $schemas) {}
 
     /**
      * Inspect every preset independently without stopping at the first invalid schema.

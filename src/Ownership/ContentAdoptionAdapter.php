@@ -26,12 +26,7 @@ use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 final readonly class ContentAdoptionAdapter implements OwnershipAdoptionAdapter
 {
     /** Retain the canonical services and immutable inputs for this workflow. */
-    public function __construct(
-        private OwnershipResourceRegistry $resources,
-        private OwnershipAdoptionStore $mappings,
-        private OwnershipSchema $schema,
-        private OwnershipDatabaseConstraints $constraints,
-    ) {}
+    public function __construct(private OwnershipResourceRegistry $resources, private OwnershipAdoptionStore $mappings, private OwnershipSchema $schema, private OwnershipDatabaseConstraints $constraints) {}
 
     /** @return list<string> */
     public function resources(): array
@@ -42,11 +37,11 @@ final readonly class ContentAdoptionAdapter implements OwnershipAdoptionAdapter
     /** Prepare additive partitions and replace only the package's known global receipt identity. */
     public function prepare(OwnershipAdoptionPlan $plan): void
     {
-        $root = new ($this->resources->get('content.blocks')->model);
+        $root = new ($this->resources->get('content.blocks')->model)();
         $connection = $root->getConnection();
         $schema = $connection->getSchemaBuilder();
         foreach ($this->resources() as $key) {
-            $model = new ($this->resources->get($key)->model);
+            $model = new ($this->resources->get($key)->model)();
             foreach (['tenant_id', 'ownership_key'] as $column) {
                 if ($schema->hasColumn($model->getTable(), $column)) {
                     $schema->table($model->getTable(), static fn (Blueprint $table) => ($column === 'tenant_id' ? $table->uuid($column) : $table->string($column, 44))->nullable()->change());
@@ -54,8 +49,8 @@ final readonly class ContentAdoptionAdapter implements OwnershipAdoptionAdapter
             }
             $this->schema->prepare($key);
         }
-        foreach ([['content.translations', 'content_block_id'], ['content.revisions', 'content_block_id'], ['content.placements', 'content_block_id']] as [$childKey,$column]) {
-            $child = new ($this->resources->get($childKey)->model);
+        foreach ([['content.translations', 'content_block_id'], ['content.revisions', 'content_block_id'], ['content.placements', 'content_block_id']] as [$childKey, $column]) {
+            $child = new ($this->resources->get($childKey)->model)();
             $found = false;
             foreach ($schema->getForeignKeys($child->getTable()) as $foreign) {
                 if ($foreign['columns'] === [$column] && $foreign['foreign_table'] === $root->getConnection()->getTablePrefix().$root->getTable() && $foreign['foreign_columns'] === ['id']) {
@@ -73,7 +68,7 @@ final readonly class ContentAdoptionAdapter implements OwnershipAdoptionAdapter
                 $schema->table($root->getTable(), static fn (Blueprint $table) => $table->dropUnique($index['name']));
             }
         }
-        $placement = new ($this->resources->get('content.placements')->model);
+        $placement = new ($this->resources->get('content.placements')->model)();
         $identity = ['id', 'owner_type', 'owner_id', 'group'];
         $this->unique($placement, $identity, 'content_native_placement_parent_identity_unique');
         $childColumns = ['parent_id', 'owner_type', 'owner_id', 'group'];
@@ -88,7 +83,7 @@ final readonly class ContentAdoptionAdapter implements OwnershipAdoptionAdapter
             $schema->table($placement->getTable(), static fn (Blueprint $table) => $table->foreign($childColumns, 'content_native_placement_parent_foreign')->references($identity)->on($placement->getTable())->restrictOnDelete());
         }
         $this->unique($root, ['owner_scope_key', 'scope', 'scope_key', 'key'], 'content_owner_scope_key_unique');
-        $locale = new ($this->resources->get('content.translations')->model);
+        $locale = new ($this->resources->get('content.translations')->model)();
         $this->unique($locale, ['owner_scope_key', 'content_block_id', 'locale'], 'content_owner_locale_unique');
     }
 
@@ -116,9 +111,8 @@ final readonly class ContentAdoptionAdapter implements OwnershipAdoptionAdapter
         foreach ($this->resources() as $key) {
             $this->schema->verify($key);
         }
-
-        $root = new ($this->resources->get('content.blocks')->model);
-        $placement = new ($this->resources->get('content.placements')->model);
+        $root = new ($this->resources->get('content.blocks')->model)();
+        $placement = new ($this->resources->get('content.placements')->model)();
         $connection = $root->getConnection();
         $table = $placement->getTable();
         $bad = $connection->table($table.' as child')->leftJoin($root->getTable().' as block', 'block.id', '=', 'child.content_block_id')->where(static fn (Builder $q) => $q->whereNull('block.id')->orWhereColumn('block.owner_scope_key', '!=', 'child.owner_scope_key'))->exists();
@@ -136,13 +130,13 @@ final readonly class ContentAdoptionAdapter implements OwnershipAdoptionAdapter
         foreach ($this->resources() as $key) {
             $this->schema->constrain($key);
         }
-        $root = new ($this->resources->get('content.blocks')->model);
-        $placement = new ($this->resources->get('content.placements')->model);
+        $root = new ($this->resources->get('content.blocks')->model)();
+        $placement = new ($this->resources->get('content.placements')->model)();
         $this->constraints->reference($root->getConnection(), $placement->getTable(), 'content_block_id', $root->getTable(), 'id');
         $this->constraints->reference($root->getConnection(), $placement->getTable(), 'parent_id', $placement->getTable(), 'id', true);
         $targets = [];
         foreach ($this->resources->get('content.placements')->parents() as $key) {
-            $parent = new ($this->resources->get($key)->model);
+            $parent = new ($this->resources->get($key)->model)();
             $targets[] = ['type' => $parent->getMorphClass(), 'table' => $parent->getTable(), 'key' => $parent->getKeyName()];
         }
         if ($targets === []) {

@@ -18,56 +18,62 @@ use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
  */
 final class ContentOwnerRegistry implements ContentOwnerRegistrar
 {
-    /** @var array<string, class-string<Model&ContentOwner>> */
+    /** @var array<string, class-string<Model>> */
     private array $models = [];
 
+    /** @var array<class-string<Model>, list<string>> */
+    private array $declaredGroups = [];
+
     /** Retain Content's allowlist, validation and native owner identity boundaries. */
-    public function __construct(
-        private readonly ContentIdentityGuard $identities,
-        private readonly OwnershipBoundary $tenancy,
-        private readonly OwnerRegistry $identitiesRegistry,
-    ) {}
+    public function __construct(private readonly ContentIdentityGuard $identities, private readonly OwnershipBoundary $tenancy, private readonly OwnerRegistry $identitiesRegistry) {}
 
     /**
      * Register one stable owner alias and its Content-capable Eloquent model.
      *
      * @param  string  $model  Shared alias or deprecated Eloquent class reference
+     * @param  array<array-key,mixed>|null  $groups
      *
      * @throws InvalidArgumentException When the capability alias or model is already registered or invalid
      */
-    public function register(string $alias, string $model): void
+    public function register(string $alias, string $model, ?array $groups = null): void
     {
         if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1 && ! is_a($alias, Model::class, true)) {
             throw new InvalidArgumentException("Content owner alias [{$alias}] is invalid.");
         }
-
         if (isset($this->models[$alias])) {
             throw new InvalidArgumentException("Content owner [{$alias}] is already registered.");
         }
-
         $reference = $model;
         $model = is_a($reference, Model::class, true) ? $reference : $this->identitiesRegistry->model($reference);
-
         if ($reference !== $model && $reference !== $alias) {
             throw new InvalidArgumentException("Content owner [{$alias}] must use its canonical shared alias [{$reference}].");
         }
-
         $model = $this->identitiesRegistry->reference($reference, "nvl-content.owners.{$alias}", $alias);
-        if (! is_a($model, ContentOwner::class, true)) {
-            throw new InvalidArgumentException(
-                "Content owner model [{$model}] must extend Model and implement ContentOwner.",
-            );
+        if (! is_a($model, ContentOwner::class, true) && $groups === null) {
+            throw new InvalidArgumentException("Content owner model [{$model}] must implement ContentOwner or supply explicit composition groups.");
         }
-
         $registeredAlias = array_search($model, $this->models, true);
         if (is_string($registeredAlias)) {
             throw new InvalidArgumentException("Content owner model [{$model}] is already registered as [{$registeredAlias}].");
         }
-
-        /** @var Model&ContentOwner $owner */
+        /** @var Model $owner */
         $owner = new $model;
+        if ($groups !== null) {
+            if (! array_is_list($groups) || $groups === []) {
+                throw new InvalidArgumentException('Content owner groups must be a nonempty unique list.');
+            }
+            foreach ($groups as $group) {
+                if (! is_string($group)) {
+                    throw new InvalidArgumentException('Content owner groups must be strings.');
+                }
+                $this->identities->group($group);
+            }
+            if (count($groups) !== count(array_unique($groups))) {
+                throw new InvalidArgumentException('Content owner groups must be unique.');
+            }
+            $this->declaredGroups[$model] = $groups;
+        }
         $this->groups($owner);
-
         $this->models[$alias] = $model;
         ksort($this->models);
     }
@@ -75,7 +81,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     /**
      * Resolve one allowlisted owner identity to its Eloquent model.
      */
-    public function resolve(string $alias, string $identifier): Model&ContentOwner
+    public function resolve(string $alias, string $identifier): Model
     {
         return $this->resolveOwner($alias, $identifier, false);
     }
@@ -83,7 +89,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     /**
      * Resolve an owner of a retained placement, including reversible soft deletion.
      */
-    public function resolveRetained(string $alias, string $identifier): Model&ContentOwner
+    public function resolveRetained(string $alias, string $identifier): Model
     {
         return $this->resolveOwner($alias, $identifier, true);
     }
@@ -91,46 +97,34 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     /**
      * Return the stable registered alias for one persisted owner model.
      */
-    public function type(Model&ContentOwner $owner): string
+    public function type(Model $owner): string
     {
         foreach ($this->models as $alias => $model) {
             if ($owner instanceof $model && (! ContentOwnership::declared() || $owner::class === $model)) {
                 return $owner->getMorphClass();
             }
         }
-
-        throw new InvalidArgumentException(
-            'The supplied model is not a registered Content owner.',
-        );
+        throw new InvalidArgumentException('The supplied model is not a registered Content owner.');
     }
 
     /**
      * Return and validate the portable persisted identifier for one owner.
      */
-    public function id(Model&ContentOwner $owner): string
+    public function id(Model $owner): string
     {
         if (! $owner->exists) {
             throw new InvalidArgumentException('A Content owner must be persisted.');
         }
-
         $identifier = $owner->getKey();
-
         if (! is_int($identifier) && ! is_string($identifier)) {
-            throw new InvalidArgumentException(
-                'A Content owner identifier must be a string or integer.',
-            );
+            throw new InvalidArgumentException('A Content owner identifier must be a string or integer.');
         }
-
         $id = (string) $identifier;
         $this->identities->owner($this->type($owner), $id);
-
         $query = $owner->newQuery()->withoutGlobalScope(SoftDeletingScope::class);
         if (! (clone $query)->whereKey($identifier)->exists()) {
-            throw new InvalidArgumentException(
-                'The supplied Content owner no longer exists.',
-            );
+            throw new InvalidArgumentException('The supplied Content owner no longer exists.');
         }
-
         if (ContentOwnership::active()) {
             $canonical = $query->findOrFail($identifier);
             $this->tenancy->assertRecord($owner, ContentOwnership::resource($canonical));
@@ -144,7 +138,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
      *
      * @internal
      */
-    public function canonical(Model&ContentOwner $owner): Model&ContentOwner
+    public function canonical(Model $owner): Model
     {
         if (! ContentOwnership::declared()) {
             return $owner;
@@ -158,7 +152,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     /**
      * Return the Eloquent model registered for one stable owner alias.
      *
-     * @return class-string<Model&ContentOwner>
+     * @return class-string<Model>
      */
     public function model(string $alias): string
     {
@@ -168,16 +162,13 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
             }
         }
 
-        return $this->models[$alias]
-            ?? throw new InvalidArgumentException(
-                "Content owner [{$alias}] is not registered.",
-            );
+        return $this->models[$alias] ?? throw new InvalidArgumentException("Content owner [{$alias}] is not registered.");
     }
 
     /**
      * Return the registered model for an alias, or null when it is available.
      *
-     * @return class-string<Model&ContentOwner>|null
+     * @return class-string<Model>|null
      */
     public function registered(string $alias): ?string
     {
@@ -197,7 +188,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
      *
      * @internal
      *
-     * @return array<string, class-string<Model&ContentOwner>>
+     * @return array<string, class-string<Model>>
      */
     public function compilationIdentities(): array
     {
@@ -209,27 +200,19 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
      *
      * @return list<string>
      */
-    public function groups(Model&ContentOwner $owner): array
+    public function groups(Model $owner): array
     {
-        $groups = $owner->contentGroups();
+        $groups = $this->declaredGroups[$owner::class] ?? ($owner instanceof ContentOwner ? $owner->contentGroups() : []);
         $ownerClass = $owner::class;
-
         if ($groups === []) {
-            throw new InvalidArgumentException(
-                "Content owner [{$ownerClass}] must declare at least one composition group.",
-            );
+            throw new InvalidArgumentException("Content owner [{$ownerClass}] must declare at least one composition group.");
         }
-
         foreach ($groups as $group) {
             $this->identities->group($group);
         }
-
         if (count($groups) !== count(array_unique($groups))) {
-            throw new InvalidArgumentException(
-                "Content owner [{$ownerClass}] contains duplicate composition groups.",
-            );
+            throw new InvalidArgumentException("Content owner [{$ownerClass}] contains duplicate composition groups.");
         }
-
         sort($groups);
 
         return $groups;
@@ -238,51 +221,31 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     /**
      * Assert that one composition group is declared by the owner.
      */
-    public function assertGroup(Model&ContentOwner $owner, string $group): void
+    public function assertGroup(Model $owner, string $group): void
     {
         $this->identities->group($group);
-
         if (! in_array($group, $this->groups($owner), true)) {
             $ownerClass = $owner::class;
-
-            throw new InvalidArgumentException(
-                "Content group [{$group}] is not declared by owner [{$ownerClass}].",
-            );
+            throw new InvalidArgumentException("Content group [{$group}] is not declared by owner [{$ownerClass}].");
         }
     }
 
     /**
      * Resolve an exact owner identity while preserving every non-deletion scope.
      */
-    private function resolveOwner(string $alias, string $identifier, bool $withTrashed): Model&ContentOwner
+    private function resolveOwner(string $alias, string $identifier, bool $withTrashed): Model
     {
         $this->identities->owner($alias, $identifier);
         $class = $this->model($alias);
         $query = (new $class)->newQuery();
-
         if ($withTrashed) {
             $query->withoutGlobalScope(SoftDeletingScope::class);
         }
-
-        $owner = $query->find($identifier)
-            ?? throw new InvalidArgumentException(
-                "Content owner [{$alias}:{$identifier}] does not exist.",
-            );
-
-        if (! $owner instanceof ContentOwner) {
-            throw new InvalidArgumentException(
-                "Resolved Content owner [{$alias}] does not implement ContentOwner.",
-            );
-        }
-
+        $owner = $query->find($identifier) ?? throw new InvalidArgumentException("Content owner [{$alias}:{$identifier}] does not exist.");
         $key = $owner->getKey();
-
-        if ((! is_int($key) && ! is_string($key)) || (string) $key !== $identifier) {
-            throw new InvalidArgumentException(
-                "Resolved content owner [{$alias}] does not match identifier [{$identifier}].",
-            );
+        if (! is_int($key) && ! is_string($key) || (string) $key !== $identifier) {
+            throw new InvalidArgumentException("Resolved content owner [{$alias}] does not match identifier [{$identifier}].");
         }
-
         if (ContentOwnership::active()) {
             $this->tenancy->assertRecord($owner, ContentOwnership::resource($owner));
         }

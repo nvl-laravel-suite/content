@@ -15,10 +15,8 @@ use Nvl\Translatable\Support\LocaleCode;
  */
 final readonly class ContentLocalePolicy
 {
-    public function __construct(
-        private LocaleCatalog $locales,
-        private ContentLocale $contentLocale,
-    ) {}
+    /** Native Content operation. */
+    public function __construct(private LocaleCatalog $locales, private ContentLocale $contentLocale) {}
 
     /**
      * @return list<string>
@@ -29,25 +27,16 @@ final readonly class ContentLocalePolicy
         $registered = $this->locales->supported();
         $available = $configured === [] ? $registered : $configured;
         $normalized = [];
-
         foreach ($available as $locale) {
             $value = (new LocaleCode($locale))->value;
-
             if (! in_array($value, $registered, true)) {
-                throw new InvalidArgumentException(
-                    "Content locale [{$value}] is not registered in translatable.locales.",
-                );
+                throw new InvalidArgumentException("Content locale [{$value}] is not registered in translatable.locales.");
             }
-
             if (in_array($value, $normalized, true)) {
-                throw new InvalidArgumentException(
-                    "Content locale [{$locale}] is configured more than once.",
-                );
+                throw new InvalidArgumentException("Content locale [{$locale}] is configured more than once.");
             }
-
             $normalized[] = $value;
         }
-
         if ($normalized === []) {
             throw new InvalidArgumentException('Content requires at least one available locale.');
         }
@@ -55,10 +44,10 @@ final readonly class ContentLocalePolicy
         return $normalized;
     }
 
+    /** Native Content operation. */
     public function assertSupported(string $locale): string
     {
         $normalized = (new LocaleCode($locale))->value;
-
         if (! in_array($normalized, $this->available(), true)) {
             throw new InvalidArgumentException("Content locale [{$normalized}] is not configured.");
         }
@@ -66,12 +55,11 @@ final readonly class ContentLocalePolicy
         return $normalized;
     }
 
+    /** Native Content operation. */
     public function current(): string
     {
         $current = $this->contentLocale->get();
 
-        return in_array($current, $this->available(), true)
-            ? $current
-            : $this->available()[0];
+        return in_array($current, $this->available(), true) ? $current : $this->available()[0];
     }
 }

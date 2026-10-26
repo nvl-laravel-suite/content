@@ -9,18 +9,13 @@ use Nvl\Content\Enums\ContentResponseCode;
 
 /**
  * @api
-
  * Safe transport-neutral representation of invalid content input.
  */
 final class InvalidContentException extends ContentException
 {
+    /** Native Content operation. */
     public static function fromInvalidArgument(InvalidArgumentException $exception): self
     {
-        return new self(
-            message: $exception->getMessage(),
-            responseCode: ContentResponseCode::InvalidContent,
-            suggestedStatus: 422,
-            previous: $exception,
-        );
+        return new self(message: $exception->getMessage(), responseCode: ContentResponseCode::InvalidContent, suggestedStatus: 422, previous: $exception);
     }
 }

@@ -46,7 +46,7 @@ Constructor parameters, in native order:
 | `$blockId` | `string` | public | `required` | — |
 | `$event` | `Nvl\Content\Enums\ContentRevisionEvent` | public | `required` | — |
 | `$revision` | `int` | public | `required` | — |
-| `$actor` | `Nvl\Content\Data\ContentActorData` | public | `required` | — |
+| `$actor` | `Authenticatable\|SystemActor` | not promoted | `required` | — |
 | `$schemaVersion` | `int` | public | `1` | — |
 
 Public payload fields:
@@ -56,19 +56,19 @@ Public payload fields:
 | `$blockId` | `string` | — |
 | `$event` | `Nvl\Content\Enums\ContentRevisionEvent` | — |
 | `$revision` | `int` | — |
-| `$actor` | `Nvl\Content\Data\ContentActorData` | — |
+| `$actor` | `array` | `array{type:string,id:mixed,system:bool}` |
 | `$schemaVersion` | `int` | — |
 
 Producers and exact scheduling connection expressions (variables are resolved in the linked source):
 
 | Producer | Source connection |
 | --- | --- |
-| [Actions/ArchiveContentBlockAction.php](../src/Actions/ArchiveContentBlockAction.php) | `$model->getConnection()` |
-| [Actions/CreateContentBlockAction.php](../src/Actions/CreateContentBlockAction.php) | `$block->getConnection()` |
-| [Actions/DeleteContentBlockAction.php](../src/Actions/DeleteContentBlockAction.php) | `$model->getConnection()` |
-| [Actions/PublishContentBlockAction.php](../src/Actions/PublishContentBlockAction.php) | `$model->getConnection()` |
-| [Actions/RestoreContentBlockAction.php](../src/Actions/RestoreContentBlockAction.php) | `$model->getConnection()` |
-| [Actions/UpdateContentBlockAction.php](../src/Actions/UpdateContentBlockAction.php) | `$model->getConnection()` |
+| [Services/ContentBlocks.php](../src/Services/ContentBlocks.php) | `$model->getConnection()` |
+| [Services/ContentBlocks.php](../src/Services/ContentBlocks.php) | `$block->getConnection()` |
+| [Services/ContentBlocks.php](../src/Services/ContentBlocks.php) | `$model->getConnection()` |
+| [Services/ContentBlocks.php](../src/Services/ContentBlocks.php) | `$model->getConnection()` |
+| [Services/ContentBlocks.php](../src/Services/ContentBlocks.php) | `$model->getConnection()` |
+| [Services/ContentBlocks.php](../src/Services/ContentBlocks.php) | `$model->getConnection()` |
 | [Services/ContentBlockDefinitionMigrator.php](../src/Services/ContentBlockDefinitionMigrator.php) | `$block->getConnection()` |
 
 ### ContentPlacementChanged
@@ -84,7 +84,7 @@ Constructor parameters, in native order:
 | `$placementId` | `string` | public | `required` | — |
 | `$event` | `Nvl\Content\Enums\ContentPlacementEvent` | public | `required` | — |
 | `$revision` | `int` | public | `required` | — |
-| `$actor` | `Nvl\Content\Data\ContentActorData` | public | `required` | — |
+| `$actor` | `Authenticatable\|SystemActor` | not promoted | `required` | — |
 | `$ownerType` | `?string` | public | `null` | — |
 | `$ownerId` | `?string` | public | `null` | — |
 | `$group` | `?string` | public | `null` | — |
@@ -98,7 +98,7 @@ Public payload fields:
 | `$placementId` | `string` | — |
 | `$event` | `Nvl\Content\Enums\ContentPlacementEvent` | — |
 | `$revision` | `int` | — |
-| `$actor` | `Nvl\Content\Data\ContentActorData` | — |
+| `$actor` | `array` | `array{type:string,id:mixed,system:bool}` |
 | `$ownerType` | `?string` | — |
 | `$ownerId` | `?string` | — |
 | `$group` | `?string` | — |
@@ -109,26 +109,16 @@ Producers and exact scheduling connection expressions (variables are resolved in
 
 | Producer | Source connection |
 | --- | --- |
-| [Actions/DeleteContentPlacementAction.php](../src/Actions/DeleteContentPlacementAction.php) | `$model->getConnection()` |
-| [Actions/PlaceContentBlockAction.php](../src/Actions/PlaceContentBlockAction.php) | `$placement->getConnection()` |
-| [Actions/ReorderContentPlacementsAction.php](../src/Actions/ReorderContentPlacementsAction.php) | `$placement->getConnection()` |
-| [Actions/ReplaceContentPlacementAction.php](../src/Actions/ReplaceContentPlacementAction.php) | `$model->getConnection()` |
-| [Actions/UpdateContentPlacementAction.php](../src/Actions/UpdateContentPlacementAction.php) | `$model->getConnection()` |
+| [Services/ContentPlacements.php](../src/Services/ContentPlacements.php) | `$model->getConnection()` |
+| [Services/ContentPlacements.php](../src/Services/ContentPlacements.php) | `$placement->getConnection()` |
+| [Services/ContentPlacements.php](../src/Services/ContentPlacements.php) | `$placement->getConnection()` |
+| [Services/ContentPlacements.php](../src/Services/ContentPlacements.php) | `$model->getConnection()` |
+| [Services/ContentPlacements.php](../src/Services/ContentPlacements.php) | `$model->getConnection()` |
 | [Services/ContentBlockPlacementSynchronizer.php](../src/Services/ContentBlockPlacementSynchronizer.php) | `$placement->getConnection()` |
 
 ## Referenced payload types
 
-Native event field types are listed above; nested declared fields and backed enum values follow. Private captured envelopes are included because serialized/queued objects retain them. Dates use `Carbon\CarbonImmutable`. Spatie Data serialization can also carry its protected transformation metadata; immutable serialized payload graphs are checked by the C4 contract suite.
-
-### ContentActorData
-
-`Nvl\Content\Data\ContentActorData` · [source](../src/Data/ContentActorData.php).
-
-| Declared public field | Native PHP type | Collection shape |
-| --- | --- | --- |
-| `$type` | `?string` | — |
-| `$id` | `int\|string\|null` | — |
-| `$system` | `bool` | — |
+Native event field types are listed above; nested declared fields and backed enum values follow. Private captured envelopes are included because serialized/queued objects retain them. Dates use `Carbon\CarbonImmutable`. Events retain captured actor facts and the private native Ownership envelope, never the supplied principal object.
 
 ### ContentPlacementEvent
 
@@ -144,9 +134,9 @@ Backed string values: `Created = created`, `Updated = updated`, `Published = pub
 
 ## Deferred acceptance checks
 
-Final testing must compare catalog types/defaults/aliases with actual classes, recursively inspect producer payloads, and prove source outer commit, nested rollback, unrelated connection independence and retry behavior without an uncommitted test-harness transaction. Where applicable it must cover legacy exact/cached/queued listeners, canonical fakes and wildcard delivery, tenant capture, package no-op guards and observational failure containment. This document does not report those checks as passing.
+Final testing must compare catalog types/defaults/aliases with actual classes, recursively inspect producer payloads, and prove source outer commit, nested rollback, unrelated connection independence and retry behavior without an uncommitted test-harness transaction. Where applicable it must cover cached/queued listeners, canonical fakes, ownership capture, package no-op guards and observational failure containment. This document does not report those checks as passing.
 
 ## Consumer event assertions
 
-Use the canonical event class listed in the catalog for `Event::fake([...])` and `Event::assertDispatched(...)`. Laravel fake filters compare the emitted class name; an old alias import does not rename that canonical object. Legacy exact listeners are bridged at delivery time through Laravel’s native dispatcher. Keep compatibility listener tests on their exact legacy name, and migrate suffix-specific wildcards to canonical names.
+Use the canonical event class listed in the catalog for `Event::fake([...])` and `Event::assertDispatched(...)`. Laravel fake filters compare the emitted class name; an old alias import does not rename that canonical object. Content exposes no retired event aliases or listener bridge.
 

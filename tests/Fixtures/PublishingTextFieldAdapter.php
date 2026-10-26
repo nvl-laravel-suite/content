@@ -24,7 +24,6 @@ final class PublishingTextFieldAdapter extends AbstractFieldTypeAdapter
         if ($value === null) {
             return null;
         }
-
         if (! is_string($value)) {
             throw new InvalidArgumentException('Publishing text requires a string.');
         }

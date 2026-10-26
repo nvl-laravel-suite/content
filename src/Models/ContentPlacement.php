@@ -13,13 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Nvl\Content\Database\Factories\ContentPlacementFactory;
-use Nvl\Content\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Content\Models\Concerns\OwnsContentChild;
 use Nvl\Content\Relations\StringBelongsTo;
 use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Support\ContentConfiguration;
-use Nvl\Media\Contracts\HasNvlMedia;
-use Nvl\Media\Traits\InteractsWithNvlMedia;
 use Nvl\Support\Config\PackageStorage;
 use Nvl\Support\Ownership\Contracts\Ownable;
 
@@ -27,7 +24,6 @@ use Nvl\Support\Ownership\Contracts\Ownable;
  * Ordered placement of a reusable block within an allowlisted owner.
  *
  * @property string $id
- * @property string|null $tenant_id
  * @property string $content_block_id
  * @property string $owner_type
  * @property string $owner_id
@@ -46,44 +42,23 @@ use Nvl\Support\Ownership\Contracts\Ownable;
  *
  * @api
  */
-final class ContentPlacement extends Model implements HasNvlMedia, Ownable
+final class ContentPlacement extends Model implements Ownable
 {
-    use GuardsTenantOwnership;
-
     /** @use HasFactory<ContentPlacementFactory> */
     use HasFactory;
 
     use HasUuids;
-    use InteractsWithNvlMedia;
     use OwnsContentChild;
 
-    public const string TENANT_RESOURCE = 'content.placements';
+    public const string OWNERSHIP_RESOURCE = 'content.placements';
 
     public const string DEFAULT_GROUP = 'default';
 
     /** @var list<string> */
-    protected $fillable = [
-        'content_block_id',
-        'owner_type',
-        'owner_id',
-        'group',
-        'key',
-        'parent_id',
-        'region',
-        'sort_order',
-        'is_visible',
-        'overrides',
-        'revision',
-    ];
+    protected $fillable = ['content_block_id', 'owner_type', 'owner_id', 'group', 'key', 'parent_id', 'region', 'sort_order', 'is_visible', 'overrides', 'revision'];
 
     /** @var array<string, mixed> */
-    protected $attributes = [
-        'group' => self::DEFAULT_GROUP,
-        'region' => 'main',
-        'sort_order' => 0,
-        'is_visible' => true,
-        'revision' => 1,
-    ];
+    protected $attributes = ['group' => self::DEFAULT_GROUP, 'region' => 'main', 'sort_order' => 0, 'is_visible' => true, 'revision' => 1];
 
     /** Resolve the configured native table owned by this model. */
     public function getTable(): string
@@ -102,12 +77,7 @@ final class ContentPlacement extends Model implements HasNvlMedia, Ownable
      */
     protected function casts(): array
     {
-        return [
-            'sort_order' => 'integer',
-            'is_visible' => 'boolean',
-            'overrides' => 'array',
-            'revision' => 'integer',
-        ];
+        return ['sort_order' => 'integer', 'is_visible' => 'boolean', 'overrides' => 'array', 'revision' => 'integer'];
     }
 
     /**
@@ -125,9 +95,7 @@ final class ContentPlacement extends Model implements HasNvlMedia, Ownable
      */
     protected function newBelongsTo(Builder $query, Model $child, $foreignKey, $ownerKey, $relation): BelongsTo
     {
-        return $foreignKey === 'owner_id'
-            ? new StringBelongsTo($query, $child, $foreignKey, $ownerKey, $relation)
-            : parent::newBelongsTo($query, $child, $foreignKey, $ownerKey, $relation);
+        return $foreignKey === 'owner_id' ? new StringBelongsTo($query, $child, $foreignKey, $ownerKey, $relation) : parent::newBelongsTo($query, $child, $foreignKey, $ownerKey, $relation);
     }
 
     /**
@@ -161,9 +129,7 @@ final class ContentPlacement extends Model implements HasNvlMedia, Ownable
      */
     public function children(): HasMany
     {
-        return $this->hasMany(self::class, 'parent_id')
-            ->orderBy('sort_order')
-            ->orderBy('id');
+        return $this->hasMany(self::class, 'parent_id')->orderBy('sort_order')->orderBy('id');
     }
 
     /**

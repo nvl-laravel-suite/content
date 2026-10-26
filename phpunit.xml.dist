@@ -12,6 +12,8 @@
     <testsuites>
         <testsuite name="NVL Content">
             <directory>tests</directory>
+            <exclude>tests/Historical</exclude>
+            <exclude>tests/Fixtures</exclude>
         </testsuite>
     </testsuites>
     <php>

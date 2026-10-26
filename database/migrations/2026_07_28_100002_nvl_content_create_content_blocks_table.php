@@ -1,7 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -20,19 +19,12 @@ return new class extends Migration
     {
         $schema = Schema::connection(ContentConfiguration::connection());
         $tableName = ContentConfiguration::table('blocks');
-
         if ($schema->hasTable($tableName)) {
-            throw new LogicException(
-                "Content blocks table [{$tableName}] already exists; ".
-                'disable content.migrations.enabled during controlled schema adoption.',
-            );
+            throw new LogicException("Content blocks table [{$tableName}] already exists; ".'disable content.migrations.enabled during controlled schema adoption.');
         }
-
         $schema->create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('definition_id')
-                ->constrained(ContentConfiguration::table('definitions'))
-                ->restrictOnDelete();
+            $table->foreignUuid('definition_id')->constrained(ContentConfiguration::table('definitions'))->restrictOnDelete();
             $table->string('key', 191);
             $table->string('scope', 100)->default('global');
             $table->string('scope_key', 191)->default('*');
@@ -54,19 +46,12 @@ return new class extends Migration
             $table->string('updated_by_id', 191)->nullable();
             $table->timestamps();
             $table->softDeletes();
-
             $table->unique(['scope', 'scope_key', 'key'], 'content_blocks_scope_key_unique');
             $table->index(['definition_id', 'status', 'visibility'], 'content_blocks_definition_state_idx');
-            $table->index(
-                ['definition_id', 'definition_version', 'id'],
-                'content_blocks_definition_version_idx',
-            );
+            $table->index(['definition_id', 'definition_version', 'id'], 'content_blocks_definition_version_idx');
             $table->index(['scope', 'scope_key', 'status'], 'content_blocks_scope_state_idx');
             $table->index(['status', 'published_at'], 'content_blocks_publication_idx');
-            $table->index(
-                ['published_by_type', 'published_by_id'],
-                'content_blocks_published_by_idx',
-            );
+            $table->index(['published_by_type', 'published_by_id'], 'content_blocks_published_by_idx');
             $table->index(['created_by_type', 'created_by_id'], 'content_blocks_created_by_idx');
             $table->index(['updated_by_type', 'updated_by_id'], 'content_blocks_updated_by_idx');
         });
@@ -74,7 +59,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::connection(ContentConfiguration::connection())
-            ->dropIfExists(ContentConfiguration::table('blocks'));
+        Schema::connection(ContentConfiguration::connection())->dropIfExists(ContentConfiguration::table('blocks'));
     }
 };

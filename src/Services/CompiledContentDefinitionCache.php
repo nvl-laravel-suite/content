@@ -9,7 +9,6 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use InvalidArgumentException;
 use JsonException;
-use Nvl\Content\Data\ContentDefinitionData;
 use Nvl\Content\Exceptions\ContentDefinitionCacheException;
 use Nvl\Content\Support\ContentArrays;
 use Throwable;
@@ -17,44 +16,27 @@ use Throwable;
 /** Publishes and restores bounded scalar compiled definitions with explicit deployment identity. @internal */
 final readonly class CompiledContentDefinitionCache
 {
-    private const int MAXIMUM_BYTES = 16_777_216;
+    private const int MAXIMUM_BYTES = 16777216;
 
     /** Retain filesystem policy, compiler inputs and the isolated source compiler. */
-    public function __construct(
-        private Application $application,
-        private Repository $configuration,
-        private ContentDefinitionLoader $loader,
-        private ContentDefinitionCompilation $compilation,
-        private ContentCompilationSignature $signature,
-        private CanonicalJson $json,
-        private ContentPayloadGuard $guard,
-    ) {}
+    public function __construct(private Application $application, private Repository $configuration, private ContentDefinitionLoader $loader, private ContentDefinitionCompilation $compilation, private ContentCompilationSignature $signature, private CanonicalJson $json, private ContentPayloadGuard $guard) {}
 
     /** Compile source once and atomically replace the cache only after complete validation. */
     public function write(?string $version = null): void
     {
         $version = $this->version($version);
         $sources = $this->loader->sourceManifest();
-        $definitions = array_map(static fn (ContentDefinitionData $definition): array => $definition->toArray(), $this->compilation->compile());
+        $definitions = array_map(static fn (array $definition): array => [...$definition, 'schema' => $definition['schema']->toArray()], $this->compilation->compile());
         if ($sources !== $this->loader->sourceManifest()) {
             throw ContentDefinitionCacheException::invalid('definition sources changed during compilation');
         }
-        $payload = [
-            'schema_version' => 1,
-            'compiler_abi' => ContentCompilationSignature::ABI,
-            'package_reference' => $this->packageReference(),
-            'version' => $version,
-            'signature' => $this->signature->current(),
-            'sources' => $sources,
-            'definitions' => $definitions,
-        ];
+        $payload = ['schema_version' => 1, 'compiler_abi' => ContentCompilationSignature::ABI, 'package_reference' => $this->packageReference(), 'version' => $version, 'signature' => $this->signature->current(), 'sources' => $sources, 'definitions' => $definitions];
         $this->guard->json($payload, 'Compiled Content cache', self::MAXIMUM_BYTES, 64);
         $payload['payload_sha256'] = $this->json->hash($payload);
         $encoded = $this->json->encode($payload);
         if (strlen($encoded) > self::MAXIMUM_BYTES) {
             throw ContentDefinitionCacheException::invalid('the cache exceeds 16 MiB');
         }
-
         $path = $this->path();
         $directory = dirname($path);
         if (! is_dir($directory) && ! mkdir($directory, 0755, true) && ! is_dir($directory)) {
@@ -125,7 +107,7 @@ final readonly class CompiledContentDefinitionCache
         try {
             $enabled = $this->configuration->get('nvl-content.compiled_cache.enabled', false);
             $required = $this->configuration->get('nvl-content.compiled_cache.required', false);
-            if (! is_bool($enabled) || ! is_bool($required) || ($required && ! $enabled)) {
+            if (! is_bool($enabled) || ! is_bool($required) || $required && ! $enabled) {
                 throw ContentDefinitionCacheException::invalid('required cache mode must also be enabled and both flags must be booleans');
             }
             $result['present'] = is_file($this->path());
@@ -174,13 +156,7 @@ final readonly class CompiledContentDefinitionCache
         }
         $digest = $payload['payload_sha256'];
         unset($payload['payload_sha256']);
-        if (! is_string($digest) || ! hash_equals($this->json->hash($payload), $digest)
-            || $payload['schema_version'] !== 1 || $payload['compiler_abi'] !== ContentCompilationSignature::ABI
-            || $payload['package_reference'] !== $this->packageReference()
-            || $payload['signature'] !== $this->signature->current()
-            || ! is_array($payload['sources']) || ! is_array($payload['definitions'])
-            || ! array_is_list($payload['definitions'])
-            || ($payload['version'] !== null && ! is_string($payload['version']))) {
+        if (! is_string($digest) || ! hash_equals($this->json->hash($payload), $digest) || $payload['schema_version'] !== 1 || $payload['compiler_abi'] !== ContentCompilationSignature::ABI || $payload['package_reference'] !== $this->packageReference() || $payload['signature'] !== $this->signature->current() || ! is_array($payload['sources']) || ! is_array($payload['definitions']) || ! array_is_list($payload['definitions']) || $payload['version'] !== null && ! is_string($payload['version'])) {
             throw ContentDefinitionCacheException::invalid('digest, ABI, package reference or compiler inputs differ');
         }
         $configured = $this->version();
@@ -188,9 +164,7 @@ final readonly class CompiledContentDefinitionCache
             throw ContentDefinitionCacheException::invalid('the deployment version differs');
         }
         foreach ($payload['sources'] as $source => $hash) {
-            if (! is_string($source) || preg_match('~^root-[0-9]+/(?!/)[^\\\\]+$~D', $source) !== 1
-                || in_array('..', explode('/', $source), true) || str_contains($source, "\0")
-                || ! is_string($hash) || preg_match('/^[a-f0-9]{64}$/D', $hash) !== 1) {
+            if (! is_string($source) || preg_match('~^root-[0-9]+/(?!/)[^\\\\]+$~D', $source) !== 1 || in_array('..', explode('/', $source), true) || str_contains($source, "\x00") || ! is_string($hash) || preg_match('/^[a-f0-9]{64}$/D', $hash) !== 1) {
                 throw ContentDefinitionCacheException::invalid('a source identity or hash is invalid');
             }
         }
@@ -212,7 +186,7 @@ final readonly class CompiledContentDefinitionCache
         if ($configured !== null && (! is_string($configured) || trim($configured) === '')) {
             throw ContentDefinitionCacheException::invalid('the configured deployment version must be nonempty or null');
         }
-        if ($requested !== null && (trim($requested) === '' || ($configured !== null && $requested !== $configured))) {
+        if ($requested !== null && (trim($requested) === '' || $configured !== null && $requested !== $configured)) {
             throw ContentDefinitionCacheException::invalid('the requested deployment version must match configuration');
         }
         $version = $requested ?? $configured;
@@ -239,7 +213,7 @@ final readonly class CompiledContentDefinitionCache
     private function assertSafePath(string $path): void
     {
         $root = rtrim($this->application->basePath(), DIRECTORY_SEPARATOR);
-        if (! str_starts_with($path, $root.DIRECTORY_SEPARATOR) || str_contains($path, "\0")) {
+        if (! str_starts_with($path, $root.DIRECTORY_SEPARATOR) || str_contains($path, "\x00")) {
             throw ContentDefinitionCacheException::invalid('the cache path must remain inside the host application');
         }
         $segments = explode(DIRECTORY_SEPARATOR, substr($path, strlen($root) + 1));

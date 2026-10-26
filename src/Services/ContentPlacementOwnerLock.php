@@ -29,34 +29,17 @@ final readonly class ContentPlacementOwnerLock
      * @param  Closure(): TResult  $callback
      * @return TResult
      */
-    public function run(
-        string $ownerType,
-        string $ownerId,
-        string $group,
-        Closure $callback,
-    ): mixed {
+    public function run(string $ownerType, string $ownerId, string $group, Closure $callback): mixed
+    {
         $name = PackageOptions::lockStore('content', 'placements');
         $repository = $name === config('cache.default') ? $this->cache : Cache::store($name);
         $store = $repository->getStore();
-
         if (! $store instanceof LockProvider) {
-            throw new InvalidArgumentException(
-                'The configured cache store must support atomic locks for Content placements.',
-            );
+            throw new InvalidArgumentException('The configured cache store must support atomic locks for Content placements.');
         }
-
-        $seconds = ContentConfiguration::positiveInteger(
-            'nvl-content.placements.lock_seconds',
-            30,
-        );
-        $wait = ContentConfiguration::positiveInteger(
-            'nvl-content.placements.lock_wait_seconds',
-            10,
-        );
-        $key = 'nvl:content:placement-owner:'.$this->tenancy->key('content.placements', hash(
-            'sha256',
-            "{$ownerType}\0{$ownerId}\0{$group}",
-        ));
+        $seconds = ContentConfiguration::positiveInteger('nvl-content.placements.lock_seconds', 30);
+        $wait = ContentConfiguration::positiveInteger('nvl-content.placements.lock_wait_seconds', 10);
+        $key = 'nvl:content:placement-owner:'.$this->tenancy->key('content.placements', hash('sha256', "{$ownerType}\x00{$ownerId}\x00{$group}"));
 
         return $store->lock($key, $seconds)->block($wait, $callback);
     }

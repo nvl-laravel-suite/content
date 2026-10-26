@@ -17,6 +17,7 @@ use Nvl\Support\Config\PackageOptions;
  */
 final readonly class ContentDefinitionSyncLock
 {
+    /** Native Content operation. */
     public function __construct(private Repository $cache) {}
 
     /**
@@ -32,23 +33,12 @@ final readonly class ContentDefinitionSyncLock
         $name = PackageOptions::lockStore('content', 'definitions');
         $repository = $name === config('cache.default') ? $this->cache : Cache::store($name);
         $store = $repository->getStore();
-
         if (! $store instanceof LockProvider) {
-            throw new InvalidArgumentException(
-                'The configured cache store must support atomic locks for Content definition synchronization.',
-            );
+            throw new InvalidArgumentException('The configured cache store must support atomic locks for Content definition synchronization.');
         }
+        $seconds = ContentConfiguration::positiveInteger('nvl-content.definition_sync.lock_seconds', 60);
+        $wait = ContentConfiguration::positiveInteger('nvl-content.definition_sync.lock_wait_seconds', 10);
 
-        $seconds = ContentConfiguration::positiveInteger(
-            'nvl-content.definition_sync.lock_seconds',
-            60,
-        );
-        $wait = ContentConfiguration::positiveInteger(
-            'nvl-content.definition_sync.lock_wait_seconds',
-            10,
-        );
-
-        return $store->lock('nvl:content:definitions:sync', $seconds)
-            ->block($wait, $callback);
+        return $store->lock('nvl:content:definitions:sync', $seconds)->block($wait, $callback);
     }
 }

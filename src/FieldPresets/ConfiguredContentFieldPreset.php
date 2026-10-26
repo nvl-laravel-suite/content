@@ -12,12 +12,7 @@ final class ConfiguredContentFieldPreset extends AbstractContentFieldPreset
     /**
      * @param  array<string, mixed>  $fieldDefinition
      */
-    public function __construct(
-        private readonly string $presetAlias,
-        private readonly string $presetName,
-        private readonly ?string $presetDescription,
-        private readonly array $fieldDefinition,
-    ) {}
+    public function __construct(private readonly string $presetAlias, private readonly string $presetName, private readonly ?string $presetDescription, private readonly array $fieldDefinition) {}
 
     /**
      * Return the stable preset alias used by source-controlled schemas.

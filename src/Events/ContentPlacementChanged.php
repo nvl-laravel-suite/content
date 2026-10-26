@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Events;
 
-use Nvl\Content\Data\ContentActorData;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Nvl\Content\Enums\ContentPlacementEvent;
 use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Support\Contracts\DomainEvent;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipQueuedJob;
 use Nvl\Support\Ownership\ValueObjects\OwnershipJobEnvelope;
 
@@ -19,19 +21,14 @@ use Nvl\Support\Ownership\ValueObjects\OwnershipJobEnvelope;
 final class ContentPlacementChanged implements DomainEvent, OwnershipQueuedJob
 {
     /** Retain the canonical services and immutable inputs for this workflow. */
-    public function __construct(
-        public readonly string $placementId,
-        public readonly ContentPlacementEvent $event,
-        public readonly int $revision,
-        public readonly ContentActorData $actor,
-        public readonly ?string $ownerType = null,
-        public readonly ?string $ownerId = null,
-        public readonly ?string $group = null,
-        public readonly ?string $blockId = null,
-        public readonly int $schemaVersion = 1,
-    ) {
+    public function __construct(public readonly string $placementId, public readonly ContentPlacementEvent $event, public readonly int $revision, Authenticatable|SystemActor $actor, public readonly ?string $ownerType = null, public readonly ?string $ownerId = null, public readonly ?string $group = null, public readonly ?string $blockId = null, public readonly int $schemaVersion = 1)
+    {
+        $this->actor = ['type' => $actor instanceof SystemActor ? 'system' : ($actor instanceof Model ? $actor->getMorphClass() : $actor::class), 'id' => $actor instanceof SystemActor ? null : $actor->getAuthIdentifier(), 'system' => $actor instanceof SystemActor];
         $this->ownershipEnvelope = ContentOwnership::envelope();
     }
+
+    /** @var array{type:string,id:mixed,system:bool} */
+    public readonly array $actor;
 
     private readonly OwnershipJobEnvelope $ownershipEnvelope;
 

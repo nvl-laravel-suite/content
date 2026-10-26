@@ -19,19 +19,8 @@ final class TestReferenceResolver implements ContentReferenceResolver
         return $identifier === 'article-1';
     }
 
-    public function display(
-        string $identifier,
-        ContentValidationContext $context,
-    ): ?array {
-        return $this->exists($identifier, $context)
-            ? [
-                'title' => "Article ({$context->locale})",
-                'owner_id' => $context->owner?->getKey(),
-                'group' => $context->group,
-                'path' => $context->path,
-                'public_only' => $context->publicOnly,
-                'visibility' => $context->visibility->value,
-            ]
-            : null;
+    public function display(string $identifier, ContentValidationContext $context): ?array
+    {
+        return $this->exists($identifier, $context) ? ['title' => "Article ({$context->locale})", 'owner_id' => $context->owner?->getKey(), 'group' => $context->group, 'path' => $context->path, 'public_only' => $context->publicOnly, 'visibility' => $context->visibility->value] : null;
     }
 }

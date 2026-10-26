@@ -19,57 +19,7 @@ abstract class AbstractNavigationalContentFieldPreset extends AbstractContentFie
      */
     protected function navigationFields(): array
     {
-        return [
-            [
-                'key' => 'label',
-                'type' => 'text',
-                'label' => 'Label',
-                'localized' => true,
-                'required' => true,
-                'settings' => ['max_length' => 191],
-            ],
-            [
-                'key' => 'href',
-                'type' => 'uri',
-                'label' => 'Destination',
-                'required' => true,
-            ],
-            [
-                'key' => 'title',
-                'type' => 'text',
-                'label' => 'Accessible title',
-                'localized' => true,
-                'settings' => ['max_length' => 255],
-            ],
-            [
-                'key' => 'target',
-                'type' => 'select',
-                'label' => 'Target',
-                'default' => '_self',
-                'settings' => [
-                    'options' => [
-                        '_self' => 'Same context',
-                        '_blank' => 'New context',
-                    ],
-                ],
-            ],
-            [
-                'key' => 'rel',
-                'type' => 'multi_select',
-                'label' => 'Relationship',
-                'default' => [],
-                'settings' => [
-                    'max_items' => 5,
-                    'options' => [
-                        'nofollow' => 'No follow',
-                        'noopener' => 'No opener',
-                        'noreferrer' => 'No referrer',
-                        'sponsored' => 'Sponsored',
-                        'ugc' => 'User generated',
-                    ],
-                ],
-            ],
-        ];
+        return [['key' => 'label', 'type' => 'text', 'label' => 'Label', 'localized' => true, 'required' => true, 'settings' => ['max_length' => 191]], ['key' => 'href', 'type' => 'uri', 'label' => 'Destination', 'required' => true], ['key' => 'title', 'type' => 'text', 'label' => 'Accessible title', 'localized' => true, 'settings' => ['max_length' => 255]], ['key' => 'target', 'type' => 'select', 'label' => 'Target', 'default' => '_self', 'settings' => ['options' => ['_self' => 'Same context', '_blank' => 'New context']]], ['key' => 'rel', 'type' => 'multi_select', 'label' => 'Relationship', 'default' => [], 'settings' => ['max_items' => 5, 'options' => ['nofollow' => 'No follow', 'noopener' => 'No opener', 'noreferrer' => 'No referrer', 'sponsored' => 'Sponsored', 'ugc' => 'User generated']]]];
     }
 
     /**
@@ -81,19 +31,12 @@ abstract class AbstractNavigationalContentFieldPreset extends AbstractContentFie
     protected function secureRel(ContentLinkTarget $target, array $rel): array
     {
         if ($target === ContentLinkTarget::NewContext) {
-            $rel = [
-                ...$rel,
-                ContentLinkRelationship::NoOpener,
-                ContentLinkRelationship::NoReferrer,
-            ];
+            $rel = [...$rel, ContentLinkRelationship::NoOpener, ContentLinkRelationship::NoReferrer];
         }
-
         $relationships = [];
-
         foreach ($rel as $relationship) {
             $relationships[$relationship->value] = $relationship;
         }
-
         ksort($relationships);
 
         return array_values($relationships);
@@ -109,14 +52,9 @@ abstract class AbstractNavigationalContentFieldPreset extends AbstractContentFie
         if (! is_array($value)) {
             return [];
         }
-
         $relationships = [];
-
         foreach ($value as $relationship) {
-            $resolved = is_string($relationship)
-                ? ContentLinkRelationship::tryFrom($relationship)
-                : null;
-
+            $resolved = is_string($relationship) ? ContentLinkRelationship::tryFrom($relationship) : null;
             if ($resolved instanceof ContentLinkRelationship) {
                 $relationships[] = $resolved;
             }

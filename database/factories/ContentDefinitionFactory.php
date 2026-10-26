@@ -25,13 +25,6 @@ final class ContentDefinitionFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'key' => $this->faker->unique()->slug(3),
-            'name' => $this->faker->sentence(3),
-            'version' => 1,
-            'schema' => ['fields' => []],
-            'defaults' => [],
-            'source_hash' => hash('sha256', 'factory-content-definition'),
-        ];
+        return ['key' => $this->faker->unique()->slug(3), 'name' => $this->faker->sentence(3), 'version' => 1, 'schema' => ['fields' => []], 'defaults' => [], 'source_hash' => hash('sha256', 'factory-content-definition')];
     }
 }

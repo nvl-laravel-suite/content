@@ -17,13 +17,7 @@ final class TestContentOwner extends Model implements ContentOwner
     use HasContent;
     use HasUuids;
 
-    public const array CONTENT_GROUPS = [
-        'default',
-        'homepage',
-        'main',
-        'primary',
-        'secondary',
-    ];
+    public const array CONTENT_GROUPS = ['default', 'homepage', 'main', 'primary', 'secondary'];
 
     protected $table = 'content_test_owners';
 

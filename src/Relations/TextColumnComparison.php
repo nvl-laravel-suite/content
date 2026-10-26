@@ -12,11 +12,10 @@ use Illuminate\Database\Grammar;
  */
 final readonly class TextColumnComparison implements Expression
 {
-    public function __construct(
-        private string $left,
-        private string $right,
-    ) {}
+    /** Native Content operation. */
+    public function __construct(private string $left, private string $right) {}
 
+    /** Native Content operation. */
     public function getValue(Grammar $grammar): string
     {
         return "{$this->left} = {$this->right}";

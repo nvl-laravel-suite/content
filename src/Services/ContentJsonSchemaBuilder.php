@@ -15,6 +15,7 @@ use stdClass;
  */
 final class ContentJsonSchemaBuilder
 {
+    /** Native Content operation. */
     public function __construct(private readonly ContentFieldPresetRegistry $presets) {}
 
     /**
@@ -22,16 +23,9 @@ final class ContentJsonSchemaBuilder
      *
      * @return array<string, mixed>
      */
-    public function definition(
-        string $definition,
-        int $version,
-        ContentSchema $schema,
-    ): array {
-        return [
-            '$schema' => 'https://json-schema.org/draft/2020-12/schema',
-            '$id' => "urn:nvl:content:{$definition}:v{$version}",
-            ...$this->object($schema->fields, ''),
-        ];
+    public function definition(string $definition, int $version, ContentSchema $schema): array
+    {
+        return ['$schema' => 'https://json-schema.org/draft/2020-12/schema', '$id' => "urn:nvl:content:{$definition}:v{$version}", ...$this->object($schema->fields, '')];
     }
 
     /**
@@ -54,60 +48,27 @@ final class ContentJsonSchemaBuilder
             'integer' => $this->numeric($field, 'integer'),
             'number' => $this->numeric($field, 'number'),
             'object' => $this->objectField($field, $path),
-            'repeater', 'table' => [
-                'type' => $this->type($field, 'array'),
-                'items' => $this->row($field, $path),
-                ...$this->itemBounds($field),
-            ],
-            'list' => [
-                'type' => $this->type($field, 'array'),
-                'items' => $field->item !== null
-                    ? $this->fieldAtPath($field->item, $path.'/item')
-                    : new stdClass,
-                ...$this->itemBounds($field),
-            ],
-            'multi_select' => [
-                'type' => $this->type($field, 'array'),
-                'items' => [
-                    'type' => 'string',
-                    'enum' => $this->optionKeys($field),
-                ],
-                'uniqueItems' => true,
-                ...$this->itemBounds($field),
-            ],
-            'media_collection' => [
-                'type' => $this->type($field, 'array'),
-                'items' => ['type' => 'string', 'format' => 'uuid'],
-                'uniqueItems' => true,
-                ...$this->itemBounds($field),
-            ],
-            'reference_list' => [
-                'type' => $this->type($field, 'array'),
-                'items' => ['type' => 'string', 'maxLength' => 191],
-                'uniqueItems' => true,
-                ...$this->itemBounds($field),
-            ],
+            'repeater', 'table' => ['type' => $this->type($field, 'array'), 'items' => $this->row($field, $path), ...$this->itemBounds($field)],
+            'list' => ['type' => $this->type($field, 'array'), 'items' => $field->item !== null ? $this->fieldAtPath($field->item, $path.'/item') : new stdClass, ...$this->itemBounds($field)],
+            'multi_select' => ['type' => $this->type($field, 'array'), 'items' => ['type' => 'string', 'enum' => $this->optionKeys($field)], 'uniqueItems' => true, ...$this->itemBounds($field)],
+            'media_collection' => ['type' => $this->type($field, 'array'), 'items' => ['type' => 'string', 'format' => 'uuid'], 'uniqueItems' => true, ...$this->itemBounds($field)],
+            'reference_list' => ['type' => $this->type($field, 'array'), 'items' => ['type' => 'string', 'maxLength' => 191], 'uniqueItems' => true, ...$this->itemBounds($field)],
             'media' => ['type' => $this->type($field, 'string'), 'format' => 'uuid'],
             'reference' => ['type' => $this->type($field, 'string'), 'maxLength' => 191],
             'json' => $this->json($field, $path),
             default => $this->string($field),
         };
-
         $schema['title'] = $field->label;
         $schema['x-content-type'] = $field->type;
         $schema['x-content-localized'] = $field->localized;
-
         if ($field->preset !== null) {
             $schema['x-content-preset'] = $field->preset;
         }
-
         if ($field->default !== null) {
             $schema['default'] = $field->default;
         }
 
-        return $field->preset === null
-            ? $schema
-            : $this->presets->get($field->preset)->jsonSchema($schema, $field);
+        return $field->preset === null ? $schema : $this->presets->get($field->preset)->jsonSchema($schema, $field);
     }
 
     /**
@@ -118,21 +79,13 @@ final class ContentJsonSchemaBuilder
     {
         $properties = [];
         $required = [];
-
         foreach ($fields as $field) {
             $properties[$field->key] = $this->fieldAtPath($field, $path.'/'.$field->key);
-
             if ($field->required) {
                 $required[] = $field->key;
             }
         }
-
-        $schema = [
-            'type' => 'object',
-            'properties' => $properties === [] ? new stdClass : $properties,
-            'additionalProperties' => false,
-        ];
-
+        $schema = ['type' => 'object', 'properties' => $properties === [] ? new stdClass : $properties, 'additionalProperties' => false];
         if ($required !== []) {
             $schema['required'] = $required;
         }
@@ -145,11 +98,7 @@ final class ContentJsonSchemaBuilder
      */
     private function objectField(ContentFieldDefinition $field, string $path): array
     {
-        return [
-            ...$this->object($field->fields, $path),
-            'type' => $this->type($field, 'object'),
-            ...($field->required ? ['minProperties' => 1] : []),
-        ];
+        return [...$this->object($field->fields, $path), 'type' => $this->type($field, 'object'), ...$field->required ? ['minProperties' => 1] : []];
     }
 
     /**
@@ -158,18 +107,10 @@ final class ContentJsonSchemaBuilder
     private function row(ContentFieldDefinition $field, string $path): array
     {
         $schema = $this->object($field->fields, $path.'/items');
-
         if ($field->type === 'repeater') {
             $properties = $schema['properties'];
-
             if (is_array($properties)) {
-                $schema['properties'] = [
-                    '_key' => [
-                        'type' => 'string',
-                        'pattern' => '^[A-Za-z0-9_-]{1,100}$',
-                    ],
-                    ...$properties,
-                ];
+                $schema['properties'] = ['_key' => ['type' => 'string', 'pattern' => '^[A-Za-z0-9_-]{1,100}$'], ...$properties];
             }
         }
 
@@ -183,32 +124,17 @@ final class ContentJsonSchemaBuilder
     {
         $schema = ['type' => $this->type($field, 'string')];
         $minimum = $field->setting('min_length');
-        $defaultMaximum = $field->type === 'rich_text'
-            ? ContentConfiguration::positiveInteger(
-                'nvl-content.rich_text.maximum_input_length',
-                250_000,
-            )
-            : ContentConfiguration::positiveInteger(
-                'nvl-content.validation.maximum_string_length',
-                100_000,
-            );
-        $maximum = $field->setting(
-            'max_length',
-            $defaultMaximum,
-        );
-
+        $defaultMaximum = $field->type === 'rich_text' ? ContentConfiguration::positiveInteger('nvl-content.rich_text.maximum_input_length', 250000) : ContentConfiguration::positiveInteger('nvl-content.validation.maximum_string_length', 100000);
+        $maximum = $field->setting('max_length', $defaultMaximum);
         if (is_int($minimum) || $field->required) {
             $schema['minLength'] = max(is_int($minimum) ? $minimum : 0, $field->required ? 1 : 0);
         }
-
         if ($field->required) {
-            $schema['pattern'] = '\\S';
+            $schema['pattern'] = '\S';
         }
-
         if (is_int($maximum)) {
             $schema['maxLength'] = $maximum;
         }
-
         $format = match ($field->type) {
             'date' => 'date',
             'date_time' => 'date-time',
@@ -217,19 +143,13 @@ final class ContentJsonSchemaBuilder
             'uri' => 'uri-reference',
             default => null,
         };
-
         if ($format !== null) {
             $schema['format'] = $format;
         }
-
         if ($field->type === 'select') {
-            $schema['enum'] = $field->required
-                ? $this->optionKeys($field)
-                : [...$this->optionKeys($field), null];
+            $schema['enum'] = $field->required ? $this->optionKeys($field) : [...$this->optionKeys($field), null];
         }
-
         $pattern = $field->setting('pattern');
-
         if (is_string($pattern)) {
             $schema['x-content-pattern'] = $pattern;
         }
@@ -245,11 +165,9 @@ final class ContentJsonSchemaBuilder
         $schema = ['type' => $this->type($field, $type)];
         $minimum = $field->setting('min');
         $maximum = $field->setting('max');
-
         if (is_int($minimum) || is_float($minimum)) {
             $schema['minimum'] = $minimum;
         }
-
         if (is_int($maximum) || is_float($maximum)) {
             $schema['maximum'] = $maximum;
         }
@@ -274,20 +192,10 @@ final class ContentJsonSchemaBuilder
     {
         $bounds = [];
         $minimum = $field->setting('min_items');
-        $maximum = $field->setting(
-            'max_items',
-            ContentConfiguration::positiveInteger(
-                $field->type === 'media_collection'
-                    ? 'nvl-content.media.maximum_per_field'
-                    : 'nvl-content.validation.maximum_items',
-                $field->type === 'media_collection' ? 50 : 500,
-            ),
-        );
-
+        $maximum = $field->setting('max_items', ContentConfiguration::positiveInteger($field->type === 'media_collection' ? 'nvl-content.media.maximum_per_field' : 'nvl-content.validation.maximum_items', $field->type === 'media_collection' ? 50 : 500));
         if (is_int($minimum) || $field->required) {
             $bounds['minItems'] = max(is_int($minimum) ? $minimum : 0, $field->required ? 1 : 0);
         }
-
         if (is_int($maximum)) {
             $bounds['maxItems'] = $maximum;
         }
@@ -301,14 +209,11 @@ final class ContentJsonSchemaBuilder
     private function optionKeys(ContentFieldDefinition $field): array
     {
         $options = $field->setting('options', []);
-
         if (! is_array($options)) {
             return [];
         }
 
-        return array_is_list($options)
-            ? array_values(array_filter($options, 'is_string'))
-            : array_values(array_filter(array_keys($options), 'is_string'));
+        return array_is_list($options) ? array_values(array_filter($options, 'is_string')) : array_values(array_filter(array_keys($options), 'is_string'));
     }
 
     /**
@@ -317,30 +222,14 @@ final class ContentJsonSchemaBuilder
     private function json(ContentFieldDefinition $field, string $path): array
     {
         $schema = $field->setting('schema');
-
         if (! is_array($schema)) {
             return [];
         }
-
-        $schema = ContentArrays::stringMap(
-            $schema,
-            "content JSON field {$field->key} schema",
-        );
-
+        $schema = ContentArrays::stringMap($schema, "content JSON field {$field->key} schema");
         if (! isset($schema['$id'])) {
-            $schema['$id'] = 'urn:nvl:content:json:'.hash(
-                'sha256',
-                json_encode([$path, $schema], JSON_THROW_ON_ERROR),
-            );
+            $schema['$id'] = 'urn:nvl:content:json:'.hash('sha256', json_encode([$path, $schema], JSON_THROW_ON_ERROR));
         }
 
-        return $field->required
-            ? $schema
-            : [
-                'anyOf' => [
-                    $schema,
-                    ['type' => 'null'],
-                ],
-            ];
+        return $field->required ? $schema : ['anyOf' => [$schema, ['type' => 'null']]];
     }
 }

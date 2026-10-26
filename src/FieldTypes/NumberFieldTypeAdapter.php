@@ -13,43 +13,36 @@ use Nvl\Content\Validation\ContentValidationContext;
  */
 final class NumberFieldTypeAdapter extends AbstractFieldTypeAdapter
 {
+    /** Native Content operation. */
     public function __construct(private readonly bool $integer) {}
 
+    /** Native Content operation. */
     public function alias(): string
     {
         return $this->integer ? 'integer' : 'number';
     }
 
-    public function normalize(
-        mixed $value,
-        ContentFieldDefinition $field,
-        ContentValidationContext $context,
-    ): int|float|null {
+    /** Native Content operation. */
+    public function normalize(mixed $value, ContentFieldDefinition $field, ContentValidationContext $context): int|float|null
+    {
         if ($value === null) {
             return null;
         }
-
         if ($this->integer && ! is_int($value)) {
             throw new InvalidArgumentException("Content field [{$context->path}] must be an integer.");
         }
-
         if (! $this->integer && ! is_int($value) && ! is_float($value)) {
             throw new InvalidArgumentException("Content field [{$context->path}] must be numeric.");
         }
-
         $number = $this->integer ? $value : (float) $value;
-
         if (is_float($number) && ! is_finite($number)) {
             throw new InvalidArgumentException("Content field [{$context->path}] must be finite.");
         }
-
         $minimum = $field->setting('min');
         $maximum = $field->setting('max');
-
         if ((is_int($minimum) || is_float($minimum)) && $number < $minimum) {
             throw new InvalidArgumentException("Content field [{$context->path}] is below its minimum.");
         }
-
         if ((is_int($maximum) || is_float($maximum)) && $number > $maximum) {
             throw new InvalidArgumentException("Content field [{$context->path}] exceeds its maximum.");
         }

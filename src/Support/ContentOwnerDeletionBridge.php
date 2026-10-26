@@ -7,7 +7,6 @@ namespace Nvl\Content\Support;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
-use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Services\ContentOwnerDeletion;
 
 /**
@@ -38,10 +37,9 @@ final class ContentOwnerDeletionBridge
      *
      * @param  Closure(): (bool|null)  $delete
      */
-    public static function delete(Model&ContentOwner $owner, Closure $delete): ?bool
+    public static function delete(Model $owner, Closure $delete): ?bool
     {
-        $runtime = self::$runtime
-            ?? throw new LogicException('Content owner deletion requires the booted Content provider.');
+        $runtime = self::$runtime ?? throw new LogicException('Content owner deletion requires the booted Content provider.');
 
         return $runtime->execute($owner, $delete);
     }

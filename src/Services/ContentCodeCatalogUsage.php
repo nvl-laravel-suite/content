@@ -16,11 +16,7 @@ use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 final readonly class ContentCodeCatalogUsage
 {
     /** Retain the canonical services and immutable inputs for this workflow. */
-    public function __construct(
-        private ContentStorage $storage,
-        private ContentPlatformCatalogGuard $guard,
-        private OwnershipReadiness $readiness,
-    ) {}
+    public function __construct(private ContentStorage $storage, private ContentPlatformCatalogGuard $guard, private OwnershipReadiness $readiness) {}
 
     /** Return stored version numbers without exposing mutable owner records.
      * @return list<int>

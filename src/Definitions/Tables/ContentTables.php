@@ -27,5 +27,6 @@ final class ContentTables
         return PackageStorage::resolveTable('content', $key);
     }
 
+    /** Native Content operation. */
     private function __construct() {}
 }

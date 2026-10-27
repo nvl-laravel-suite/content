@@ -48,6 +48,35 @@ function placementMediaBlock(string $key, ?Media $baseImage = null): ContentBloc
 {
     return app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => $key, 'scope' => 'site', 'scopeKey' => 'main-site', 'visibility' => ContentVisibility::Public, 'values' => $baseImage === null ? [] : ['image' => $baseImage->id], 'translations' => ['en' => ['title' => 'Media placement']], 'metadata' => []], SystemActor::Background);
 }
+
+it('preserves omitted placement parent and overrides and clears explicit replacements', function (): void {
+    $actor = SystemActor::Background;
+    $media = placementMediaImage();
+    $block = placementMediaBlock('presence-preserving-placement');
+    $owner = TestContentOwner::query()->create(['name' => 'Presence owner']);
+    $placements = app(ContentPlacements::class);
+    $parent = $placements->place($block, $owner, 'default', ['key' => 'parent'], $actor);
+    $child = $placements->place($block, $owner, 'default', [
+        'key' => 'child', 'parentId' => $parent->id, 'overrides' => ['image' => $media->id],
+    ], $actor);
+
+    $updated = $placements->update($child, [
+        'expected_revision' => $child->revision, 'region' => 'main', 'sortOrder' => 5, 'isVisible' => false,
+    ], $actor);
+
+    expect($updated->parent_id)->toBe($parent->id)
+        ->and($updated->overrides)->toBe(['image' => $media->id])
+        ->and(MediaAssociation::query()->where('associable_id', $child->id)->sole()->media_id)->toBe($media->id);
+
+    $cleared = $placements->update($updated, [
+        'expected_revision' => $updated->revision, 'region' => 'main', 'sortOrder' => 5,
+        'isVisible' => false, 'parentId' => null, 'overrides' => [],
+    ], $actor);
+
+    expect($cleared->parent_id)->toBeNull()
+        ->and($cleared->overrides)->toBeNull()
+        ->and(MediaAssociation::query()->where('associable_id', $child->id)->count())->toBe(0);
+});
 it('protects public media reused by two placement overrides from ordinary deletion', function (): void {
     Storage::fake('public');
     $actor = SystemActor::Background;

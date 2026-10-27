@@ -7,6 +7,7 @@ namespace Nvl\Content\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentRevision;
+use Nvl\Content\Services\ContentModelRegistry;
 
 /**
  * Builds ContentRevision fixture rows and their declared package parents.
@@ -37,7 +38,7 @@ final class ContentRevisionFactory extends Factory
                 return;
             }
             if ($model->getAttribute('content_block_id') !== null) {
-                $parent = ContentBlock::query()->findOrFail(FactoryGuard::identifier($model->getAttribute('content_block_id')));
+                $parent = ContentModelRegistry::query()->findOrFail(FactoryGuard::identifier($model->getAttribute('content_block_id')));
                 FactoryGuard::parent($parent, $model);
                 FactoryGuard::inherit($model, $parent);
                 $model->revision = $parent->revision;

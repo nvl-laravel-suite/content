@@ -72,7 +72,7 @@ final class ContentBlockFactory extends Factory
      */
     public function forDefinition(ContentDefinition $parent): static
     {
-        FactoryGuard::parent($parent, new ContentBlock);
+        FactoryGuard::parent($parent, ContentModelRegistry::newInstance());
 
         return $this->state(['definition_id' => $parent->getKey(), 'definition_version' => $parent->version, 'definition_hash' => $parent->source_hash, 'definition_schema' => $parent->schema, 'definition_view' => $parent->view]);
     }

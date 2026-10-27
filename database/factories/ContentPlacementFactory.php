@@ -11,6 +11,7 @@ use Nvl\Content\Contracts\ContentOwner;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Ownership\ContentOwnership;
+use Nvl\Content\Services\ContentModelRegistry;
 
 /**
  * Builds ContentPlacement fixture rows and their declared package parents.
@@ -46,7 +47,7 @@ final class ContentPlacementFactory extends Factory
             }
             FactoryGuard::inherit($model, $owner);
             if ($model->getAttribute('content_block_id') !== null) {
-                $parent = ContentBlock::query()->findOrFail(FactoryGuard::identifier($model->getAttribute('content_block_id')));
+                $parent = ContentModelRegistry::query()->findOrFail(FactoryGuard::identifier($model->getAttribute('content_block_id')));
                 FactoryGuard::parent($parent, $model);
                 if (ContentOwnership::declared() && $owner->getRawOriginal('owner_scope_key') !== $parent->getRawOriginal('owner_scope_key')) {
                     throw new InvalidArgumentException('Fixture owner and parent ownership must agree.');

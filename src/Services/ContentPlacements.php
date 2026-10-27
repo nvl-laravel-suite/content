@@ -70,14 +70,13 @@ final class ContentPlacements
     }
 
     /**
-     * Update one placement while preserving its owner and group identity.
+     * Update one placement, preserving omitted parent and override values.
      *
      * @param  array{expected_revision:int,region:string,parentId?:string|null,sortOrder:int,isVisible:bool,overrides?:array<string, mixed>}  $data
      */
     public function update(ContentPlacement|string $placement, array $data, Authenticatable|SystemActor $actor): ContentPlacement
     {
         Validator::make($data, self::updateRules())->validate();
-        $data += ['parentId' => null, 'overrides' => []];
         $placementId = $placement instanceof ContentPlacement ? $placement->id : $placement;
         $this->identities->region($data['region']);
         $this->identities->sortOrder($data['sortOrder']);
@@ -85,6 +84,7 @@ final class ContentPlacements
 
         return $this->ownerLocks->run($identity->owner_type, $identity->owner_id, $identity->group, fn (): ContentPlacement => DB::connection((new ContentPlacement)->getConnectionName())->transaction(function () use ($actor, $data, $placementId): ContentPlacement {
             $model = ContentPlacement::query()->lockForUpdate()->findOrFail($placementId);
+            $data += ['parentId' => $model->parent_id, 'overrides' => $model->overrides ?? []];
             $block = ContentModelRegistry::query()->with(['definition', 'translations'])->lockForUpdate()->findOrFail($model->content_block_id);
             $model->setRelation('block', $block);
             $owner = $this->owners->resolve($model->owner_type, $model->owner_id);

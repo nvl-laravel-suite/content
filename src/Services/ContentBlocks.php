@@ -105,8 +105,16 @@ final class ContentBlocks
         return $payloads;
     }
 
-    /** Apply an authorized revision-checked block mutation.
+    /** Apply an authorized revision-checked block mutation on its canonical connection.
+     *
+     * Patch mode merges schema-defined values; replace mode replaces them. Locale
+     * removal and nullable fields follow the definition and mutation mode. Unknown
+     * top-level keys are rejected. Returns refreshed definition and translation state.
+     * Domain events wait for the actual outer commit.
+     *
      * @param  array{expected_revision:int,mode?:ContentMutationMode|string,visibility?:ContentVisibility|string|null,values?:array<string, mixed>,translations?:array<string, array<string, mixed>>,metadata?:array<string, mixed>}  $data
+     *
+     * @throws StaleContentException
      */
     public function update(ContentBlock|string $block, array $data, Authenticatable|SystemActor $actor): ContentBlock
     {

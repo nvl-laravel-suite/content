@@ -169,9 +169,9 @@ final class ContentServiceProvider extends ServiceProvider implements OwnershipI
             $this->commands([CacheContentDefinitionsCommand::class, ClearContentDefinitionsCommand::class, ContentDoctorCommand::class, MigrateContentDefinitionsCommand::class, SyncContentDefinitionsCommand::class]);
         }
         $this->optimizes('nvl:content:cache', 'nvl:content:clear', 'nvl-content');
-        $this->publishes([__DIR__.'/../../config/nvl-content.php' => config_path('nvl-content.php')], 'content-config');
-        $this->publishesMigrations([__DIR__.'/../../database/migrations' => database_path('migrations')], 'content-migrations');
-        $this->publishes([__DIR__.'/../../resources/boost/skills' => base_path('.agents/skills')], 'content-skills');
+        $this->publishes([__DIR__.'/../../config/nvl-content.php' => config_path('nvl-content.php')], 'nvl-content-config');
+        $this->publishesMigrations([__DIR__.'/../../database/migrations' => database_path('migrations')], 'nvl-content-migrations');
+        $this->publishes([__DIR__.'/../../resources/boost/skills' => base_path('.agents/skills')], 'nvl-content-skills');
     }
 
     /**

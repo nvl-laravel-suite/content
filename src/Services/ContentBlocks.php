@@ -24,6 +24,7 @@ use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Validation\ContentObjectRule;
 use Nvl\Content\Validation\ContentValueValidator;
+use Nvl\Support\Auth\CanonicalActorResolver;
 use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Events\DomainEventDispatcher;
 use Nvl\Translatable\Rules\SupportedLocaleMapRule;
@@ -36,13 +37,16 @@ use Nvl\Translatable\Services\RelatedTranslationStore;
  */
 final class ContentBlocks
 {
-    public function __construct(private ContentAuthorization $authorization, private ContentDefinitionRegistry $definitions, private ContentScopeRegistry $scopes, private ContentValueValidator $validator, private ContentMediaSynchronizer $media, private ContentRevisionRecorder $revisions, private CanonicalJson $json, private ContentPayloadGuard $guard, private ContentPatch $patch, private ContentIdentityGuard $identities, private RelatedTranslationStore $translations, private DomainEventDispatcher $domainEvents, private ContentDefinitionVersionGuard $definitionVersions, private RelatedTranslationStore $translationWriter, private ContentBlockPlacementSynchronizer $placements) {}
+    public function __construct(private CanonicalActorResolver $actors, private ContentAuthorization $authorization, private ContentDefinitionRegistry $definitions, private ContentScopeRegistry $scopes, private ContentValueValidator $validator, private ContentMediaSynchronizer $media, private ContentRevisionRecorder $revisions, private CanonicalJson $json, private ContentPayloadGuard $guard, private ContentPatch $patch, private ContentIdentityGuard $identities, private RelatedTranslationStore $translations, private DomainEventDispatcher $domainEvents, private ContentDefinitionVersionGuard $definitionVersions, private RelatedTranslationStore $translationWriter, private ContentBlockPlacementSynchronizer $placements) {}
 
     /** Create a validated block and localized values on its canonical source.
      * @param  array{definition:string,key:string,scope?:string,scopeKey?:string,visibility?:ContentVisibility|string,values?:array<string, mixed>,translations?:array<string, array<string, mixed>>,metadata?:array<string, mixed>}  $data
      */
     public function create(array $data, Authenticatable|SystemActor $actor): ContentBlock
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         Validator::make($data, self::createRules())->validate();
         $data += ['scope' => 'global', 'scopeKey' => '*', 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => [], 'metadata' => []];
         if (is_string($data['visibility'])) {
@@ -118,6 +122,9 @@ final class ContentBlocks
      */
     public function update(ContentBlock|string $block, array $data, Authenticatable|SystemActor $actor): ContentBlock
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         Validator::make($data, self::updateRules())->validate();
         $data += ['mode' => ContentMutationMode::Patch, 'visibility' => null, 'values' => [], 'translations' => [], 'metadata' => []];
         if (is_string($data['mode'])) {
@@ -221,6 +228,9 @@ final class ContentBlocks
     /** Publish an admitted block at its expected revision. */
     public function publish(ContentBlock|string $block, int $expectedRevision, Authenticatable|SystemActor $actor): ContentBlock
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
 
         return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())->transaction(function () use ($actor, $blockId, $expectedRevision): ContentBlock {
@@ -258,6 +268,9 @@ final class ContentBlocks
     /** Archive an admitted block at its expected revision. */
     public function archive(ContentBlock|string $block, int $expectedRevision, Authenticatable|SystemActor $actor): ContentBlock
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
 
         return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())->transaction(function () use ($actor, $blockId, $expectedRevision): ContentBlock {
@@ -277,6 +290,9 @@ final class ContentBlocks
     /** Restore the exact configured block at its expected revision. */
     public function restore(ContentBlock|string $block, int $expectedRevision, Authenticatable|SystemActor $actor): ContentBlock
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
 
         return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())->transaction(function () use ($actor, $blockId, $expectedRevision): ContentBlock {
@@ -308,6 +324,9 @@ final class ContentBlocks
     /** Delete an authorized unplaced block while retaining Media binaries. */
     public function delete(ContentBlock|string $block, int $expectedRevision, Authenticatable|SystemActor $actor): void
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
         DB::connection(ContentModelRegistry::newInstance()->getConnectionName())->transaction(function () use ($actor, $blockId, $expectedRevision): void {
             $model = ContentModelRegistry::query()->lockForUpdate()->findOrFail($blockId);

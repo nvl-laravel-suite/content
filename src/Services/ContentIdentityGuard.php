@@ -18,7 +18,7 @@ final class ContentIdentityGuard
      */
     public function blockKey(string $key): void
     {
-        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,190}$/', $key) !== 1) {
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,190}$/D', $key) !== 1) {
             throw new InvalidArgumentException("Content block key [{$key}] is invalid.");
         }
     }
@@ -31,7 +31,7 @@ final class ContentIdentityGuard
         if (preg_match('/^[A-Za-z_][A-Za-z0-9_\\\\.:-]{0,254}$/D', $type) !== 1) {
             throw new InvalidArgumentException("Content owner type [{$type}] is invalid.");
         }
-        if (preg_match('/^[A-Za-z0-9_.:-]{1,191}$/', $identifier) !== 1) {
+        if (preg_match('/^[A-Za-z0-9_.:-]{1,191}$/D', $identifier) !== 1) {
             throw new InvalidArgumentException('Content owner identifier is invalid.');
         }
     }
@@ -41,7 +41,7 @@ final class ContentIdentityGuard
      */
     public function placementKey(string $key): void
     {
-        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,190}$/', $key) !== 1) {
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,190}$/D', $key) !== 1) {
             throw new InvalidArgumentException("Content placement key [{$key}] is invalid.");
         }
     }
@@ -75,7 +75,7 @@ final class ContentIdentityGuard
     /** Native Content operation. */
     private function alias(string $alias, string $label): void
     {
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $alias) !== 1) {
             throw new InvalidArgumentException("Content {$label} [{$alias}] is invalid.");
         }
     }

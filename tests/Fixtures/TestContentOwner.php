@@ -12,7 +12,7 @@ use Nvl\Content\Traits\HasContent;
 /**
  * Consumer model used to prove string-compatible owner placement.
  */
-final class TestContentOwner extends Model implements ContentOwner
+class TestContentOwner extends Model implements ContentOwner
 {
     use HasContent;
     use HasUuids;

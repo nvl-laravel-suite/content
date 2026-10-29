@@ -114,22 +114,14 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
      */
     public function id(Model $owner): string
     {
-        if (! $owner->exists) {
-            throw new InvalidArgumentException('A Content owner must be persisted.');
-        }
-        $identifier = $owner->getKey();
-        if (! is_int($identifier) && ! is_string($identifier)) {
-            throw new InvalidArgumentException('A Content owner identifier must be a string or integer.');
-        }
-        $id = (string) $identifier;
-        $this->identities->owner($this->type($owner), $id);
-        $query = $owner->newQuery()->withoutGlobalScope(SoftDeletingScope::class);
-        if (! (clone $query)->whereKey($identifier)->exists()) {
+        $id = $this->canonicalIdentifier($owner);
+        $query = (new ($owner::class))->newQuery()->useWritePdo()->withoutGlobalScope(SoftDeletingScope::class);
+        $canonical = $query->whereKey($id)->first();
+        if (! $canonical instanceof Model) {
             throw new InvalidArgumentException('The supplied Content owner no longer exists.');
         }
         if (ContentOwnership::active()) {
-            $canonical = $query->findOrFail($identifier);
-            $this->tenancy->assertRecord($owner, ContentOwnership::resource($canonical));
+            $this->tenancy->assertRecord($canonical, ContentOwnership::resource($canonical));
         }
 
         return $id;
@@ -142,13 +134,34 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
      */
     public function canonical(Model $owner): Model
     {
-        if (! ContentOwnership::declared()) {
-            return $owner;
-        }
+        $id = $this->canonicalIdentifier($owner);
         $type = $this->type($owner);
-        $id = $this->id($owner);
 
         return $this->resolve($type, $id);
+    }
+
+    /** Validate caller identity metadata without issuing owner queries.
+     *
+     * @internal
+     */
+    public function canonicalIdentifier(Model $owner): string
+    {
+        $prototype = new ($owner::class);
+        $key = $owner->getKey();
+        $original = $owner->getRawOriginal($prototype->getKeyName());
+        if (! $owner->exists || (! is_int($key) && ! is_string($key))
+            || (! is_int($original) && ! is_string($original))
+            || $owner->getTable() !== $prototype->getTable()
+            || $owner->getConnection() !== $prototype->getConnection()
+            || $owner->getKeyName() !== $prototype->getKeyName()
+            || $owner->getKeyType() !== $prototype->getKeyType()
+            || $owner->isDirty($prototype->getKeyName())
+            || (string) $key !== (string) $original) {
+            throw new InvalidArgumentException('A persisted canonical Content owner is required.');
+        }
+        $this->identities->owner($this->type($owner), (string) $key);
+
+        return (string) $key;
     }
 
     /**
@@ -239,7 +252,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
     {
         $this->identities->owner($alias, $identifier);
         $class = $this->model($alias);
-        $query = (new $class)->newQuery();
+        $query = (new $class)->newQuery()->useWritePdo();
         if ($withTrashed) {
             $query->withoutGlobalScope(SoftDeletingScope::class);
         }

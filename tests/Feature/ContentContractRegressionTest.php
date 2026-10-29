@@ -56,6 +56,7 @@ use Nvl\Content\Services\ContentSnapshotService;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Tests\Fixtures\Consumer\Data\ContentPlacementData;
 use Nvl\Content\Tests\Fixtures\Consumer\GetOwnerContentEditorAction;
+use Nvl\Content\Tests\Fixtures\TestContentMember;
 use Nvl\Content\Tests\Fixtures\TestContentOwner;
 use Nvl\Content\Tests\Fixtures\TestIntegerContentOwner;
 use Nvl\Content\Tests\Fixtures\TestStringContentOwner;
@@ -159,7 +160,7 @@ it('loads the editor bootstrap in a constant query count', function (): void {
 
                 return false;
             })->count();
-            expect($dataQueries)->toBe(5);
+            expect($dataQueries)->toBe(7);
 
             return [$queryCount, count($editor['placements'])];
         } finally {
@@ -250,7 +251,7 @@ it('bounds and short circuits bulk owner placement summaries', function (): void
     expect(fn () => app(ContentReader::class)->summaries($owners, 'homepage', $actor))->toThrow(InvalidArgumentException::class);
     expect(fn () => app(ContentReader::class)->summaries(array_fill(0, 101, $owners[0]), 'homepage', $actor))->toThrow(InvalidArgumentException::class);
 });
-it('authorizes every bulk summary owner before querying package or owner storage', function (): void {
+it('authorizes every canonical bulk summary owner before querying package storage', function (): void {
     $owners = collect(range(1, 2))->map(static fn (int $index): TestContentOwner => TestContentOwner::query()->create(['name' => "Denied owner {$index}"]));
     $authorization = new class implements ContentAuthorization
     {
@@ -271,7 +272,8 @@ it('authorizes every bulk summary owner before querying package or owner storage
     DB::flushQueryLog();
     DB::enableQueryLog();
     try {
-        expect(fn () => app(ContentReader::class)->summaries([$owners[0], $owners[0], $owners[1]], 'homepage', new GenericUser(['id' => 'denied-editor'])))->toThrow(AuthorizationException::class)->and($authorization->calls)->toBe(2)->and(DB::getQueryLog())->toBe([]);
+        expect(fn () => app(ContentReader::class)->summaries([$owners[0], $owners[0], $owners[1]], 'homepage', new GenericUser(['id' => 'denied-editor'])))->toThrow(AuthorizationException::class)->and($authorization->calls)->toBe(2)->and(DB::getQueryLog())->toHaveCount(1)
+            ->and(DB::getQueryLog()[0]['query'])->toContain('content_test_owners');
     } finally {
         DB::disableQueryLog();
     }
@@ -644,6 +646,7 @@ it('rejects ambiguous and unsupported translation locale keys', function (): voi
     expect(fn () => app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'unsupported-locale', 'scope' => 'site', 'scopeKey' => 'main-site', 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => ['fr' => ['title' => 'Bonjour']], 'metadata' => []], SystemActor::Background))->toThrow(ValidationException::class);
 });
 it('returns stable unprocessable API errors for semantic content failures', function (): void {
+    $this->actingAs(new GenericUser(['id' => 'content-http-editor']));
     config()->set(['nvl-content.routes.management.enabled' => true, 'nvl-content.routes.management.prefix' => 'api/content-contract', 'nvl-content.routes.management.name' => 'content.contract.', 'nvl-content.routes.management.middleware' => []]);
     require __DIR__.'/../Fixtures/Consumer/routes/api.php';
     app('router')->getRoutes()->refreshNameLookups();
@@ -876,6 +879,95 @@ it('canonicalizes DTO block reads and does not query unused placements', functio
     $deleted = ContentBlock::withTrashed()->findOrFail($block->id);
     expect(fn () => app(ContentReader::class)->get($deleted, $actor))->toThrow(ModelNotFoundException::class);
 });
+
+it('reloads actor authority at every native workflow boundary', function (string $operation): void {
+    app(ContentDefinitions::class)->sync(SystemActor::Background);
+    $block = app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'authority-block', 'scope' => 'site', 'scopeKey' => 'main-site', 'translations' => ['en' => ['title' => 'Retained']]], SystemActor::Background);
+    $owner = TestContentOwner::query()->create(['name' => 'Owner']);
+    $actor = TestContentMember::query()->create(['id' => 'actor-current', 'name' => 'Revoked']);
+    $actor->name = 'Operator';
+    $actor->setRelation('permissions', collect(['manage']));
+    config(['nvl-content.authorization.callback' => static fn (ContentAbility $ability, Authenticatable|SystemActor|PublicActor $current): bool => $current instanceof Model && $current->name === 'Operator']);
+
+    expect(fn () => match ($operation) {
+        'create' => app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'unauthorized', 'scope' => 'site', 'scopeKey' => 'main-site'], $actor),
+        'update' => app(ContentBlocks::class)->update($block, ['expected_revision' => $block->revision], $actor),
+        'publish' => app(ContentBlocks::class)->publish($block, $block->revision, $actor),
+        'get' => app(ContentReader::class)->get($block, $actor),
+        'paginate' => app(ContentReader::class)->paginate([], $actor),
+        'definitions' => app(ContentDefinitions::class)->sync($actor),
+        'place' => app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'unauthorized'], $actor),
+        'groups' => app(ContentReader::class)->groups($owner, $actor),
+        'placements' => app(ContentReader::class)->placements($owner, 'default', $actor),
+        'summaries' => app(ContentReader::class)->summaries([$owner], 'default', $actor),
+        'render' => app(ContentRenderer::class)->render($owner, ['actor' => $actor, 'publicOnly' => false]),
+        'snapshot' => app(ContentSnapshotService::class)->capture($owner, 'default', $actor),
+    })->toThrow(AuthorizationException::class);
+    expect($block->fresh()->revision)->toBe($block->revision);
+})->with(['create', 'update', 'publish', 'get', 'paginate', 'definitions', 'place', 'groups', 'placements', 'summaries', 'render', 'snapshot']);
+
+it('authorizes canonical owner facts for ordinary unscoped hosts', function (string $operation): void {
+    $owner = TestContentOwner::query()->create(['name' => 'Persisted']);
+    $owner->name = 'Forged';
+    $owner->setRelation('permissions', collect(['manage']));
+    config(['nvl-content.authorization.callback' => static fn (ContentAbility $ability, mixed $actor, ?ContentBlock $block, ?Model $current): bool => $current?->getAttribute('name') === 'Persisted' && $current->getRelations() === []]);
+
+    $result = match ($operation) {
+        'groups' => app(ContentReader::class)->groups($owner, SystemActor::Background),
+        'placements' => app(ContentReader::class)->placements($owner, 'default', SystemActor::Background),
+        'summaries' => app(ContentReader::class)->summaries([$owner], 'default', SystemActor::Background),
+        'render' => app(ContentRenderer::class)->render($owner, ['actor' => SystemActor::Background]),
+    };
+    expect($result)->not->toBeNull();
+})->with(['groups', 'placements', 'summaries', 'render']);
+
+it('checks block visibility authority before exposing composition values', function (string $operation): void {
+    app(ContentDefinitions::class)->sync(SystemActor::Background);
+    $block = app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'protected-values', 'scope' => 'site', 'scopeKey' => 'main-site', 'translations' => ['en' => ['title' => 'Sensitive copy']]], SystemActor::Background);
+    $block = app(ContentBlocks::class)->publish($block, $block->revision, SystemActor::Background);
+    $owner = TestContentOwner::query()->create(['name' => 'Owner']);
+    $placement = app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'protected-values'], SystemActor::Background);
+    config(['nvl-content.authorization.callback' => static fn (ContentAbility $ability): bool => $ability !== ContentAbility::View]);
+
+    expect(fn () => match ($operation) {
+        'placement' => app(ContentReader::class)->placement($owner, 'default', $placement->id, SystemActor::Background),
+        'placements' => app(ContentReader::class)->placements($owner, 'default', SystemActor::Background, includeBlocks: true),
+        'summaries' => app(ContentReader::class)->summaries([$owner], 'default', SystemActor::Background),
+        'render' => app(ContentRenderer::class)->render($owner, ['actor' => SystemActor::Background]),
+        'snapshot' => app(ContentSnapshotService::class)->capture($owner, 'default', SystemActor::Background),
+    })->toThrow(AuthorizationException::class);
+})->with(['placement', 'placements', 'summaries', 'render', 'snapshot']);
+
+it('does not let anonymous rendering request private composition values', function (): void {
+    $owner = TestContentOwner::query()->create(['name' => 'Owner']);
+
+    expect(fn () => app(ContentRenderer::class)->render($owner, ['actor' => PublicActor::Anonymous, 'publicOnly' => false]))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('keeps private frozen content unavailable to anonymous snapshot rendering', function (): void {
+    app(ContentDefinitions::class)->sync(SystemActor::Background);
+    $block = app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'private-snapshot', 'scope' => 'site', 'scopeKey' => 'main-site', 'visibility' => ContentVisibility::Private, 'translations' => ['en' => ['title' => 'Private frozen copy']]], SystemActor::Background);
+    $owner = TestContentOwner::query()->create(['name' => 'Private snapshot owner']);
+    app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'private-snapshot'], SystemActor::Background);
+    $snapshots = app(ContentSnapshotService::class);
+    $snapshot = $snapshots->capture($owner, 'default', SystemActor::Background);
+
+    expect(fn () => $snapshots->render($snapshot, 'en', PublicActor::Anonymous))->toThrow(AuthorizationException::class);
+    $rendered = $snapshots->render($snapshot, 'en', SystemActor::Background);
+    expect(contentRenderedValue($rendered, 'private-snapshot.title'))->toBe('Private frozen copy');
+});
+
+it('rejects unknown and malformed native block filters before querying blocks', function (array $filters): void {
+    expect(fn () => app(ContentReader::class)->paginate($filters, SystemActor::Background))
+        ->toThrow(ValidationException::class);
+})->with([
+    'unknown key' => [['scopeKey' => 'tenant-a']],
+    'invalid status' => [['status' => 'invalid-status']],
+    'invalid visibility' => [['visibility' => 'invalid-visibility']],
+    'invalid definition' => [['definition_id' => 'not-a-uuid']],
+    'nested scope' => [['scope' => ['unexpected']]],
+]);
 it('applies trusted actor scope before caller-controlled block filters', function (): void {
     $system = SystemActor::Background;
     foreach (['tenant-a', 'tenant-b'] as $tenant) {

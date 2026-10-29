@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\GenericUser;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
@@ -52,6 +53,7 @@ it('authorizes definition migration planning explicitly', function (): void {
     expect(fn () => app(ContentDefinitions::class)->planMigration(TestContentMember::query()->create(['id' => 'unauthorized', 'name' => 'Member'])))->toThrow(AuthorizationException::class);
 });
 it('returns a stable conflict when the management API receives an old block', function (): void {
+    $this->actingAs(new GenericUser(['id' => 'content-http-editor']));
     config()->set(['nvl-content.routes.management.enabled' => true, 'nvl-content.routes.management.prefix' => 'api/content-migrations', 'nvl-content.routes.management.name' => 'content.migrations.', 'nvl-content.routes.management.middleware' => []]);
     require __DIR__.'/../Fixtures/Consumer/routes/api.php';
     app('router')->getRoutes()->refreshNameLookups();

@@ -1,8 +1,8 @@
 <?php
 
 declare(strict_types=1);
+use Illuminate\Auth\GenericUser;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
@@ -48,7 +48,6 @@ use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Models\Media;
 use Nvl\Media\Models\MediaAssociation;
 use Nvl\Media\Services\MediaPathResolver;
-use Nvl\Media\Tests\Fixtures\Http\Controllers\MediaAssetController;
 use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 
@@ -208,6 +207,7 @@ it('loads deterministic definition files and guards custom view destinations', f
     }
 });
 it('exposes independently configurable authorized management and public APIs', function (): void {
+    $this->actingAs(new GenericUser(['id' => 'content-http-editor']));
     config()->set(['nvl-content.routes.management.enabled' => true, 'nvl-content.routes.management.prefix' => 'api/internal/content-manager', 'nvl-content.routes.management.name' => 'consumer.content.management', 'nvl-content.routes.management.middleware' => [], 'nvl-content.routes.public.enabled' => true, 'nvl-content.routes.public.prefix' => 'api/site-content', 'nvl-content.routes.public.name' => 'consumer.content.public', 'nvl-content.routes.public.middleware' => []]);
     require __DIR__.'/../Fixtures/Consumer/routes/api.php';
     app('router')->getRoutes()->refreshNameLookups();
@@ -335,9 +335,9 @@ it('preserves localized media association identity and returns typed private pro
     expect(contentRenderedValue($composition, 'private.image', false))->toBeArray();
 });
 it('serves a rendered private media URL when a system actor is not the uploader', function (): void {
+    config(['nvl-media.delivery.maximum_ttl' => 120]);
     Relation::morphMap(['member' => TestContentMember::class]);
     TestContentMember::query()->create(['id' => 'uploader-42', 'name' => 'Uploader']);
-    Route::get('/media/private/{owner}/{media}', [MediaAssetController::class, 'showPrivate'])->middleware(['signed', SubstituteBindings::class])->name('nvl.media.private.show');
     $private = Media::factory()->create(['mime_type' => 'image/jpeg', 'extension' => 'jpg', 'type' => MediaType::IMAGE, 'is_public' => false, 'visibility' => MediaVisibility::Private, 'status' => MediaLifecycleStatus::Available, 'uploaded_by_type' => 'member', 'uploaded_by' => 'uploader-42']);
     Storage::disk('public')->put(app(MediaPathResolver::class)->mediaPath($private), 'private image');
     $actor = SystemActor::Background;
@@ -346,7 +346,9 @@ it('serves a rendered private media URL when a system actor is not the uploader'
     app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'private-system', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []], $actor);
     $composition = app(ContentRenderer::class)->render($owner, ['group' => 'default', 'locale' => 'en', 'actor' => $actor, 'publicOnly' => false]);
     $rendered = contentRenderedValue($composition, 'private-system.image', false);
-    expect($rendered)->toBeArray()->and(parse_url($rendered['url'], PHP_URL_PATH))->toBe("/media/private/uploader-42/{$private->id}");
+    parse_str((string) parse_url($rendered['url'], PHP_URL_QUERY), $parameters);
+    expect((int) $parameters['expires'])->toBeLessThanOrEqual(now()->addSeconds(120)->getTimestamp());
+    expect($rendered)->toBeArray()->and(parse_url($rendered['url'], PHP_URL_PATH))->toBe("/nvl/media/private/uploader-42/{$private->id}");
     $this->get($rendered['url'])->assertSuccessful()->assertHeader('Content-Type', 'image/jpeg');
 });
 it('fails closed for invalid route middleware unsafe URLs and unbounded definition discovery', function (): void {

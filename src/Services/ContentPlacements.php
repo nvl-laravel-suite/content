@@ -21,6 +21,7 @@ use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Validation\ContentObjectRule;
+use Nvl\Support\Auth\CanonicalActorResolver;
 use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Events\DomainEventDispatcher;
 
@@ -31,7 +32,7 @@ use Nvl\Support\Events\DomainEventDispatcher;
  */
 final class ContentPlacements
 {
-    public function __construct(private ContentAuthorization $authorization, private ContentOwnerRegistry $owners, private ContentPlacementValidator $validator, private ContentIdentityGuard $identities, private ContentPlacementOwnerLock $ownerLocks, private ContentMediaSynchronizer $media, private DomainEventDispatcher $domainEvents, private ContentPlacementTree $tree) {}
+    public function __construct(private CanonicalActorResolver $actors, private ContentAuthorization $authorization, private ContentOwnerRegistry $owners, private ContentPlacementValidator $validator, private ContentIdentityGuard $identities, private ContentPlacementOwnerLock $ownerLocks, private ContentMediaSynchronizer $media, private DomainEventDispatcher $domainEvents, private ContentPlacementTree $tree) {}
 
     /**
      * Place one block in a validated, revisioned owner group tree.
@@ -40,6 +41,9 @@ final class ContentPlacements
      */
     public function place(ContentBlock|string $block, Model $owner, string $group, array $data, Authenticatable|SystemActor $actor): ContentPlacement
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         Validator::make($data, self::placeRules())->validate();
         $data += ['region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []];
         $model = $block instanceof ContentBlock ? $block->loadMissing(['definition', 'translations']) : ContentModelRegistry::query()->with(['definition', 'translations'])->findOrFail($block);
@@ -76,6 +80,9 @@ final class ContentPlacements
      */
     public function update(ContentPlacement|string $placement, array $data, Authenticatable|SystemActor $actor): ContentPlacement
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         Validator::make($data, self::updateRules())->validate();
         $placementId = $placement instanceof ContentPlacement ? $placement->id : $placement;
         $this->identities->region($data['region']);
@@ -111,6 +118,9 @@ final class ContentPlacements
      */
     public function move(Model $owner, string $group, array $data, Authenticatable|SystemActor $actor): array
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         Validator::make($data, self::moveRules())->validate();
         $maximum = ContentConfiguration::positiveInteger('nvl-content.placements.maximum_per_group', 1000);
         $proposal = $this->reorderContentPlacementsNormalizeProposal($data, $maximum);
@@ -203,6 +213,9 @@ final class ContentPlacements
      */
     public function replace(Model $owner, string $group, string $placement, string $block, int $expectedRevision, Authenticatable|SystemActor $actor): ContentPlacement
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         if (! Str::isUuid($placement) || ! Str::isUuid($block)) {
             throw new InvalidArgumentException('Content placement and replacement block identifiers must be UUIDs.');
         }
@@ -241,6 +254,9 @@ final class ContentPlacements
      */
     public function delete(ContentPlacement|string $placement, int $expectedRevision, Authenticatable|SystemActor $actor): void
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $placementId = $placement instanceof ContentPlacement ? $placement->id : $placement;
         $identity = ContentPlacement::query()->findOrFail($placementId, ['owner_type', 'owner_id', 'group']);
         $this->ownerLocks->run($identity->owner_type, $identity->owner_id, $identity->group, function () use ($actor, $expectedRevision, $placementId): void {

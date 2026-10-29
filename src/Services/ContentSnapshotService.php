@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Services;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,7 @@ use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Validation\ContentValueValidator;
+use Nvl\Support\Auth\CanonicalActorResolver;
 use Nvl\Support\Enums\PublicActor;
 use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
@@ -30,7 +32,7 @@ use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 final readonly class ContentSnapshotService
 {
     /** Retain the canonical services and immutable inputs for this workflow. */
-    public function __construct(private ContentAuthorization $authorization, private ContentOwnerRegistry $owners, private ContentValueValidator $values, private ContentPatch $patch, private CanonicalJson $json, private Factory $views, private ContentPlacementTree $tree, private ContentMediaReferences $mediaReferences, private ContentLocalePolicy $locales, private ContentPayloadGuard $guard, private ContentIdentityGuard $identities, private ContentLocalizedValues $localizedValues, private ContentPlacementOwnerLock $ownerLocks) {}
+    public function __construct(private CanonicalActorResolver $actors, private ContentAuthorization $authorization, private ContentOwnerRegistry $owners, private ContentValueValidator $values, private ContentPatch $patch, private CanonicalJson $json, private Factory $views, private ContentPlacementTree $tree, private ContentMediaReferences $mediaReferences, private ContentLocalePolicy $locales, private ContentPayloadGuard $guard, private ContentIdentityGuard $identities, private ContentLocalizedValues $localizedValues, private ContentPlacementOwnerLock $ownerLocks) {}
 
     /**
      * Capture one authorized owner group as a bounded immutable snapshot.
@@ -39,6 +41,9 @@ final readonly class ContentSnapshotService
      */
     public function capture(Model $owner, string $group, Authenticatable|SystemActor $actor, bool $publishing = false): array
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
@@ -56,6 +61,9 @@ final readonly class ContentSnapshotService
      */
     public function render(array $snapshot, string $locale, Authenticatable|SystemActor|PublicActor $actor): array
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $native = ContentOwnership::snapshotContext();
         if ($native !== null || $snapshot['formatVersion'] >= 3 || $snapshot['ownershipContext'] !== null) {
             if ($native === null || $snapshot['formatVersion'] !== 3 || $snapshot['tenantId'] !== null || $snapshot['ownershipContext'] === null || $this->json->hash($native) !== $this->json->hash($snapshot['ownershipContext'])) {
@@ -74,6 +82,13 @@ final readonly class ContentSnapshotService
         $owner = $this->owners->resolve($snapshot['ownerType'], $snapshot['ownerId']);
         $this->owners->assertGroup($owner, $snapshot['group']);
         $this->authorization->authorize(ContentAbility::Render, $actor, owner: $owner, context: ['group' => $snapshot['group'], 'snapshot' => 'render']);
+        if ($actor instanceof PublicActor) {
+            foreach ($snapshot['blocks'] as $record) {
+                if ($record['visibility'] !== ContentVisibility::Public->value) {
+                    throw new AuthorizationException('Private Content snapshots require an authenticated or authorized system actor.');
+                }
+            }
+        }
         $records = [];
         foreach ($snapshot['blocks'] as $record) {
             if (isset($records[$record['placementId']])) {
@@ -114,8 +129,13 @@ final readonly class ContentSnapshotService
         $this->owners->id($owner);
         $placements = $this->tree->eligible($this->tree->load($owner, $group, lockForUpdate: true), publicOnly: false);
         $blocks = [];
+        $authorized = [];
         foreach ($placements as $placement) {
             $block = $placement->block;
+            if (! isset($authorized[$block->id])) {
+                $this->authorization->authorize(ContentAbility::View, $actor, $block, $owner, ['group' => $group, 'snapshot' => 'capture']);
+                $authorized[$block->id] = true;
+            }
             $translations = [];
             foreach ($block->translations as $translation) {
                 $locale = $translation->getAttribute('locale');

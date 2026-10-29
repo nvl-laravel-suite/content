@@ -16,6 +16,7 @@ use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Content\Validation\ContentValueValidator;
+use Nvl\Support\Auth\CanonicalActorResolver;
 use Nvl\Support\Enums\PublicActor;
 use Nvl\Support\Enums\SystemActor;
 
@@ -27,7 +28,7 @@ use Nvl\Support\Enums\SystemActor;
 final readonly class ContentRenderer
 {
     /** Retain the canonical services and immutable inputs for this workflow. */
-    public function __construct(private ContentAuthorization $authorization, private ContentOwnerRegistry $owners, private ContentValueValidator $values, private ContentPatch $patch, private CanonicalJson $json, private Factory $views, private ContentPlacementTree $tree, private ContentMediaReferences $mediaReferences, private ContentLocalePolicy $locales, private ContentLocalizedValues $localizedValues) {}
+    public function __construct(private CanonicalActorResolver $actors, private ContentAuthorization $authorization, private ContentOwnerRegistry $owners, private ContentValueValidator $values, private ContentPatch $patch, private CanonicalJson $json, private Factory $views, private ContentPlacementTree $tree, private ContentMediaReferences $mediaReferences, private ContentLocalePolicy $locales, private ContentLocalizedValues $localizedValues) {}
 
     /**
      * Render one authorized live owner group into a deterministic composition.
@@ -41,11 +42,17 @@ final readonly class ContentRenderer
         if (! $actor instanceof Authenticatable && ! $actor instanceof SystemActor && ! $actor instanceof PublicActor) {
             throw new AuthorizationException('Content rendering requires an explicit actor.');
         }
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $group = $context['group'] ?? 'default';
         $locale = $context['locale'] ?? $this->locales->current();
         $publicOnly = $context['publicOnly'] ?? true;
         if (! is_string($group) || ! is_string($locale) || ! is_bool($publicOnly)) {
             throw new InvalidArgumentException('Content render context requires a group, locale and publicOnly flag.');
+        }
+        if ($actor instanceof PublicActor && ! $publicOnly) {
+            throw new AuthorizationException('Anonymous Content rendering requires publicOnly.');
         }
         $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
@@ -54,6 +61,14 @@ final readonly class ContentRenderer
         $this->authorization->authorize(ContentAbility::Render, $actor, owner: $owner, context: ['group' => $group, 'public_only' => $publicOnly]);
         $locale = $this->locales->assertSupported($locale);
         $placements = $this->tree->eligible($this->tree->load($owner, $group), $publicOnly);
+        $authorized = [];
+        foreach ($placements as $placement) {
+            $block = $placement->block;
+            if (! isset($authorized[$block->id])) {
+                $this->authorization->authorize(ContentAbility::View, $actor, $block, $owner, ['group' => $group]);
+                $authorized[$block->id] = true;
+            }
+        }
         $resources = new ContentRenderResources;
         $mediaIds = [];
         foreach ($placements as $placement) {

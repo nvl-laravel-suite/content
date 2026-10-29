@@ -11,11 +11,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Contracts\ContentBlockQueryScope;
 use Nvl\Content\Enums\ContentAbility;
+use Nvl\Content\Enums\ContentStatus;
+use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Exceptions\ContentScopeOverflowException;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
@@ -26,6 +30,7 @@ use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Support\ContentConfiguration;
 use Nvl\Media\Services\MediaModelRegistry;
+use Nvl\Support\Auth\CanonicalActorResolver;
 use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
@@ -38,7 +43,7 @@ use RuntimeException;
  */
 final class ContentReader
 {
-    public function __construct(private ContentAuthorization $authorization, private ContentIdentityGuard $identities, private ContentOwnerRegistry $owners, private OwnershipBoundary $boundary, private ContentLocalePolicy $locales, private ContentLocalizedValues $localizedValues, private ContentCatalogCopyRegistry $copies, private ContentMediaReferences $media, private ContentSnapshotIntegrity $integrity) {}
+    public function __construct(private CanonicalActorResolver $actors, private ContentAuthorization $authorization, private ContentIdentityGuard $identities, private ContentOwnerRegistry $owners, private OwnershipBoundary $boundary, private ContentLocalePolicy $locales, private ContentLocalizedValues $localizedValues, private ContentCatalogCopyRegistry $copies, private ContentMediaReferences $media, private ContentSnapshotIntegrity $integrity) {}
 
     /** Read an authorized native composition through the existing rendering engine.
      * @param  array{actor?: Authenticatable|SystemActor, group?: string, locale?: string, publicOnly?: bool}  $context
@@ -60,6 +65,9 @@ final class ContentReader
     /** Resolve the exact admitted block and authorize its read. */
     public function get(ContentBlock|string $block, Authenticatable|SystemActor $actor): ContentBlock
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $blockId = $block instanceof ContentBlock ? $block->id : $block;
         $model = ContentModelRegistry::query()->with(['definition', 'translations'])->findOrFail($blockId);
         $this->authorization->authorize(ContentAbility::View, $actor, $model);
@@ -72,6 +80,9 @@ final class ContentReader
      */
     public function find(string $key, Authenticatable|SystemActor $actor): ContentBlock
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $this->identities->blockKey($key);
         $query = ContentModelRegistry::query()->with(['definition', 'translations']);
         $driver = $query->getModel()->getConnection()->getDriverName();
@@ -95,6 +106,9 @@ final class ContentReader
      */
     public function placement(Model $owner, string $group, string $idOrKey, Authenticatable|SystemActor $actor): ContentPlacement
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
@@ -128,16 +142,30 @@ final class ContentReader
             throw new InvalidArgumentException("Content placement identity [{$idOrKey}] is ambiguous in the owner group.");
         }
 
+        $this->authorizePlacementBlocks($placements, $owner, $group, $actor);
+
         return $placements->firstOrFail();
     }
 
     /**
-     * @param  array<string,mixed>  $filters
+     * @param  array{key?:string,scope?:string,scope_key?:string,status?:ContentStatus|string,visibility?:ContentVisibility|string,definition_id?:string}  $filters
      * @return LengthAwarePaginator<int, ContentBlock>
      */
     public function paginate(array $filters, Authenticatable|SystemActor $actor, int $perPage = 25): LengthAwarePaginator
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $this->authorization->authorize(ContentAbility::List, $actor);
+        Validator::make(['filters' => $filters], [
+            'filters' => ['array:key,scope,scope_key,status,visibility,definition_id'],
+            'filters.key' => ['sometimes', 'string', 'max:191'],
+            'filters.scope' => ['sometimes', 'string', 'max:100'],
+            'filters.scope_key' => ['sometimes', 'string', 'max:191'],
+            'filters.status' => ['sometimes', Rule::enum(ContentStatus::class)],
+            'filters.visibility' => ['sometimes', Rule::enum(ContentVisibility::class)],
+            'filters.definition_id' => ['sometimes', 'uuid'],
+        ])->validate();
         $query = ContentModelRegistry::query()->with(['definition', 'translations']);
         if ($this->authorization instanceof ContentBlockQueryScope) {
             $this->authorization->scopeContentBlocks($query, $actor);
@@ -158,6 +186,10 @@ final class ContentReader
      */
     public function groups(Model $owner, Authenticatable|SystemActor $actor): Collection
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
+        $owner = $this->owners->canonical($owner);
         $this->authorization->authorize(ContentAbility::ListPlacements, $actor, owner: $owner, context: ['groups' => true]);
 
         return collect($this->owners->groups($owner));
@@ -170,6 +202,10 @@ final class ContentReader
      */
     public function placements(Model $owner, string $group, Authenticatable|SystemActor $actor, bool $includeBlocks = false): Collection
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
+        $owner = $this->owners->canonical($owner);
         $this->owners->assertGroup($owner, $group);
         $ownerId = $owner->getKey();
         if (! is_int($ownerId) && ! is_string($ownerId)) {
@@ -197,7 +233,27 @@ final class ContentReader
             throw new InvalidArgumentException("Content owner exceeds the {$maximum} placement limit.");
         }
 
-        return $placements->map(static fn (ContentPlacement $placement): ContentPlacement => $placement);
+        if ($includeBlocks) {
+            $this->authorizePlacementBlocks($placements, $owner, $group, $actor);
+        }
+
+        return $placements;
+    }
+
+    /** @param Collection<int, ContentPlacement> $placements */
+    private function authorizePlacementBlocks(Collection $placements, Model $owner, string $group, Authenticatable|SystemActor $actor): void
+    {
+        $authorized = [];
+        foreach ($placements as $placement) {
+            $block = $placement->getRelation('block');
+            if (! $block instanceof ContentBlock) {
+                throw new InvalidArgumentException('A Content placement block is unavailable.');
+            }
+            if (! isset($authorized[$block->id])) {
+                $this->authorization->authorize(ContentAbility::View, $actor, $block, $owner, ['group' => $group]);
+                $authorized[$block->id] = true;
+            }
+        }
     }
 
     private const int MAXIMUM_OWNERS = 100;
@@ -210,18 +266,16 @@ final class ContentReader
      */
     public function summaries(iterable $owners, string $group, Authenticatable|SystemActor $actor): array
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $normalized = $this->listOwnerContentPlacementSummariesNormalize($owners, $group);
         if ($normalized === []) {
             return [];
         }
-        if (ContentOwnership::declared()) {
-            $normalized = $this->listOwnerContentPlacementSummariesCanonicalOwners($normalized);
-        }
+        $normalized = $this->listOwnerContentPlacementSummariesCanonicalOwners($normalized);
         foreach ($normalized as $identity) {
             $this->authorization->authorize(ContentAbility::ListPlacements, $actor, owner: $identity['owner'], context: ['group' => $group, 'includes_blocks' => true]);
-        }
-        if (! ContentOwnership::declared()) {
-            $this->listOwnerContentPlacementSummariesAssertPersisted($normalized);
         }
         $maximum = ContentConfiguration::positiveInteger('nvl-content.placements.maximum_per_group', 1000);
         /** @var array<string, list<ContentPlacement>> $summaries */
@@ -234,6 +288,10 @@ final class ContentReader
         }
         foreach ($ownersByType as $type => $identities) {
             $ownerIds = array_map(static fn (array $identity): string => $identity['id'], $identities);
+            $ownerModels = [];
+            foreach ($identities as $identity) {
+                $ownerModels[$identity['id']] = $identity['owner'];
+            }
             $queryLimit = $this->listOwnerContentPlacementSummariesQueryLimit($maximum, count($ownerIds));
             $placements = ContentPlacement::query()->select(['id', 'content_block_id', 'owner_type', 'owner_id', 'group', 'key', 'parent_id', 'region', 'sort_order', 'is_visible', 'overrides', 'revision'])->with(['block' => static function (Relation $query): void {
                 $query->select(ContentModelRegistry::projectionColumns(['id', 'definition_id', 'key', 'scope', 'scope_key', 'status', 'visibility', 'values', 'metadata', 'definition_version', 'revision', 'published_at']));
@@ -255,6 +313,8 @@ final class ContentReader
                 if (count($ownerPlacements) > $maximum) {
                     throw new InvalidArgumentException("Content owner exceeds the {$maximum} placement limit.");
                 }
+                $owner = $ownerModels[$ownerId];
+                $this->authorizePlacementBlocks(new Collection($ownerPlacements), $owner, $group, $actor);
                 $summaries[$this->listOwnerContentPlacementSummariesSummaryKey($type, $ownerId)] = $ownerPlacements;
             }
         }
@@ -277,6 +337,7 @@ final class ContentReader
                 throw new InvalidArgumentException('Content placement summaries support at most 100 owner entries.');
             }
             $owner = $this->listOwnerContentPlacementSummariesNormalizeOwner($candidate);
+            $this->owners->canonicalIdentifier($owner);
             if (! $owner->exists) {
                 throw new InvalidArgumentException('A Content owner must be persisted.');
             }
@@ -344,7 +405,10 @@ final class ContentReader
         $loaded = [];
         foreach ($groups as $class => $ids) {
             $prototype = new $class;
-            $query = $this->boundary->query($prototype->newQuery(), ContentOwnership::resource($prototype));
+            $query = $prototype->newQuery()->useWritePdo();
+            if (ContentOwnership::active()) {
+                $this->boundary->query($query, ContentOwnership::resource($prototype));
+            }
             foreach ($query->whereKey($ids)->get() as $record) {
                 if ($record::class !== $class) {
                     throw new InvalidArgumentException('Content host hydration must retain its canonical capability class.');
@@ -365,37 +429,6 @@ final class ContentReader
     }
 
     /**
-     * @param  list<array{owner: Model, type: string, id: string, model: class-string<Model>}>  $owners
-     */
-    private function listOwnerContentPlacementSummariesAssertPersisted(array $owners): void
-    {
-        /** @var array<class-string<Model>, list<array{owner: Model, type: string, id: string, model: class-string<Model>}>> $ownersByModel */
-        $ownersByModel = [];
-        foreach ($owners as $identity) {
-            $ownersByModel[$identity['model']][] = $identity;
-        }
-        foreach ($ownersByModel as $modelClass => $identities) {
-            /** @var Model $model */
-            $model = new $modelClass;
-            $ids = array_map(static fn (array $identity): string => $identity['id'], $identities);
-            $persistedIds = $model->newQuery()->whereKey($ids)->pluck($model->getKeyName())->all();
-            /** @var array<string, true> $persisted */
-            $persisted = [];
-            foreach ($persistedIds as $persistedId) {
-                if (! is_int($persistedId) && ! is_string($persistedId)) {
-                    throw new InvalidArgumentException('A persisted Content owner identifier must be a string or integer.');
-                }
-                $persisted[(string) $persistedId] = true;
-            }
-            foreach ($ids as $id) {
-                if (! isset($persisted[$id])) {
-                    throw new InvalidArgumentException("Content owner [{$id}] no longer exists.");
-                }
-            }
-        }
-    }
-
-    /**
      * Resolve unique block keys using the first matching scope as highest priority.
      *
      * @param  list<array{scope:string,scopeKey:string}>  $scopes
@@ -403,6 +436,9 @@ final class ContentReader
      */
     public function resolveScopes(array $scopes, string $locale, Authenticatable|SystemActor $actor, ?int $limit = null, bool $publicOnly = true): array
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $scopes = $this->resolveContentScopesValidatedScopes($scopes);
         $locale = $this->locales->assertSupported($locale);
         $limit = $this->resolveContentScopesLimit($limit);
@@ -558,6 +594,9 @@ final class ContentReader
      */
     public function importSnapshot(Model $target, array $source, array $mediaMap, Authenticatable|SystemActor $actor): array
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $native = ContentOwnership::snapshotContext();
         if ($native === null) {
             throw new OwnershipViolation('Content catalog import requires an admitted native owner.');

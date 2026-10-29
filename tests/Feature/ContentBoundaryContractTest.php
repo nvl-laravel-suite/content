@@ -69,6 +69,16 @@ it('round trips typed composition snapshots through the Eloquent cast', function
     expect(fn () => $cast->get($model, 'snapshot', 42, []))->toThrow(InvalidArgumentException::class);
     expect(fn () => $cast->set($model, 'snapshot', 'invalid', []))->toThrow(InvalidArgumentException::class);
 });
+
+it('rejects trailing line breaks in portable content identities', function (string $identity): void {
+    $guard = new ContentIdentityGuard;
+    expect(fn () => match ($identity) {
+        'block' => $guard->blockKey("block\n"),
+        'placement' => $guard->placementKey("placement\n"),
+        'owner' => $guard->owner('page', "owner\n"),
+        'group' => $guard->group("group\n"),
+    })->toThrow(InvalidArgumentException::class);
+})->with(['block', 'placement', 'owner', 'group']);
 it('round trips schemas through the Eloquent cast and rejects invalid values', function (): void {
     $model = new class extends Model {};
     $cast = new ContentSchemaCast;

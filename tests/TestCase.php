@@ -7,6 +7,7 @@ namespace Nvl\Content\Tests;
 use Illuminate\Console\Application;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Schema;
 use Nvl\Content\Providers\ContentServiceProvider;
 use Nvl\Content\Tests\Fixtures\Consumer\PublishContentViewsCommand;
@@ -16,6 +17,7 @@ use Nvl\Content\Tests\Fixtures\TestContentOwner;
 use Nvl\Content\Tests\Fixtures\TestReferenceResolver;
 use Nvl\Media\Contracts\MediaAuthorization;
 use Nvl\Media\Providers\MediaServiceProvider;
+use Nvl\Media\Tests\Fixtures\Http\Controllers\MediaAssetController;
 use Nvl\Support\Providers\LocaleServiceProvider;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
@@ -28,6 +30,17 @@ use Spatie\LaravelData\LaravelDataServiceProvider;
 abstract class TestCase extends Orchestra
 {
     use RefreshDatabase;
+
+    /** Host-owned Media endpoints used by the optional delivery adapter fixtures. */
+    protected function defineRoutes($router): void
+    {
+        $controller = MediaAssetController::class;
+        $router->get('/nvl/media/assets/{media}', [$controller, 'showPublic'])
+            ->name('nvl.media.assets.show');
+        $router->get('/nvl/media/private/{owner}/{media}', [$controller, 'showPrivate'])
+            ->middleware(['signed', SubstituteBindings::class])
+            ->name('nvl.media.private.show');
+    }
 
     /**
      * @return list<class-string>

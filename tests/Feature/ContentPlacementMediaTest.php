@@ -189,7 +189,7 @@ it('fails closed when owner cleanup cannot share the Content connection', functi
     try {
         DB::connection('content-owner-alias')->setPdo(DB::connection()->getPdo());
         $owner->setConnection('content-owner-alias');
-        expect(fn () => $owner->delete())->toThrow(InvalidArgumentException::class, 'same named database connection');
+        expect(fn () => $owner->delete())->toThrow(InvalidArgumentException::class, 'canonical Content owner');
         expect(TestContentOwner::query()->whereKey($owner->id)->exists())->toBeTrue()->and(ContentPlacement::query()->count())->toBe(1)->and($media->associations()->count())->toBe(1);
     } finally {
         DB::purge('content-owner-alias');

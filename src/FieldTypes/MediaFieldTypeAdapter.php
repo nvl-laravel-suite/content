@@ -17,6 +17,7 @@ use Nvl\Media\Contracts\MediaAuthorization;
 use Nvl\Media\Enums\MediaAbility;
 use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Models\Media;
+use Nvl\Media\Services\MediaDeliveryPolicy;
 use Nvl\Media\Services\MediaModelRegistry;
 use Nvl\Support\Enums\PublicActor;
 use Nvl\Support\Enums\SystemActor;
@@ -118,7 +119,9 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
                 continue;
             }
             $minutes = ContentConfiguration::positiveInteger('nvl-content.media.private_url_ttl_minutes', 15);
-            $rendered[] = ['id' => $item->id, 'type' => $item->type->value, 'mimeType' => $item->mime_type, 'url' => $item->buildPrivateUrl(expiration: (new DateTimeImmutable)->add(new DateInterval("PT{$minutes}M")))];
+            $maximum = app(MediaDeliveryPolicy::class)->maximumTtl($item->disk);
+            $seconds = $minutes > intdiv($maximum, 60) ? $maximum : $minutes * 60;
+            $rendered[] = ['id' => $item->id, 'type' => $item->type->value, 'mimeType' => $item->mime_type, 'url' => $item->buildPrivateUrl(actor: $context->actor, expiration: (new DateTimeImmutable)->add(new DateInterval("PT{$seconds}S")))];
         }
 
         return $this->multiple ? $rendered : $rendered[0] ?? null;

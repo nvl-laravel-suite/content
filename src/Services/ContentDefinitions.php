@@ -19,6 +19,7 @@ use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Content\Schema\ContentFieldDefinition;
 use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Support\ContentConfiguration;
+use Nvl\Support\Auth\CanonicalActorResolver;
 use Nvl\Support\Enums\SystemActor;
 
 /**
@@ -28,13 +29,16 @@ use Nvl\Support\Enums\SystemActor;
  */
 final class ContentDefinitions
 {
-    public function __construct(private ContentAuthorization $authorization, private ContentDefinitionRegistry $definitions, private ContentDefinitionMigrationRegistry $migrations, private ContentDefinitionSyncLock $syncLock, private CanonicalJson $json, private ContentPlatformCatalogGuard $platformCatalog, private ContentCodeCatalogUsage $catalogUsage, private ContentBlockDefinitionMigrator $migrator, private ContentFieldPresetRegistry $presets, private ContentSchemaCompiler $compiler, private ContentJsonSchemaBuilder $jsonSchemas) {}
+    public function __construct(private CanonicalActorResolver $actors, private ContentAuthorization $authorization, private ContentDefinitionRegistry $definitions, private ContentDefinitionMigrationRegistry $migrations, private ContentDefinitionSyncLock $syncLock, private CanonicalJson $json, private ContentPlatformCatalogGuard $platformCatalog, private ContentCodeCatalogUsage $catalogUsage, private ContentBlockDefinitionMigrator $migrator, private ContentFieldPresetRegistry $presets, private ContentSchemaCompiler $compiler, private ContentJsonSchemaBuilder $jsonSchemas) {}
 
     /** Synchronize the deployment-owned definition catalog after central authorization.
      * @return array{create:list<string>,update:list<string>,unchanged:list<string>,orphan:list<string>,applied:bool}
      */
     public function sync(Authenticatable|SystemActor $actor, bool $dryRun = false): array
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $this->platformCatalog->authorize();
         $this->authorization->authorize(ContentAbility::SyncDefinitions, $actor);
         $registered = [];
@@ -131,6 +135,9 @@ final class ContentDefinitions
      */
     public function planMigration(Authenticatable|SystemActor $actor, ?string $definition = null, ?int $limit = null): array
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $this->authorization->authorize(ContentAbility::MigrateDefinitions, $actor, context: ['definition' => $definition, 'plan' => true]);
         $batchLimit = $this->planContentDefinitionMigrationsBatchLimit($limit);
         $targets = $this->planContentDefinitionMigrationsTargets($definition);
@@ -223,6 +230,9 @@ final class ContentDefinitions
      */
     public function migrate(array $plan, Authenticatable|SystemActor $actor): array
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $this->authorization->authorize(ContentAbility::MigrateDefinitions, $actor, context: ['definition' => $plan['definition'], 'count' => count($plan['ready']), 'apply' => true]);
         if ($plan['blocked'] !== []) {
             throw new InvalidArgumentException('Content definition migration plan contains blocked targets and cannot be applied.');
@@ -267,6 +277,9 @@ final class ContentDefinitions
      */
     public function all(Authenticatable|SystemActor $actor): Collection
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $this->authorization->authorize(ContentAbility::ListDefinitions, $actor);
 
         return collect($this->definitions->all())->filter(static fn (array $definition): bool => $definition['isActive'])->sortBy([['sortOrder', 'asc'], ['key', 'asc']])->values();
@@ -279,6 +292,9 @@ final class ContentDefinitions
      */
     public function presets(Authenticatable|SystemActor $actor): Collection
     {
+        if ($actor instanceof Authenticatable) {
+            $actor = $this->actors->resolve($actor);
+        }
         $this->authorization->authorize(ContentAbility::ListDefinitions, $actor, context: ['presets' => true]);
 
         return collect($this->presets->all())->map(function (ContentFieldPreset $preset): array {

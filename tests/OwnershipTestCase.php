@@ -67,12 +67,20 @@ abstract class OwnershipTestCase extends TestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:', 'nvl-core.owners' => [OwnershipCompany::class, OwnershipActor::class], 'nvl-ownership.enabled' => true, 'nvl-ownership.migrations.enabled' => false, 'nvl-ownership.central_operations' => ['content-definitions'], 'nvl-tenancy.enabled' => false, 'nvl-content.models.block' => $this->blockClass(), 'nvl-content.ownership.owner_resources' => ['fixture.content-owners'], 'nvl-content.authorization.callback' => static fn (): bool => true, 'nvl-content.locales.available' => ['en', 'bg'], 'nvl-content.locales.required_on_publish' => ['en'], 'nvl-content.owners' => ['subjects' => OwnershipContentOwner::class], 'nvl-content.definitions' => ['copy' => ['name' => 'Copy', 'version' => 1, 'allowed_regions' => ['main'], 'schema' => ['fields' => [['key' => 'text', 'type' => 'text', 'label' => 'Text', 'localized' => true]]]]], 'nvl-media.models.media' => OwnershipMedia::class, 'nvl-media.migrations.enabled' => false, 'nvl-translatable.locales' => ['en', 'bg'], 'nvl-comments.moderation.new_status' => 'approved', 'nvl-comments.mutation_lock.enabled' => false, 'nvl-content.migrations.enabled' => false, 'nvl-media.locks.deduplication.store' => 'array', 'nvl-media.routes.api_enabled' => false, 'auth.providers.users.model' => OwnershipActor::class]);
-        if (getenv('NVL_OWNERSHIP_TEST_DRIVER') === 'pgsql') {
+        if (in_array(getenv('NVL_OWNERSHIP_TEST_DRIVER'), ['pgsql', 'mysql', 'mariadb'], true)) {
             $database = getenv('NVL_OWNERSHIP_TEST_DATABASE');
             if (! is_string($database) || preg_match('/^nvl_own_test_[a-z0-9_]+$/D', $database) !== 1) {
                 throw new \RuntimeException('Native integration tests require a dedicated nvl_own_test_ database.');
             }
-            $app['config']->set('database.connections.sqlite', ['driver' => 'pgsql', 'url' => null, 'host' => '/tmp', 'port' => '5432', 'database' => $database, 'username' => get_current_user(), 'password' => '', 'charset' => 'utf8', 'prefix' => '', 'search_path' => 'public', 'sslmode' => 'prefer']);
+            $driver = (string) getenv('NVL_OWNERSHIP_TEST_DRIVER');
+            $host = getenv('NVL_OWNERSHIP_TEST_HOST') ?: ($driver === 'pgsql' ? '/tmp' : '127.0.0.1');
+            $port = getenv('NVL_OWNERSHIP_TEST_PORT') ?: ($driver === 'pgsql' ? '5432' : '3306');
+            if (! in_array($host, ['127.0.0.1', 'localhost', '::1', ...($driver === 'pgsql' ? ['/tmp'] : [])], true) || ! ctype_digit($port)) {
+                throw new \RuntimeException('Native ownership fixtures require a loopback service and explicit numeric port.');
+            }
+            $connection = ['driver' => $driver, 'url' => null, 'host' => $host, 'port' => $port, 'database' => $database, 'username' => getenv('NVL_OWNERSHIP_TEST_USERNAME') ?: ($driver === 'pgsql' ? get_current_user() : 'root'), 'password' => getenv('NVL_OWNERSHIP_TEST_PASSWORD') ?: '', 'prefix' => '', 'timezone' => $driver === 'pgsql' ? 'UTC' : '+00:00'];
+            $connection += $driver === 'pgsql' ? ['charset' => 'utf8', 'search_path' => 'public', 'sslmode' => 'prefer'] : ['charset' => 'utf8mb4', 'collation' => 'utf8mb4_bin', 'strict' => true, 'engine' => 'InnoDB'];
+            $app['config']->set('database.connections.sqlite', $connection);
         }
     }
 
@@ -84,7 +92,8 @@ abstract class OwnershipTestCase extends TestCase
         $connection = ContentModelRegistry::newInstance()->getConnection();
         $schema = $connection->getSchemaBuilder();
         $actorSchema = DB::getSchemaBuilder();
-        if (getenv('NVL_OWNERSHIP_TEST_DRIVER') === 'pgsql') {
+        if (in_array(getenv('NVL_OWNERSHIP_TEST_DRIVER'), ['pgsql', 'mysql', 'mariadb'], true)) {
+            $this->assertSame(getenv('NVL_OWNERSHIP_TEST_DRIVER'), DB::connection()->getDriverName());
             if (DB::connection()->getDatabaseName() !== getenv('NVL_OWNERSHIP_TEST_DATABASE')) {
                 throw new \RuntimeException('The actual coordinator differs from the dedicated test database.');
             }

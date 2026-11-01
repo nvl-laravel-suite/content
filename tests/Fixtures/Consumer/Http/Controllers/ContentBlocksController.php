@@ -6,6 +6,7 @@ namespace Nvl\Content\Tests\Fixtures\Consumer\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Nvl\Content\Enums\ContentMutationMode;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Models\ContentBlock;
@@ -46,13 +47,18 @@ final class ContentBlocksController extends ContentController
 
     public function index(Request $request, ContentActorFactory $actors): JsonResponse
     {
-        $query = [];
-        foreach ($request->query() as $key => $value) {
-            if (is_string($key)) {
-                $query[$key] = $value;
-            }
-        }
-        $blocks = $this->content(fn () => app(ContentReader::class)->paginate(array_diff_key($query, array_flip(['page', 'per_page'])), $actors->fromRequest($request), $request->integer('per_page', 25)));
+        $validated = Validator::make(['filters' => array_diff_key($request->query(), array_flip(['page', 'per_page']))], [
+            'filters' => ['array:key,scope,scope_key,status,visibility,definition_id'],
+            'filters.key' => ['sometimes', 'string', 'max:191'],
+            'filters.scope' => ['sometimes', 'string', 'max:100'],
+            'filters.scope_key' => ['sometimes', 'string', 'max:191'],
+            'filters.status' => ['sometimes', 'string'],
+            'filters.visibility' => ['sometimes', 'string'],
+            'filters.definition_id' => ['sometimes', 'uuid'],
+        ])->validate();
+        /** @var array{key?:string,scope?:string,scope_key?:string,status?:string,visibility?:string,definition_id?:string} $filters */
+        $filters = $validated['filters'];
+        $blocks = $this->content(fn () => app(ContentReader::class)->paginate($filters, $actors->fromRequest($request), $request->integer('per_page', 25)));
 
         return response()->json(['data' => array_map(static fn (ContentBlock $block): array => ContentResponseData::block(ContentBlockData::fromModel($block)), $blocks->items()), 'meta' => ['current_page' => $blocks->currentPage(), 'last_page' => $blocks->lastPage(), 'per_page' => $blocks->perPage(), 'total' => $blocks->total()]]);
     }

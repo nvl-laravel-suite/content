@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -33,6 +34,7 @@ use Nvl\Media\Enums\MediaVisibility;
 use Nvl\Media\Exceptions\MediaInUseException;
 use Nvl\Media\Models\Media;
 use Nvl\Media\Models\MediaAssociation;
+use Nvl\Media\Services\MediaAccessService;
 use Nvl\Media\Services\MediaLibrary;
 use Nvl\Support\Enums\SystemActor;
 
@@ -164,21 +166,50 @@ it('authorizes override Media against the registered content owner', function ()
     $media = placementMediaImage();
     $block = placementMediaBlock('owner-policy');
     $owner = TestContentOwner::query()->create(['name' => 'Authorized page']);
+    $checkedAbilities = [];
     $authorization = Mockery::mock(MediaAuthorization::class);
-    $authorization->shouldReceive('allows')->atLeast()->once()->andReturnUsing(static function (Authenticatable|SystemActor $actor, MediaAbility $ability, ?Media $asset, ?Model $target) use ($owner, $media): bool {
-        expect($target)->toBeInstanceOf(TestContentOwner::class)->and($target?->getKey())->toBe($owner->id)->and($asset?->id)->toBe($media->id)->and($ability)->toBe(MediaAbility::Reuse);
+    $authorization->shouldReceive('allows')->atLeast()->once()->andReturnUsing(static function (Authenticatable|SystemActor $actor, MediaAbility $ability, ?Media $asset, ?Model $target) use ($owner, $media, &$checkedAbilities): bool {
+        expect($actor)->toBe(SystemActor::Background)->and($asset?->id)->toBe($media->id);
+        if ($ability === MediaAbility::Reuse) {
+            expect($target)->toBeInstanceOf(TestContentOwner::class)->and($target?->getKey())->toBe($owner->id);
+        } elseif ($ability === MediaAbility::Associate) {
+            expect($target)->toBeInstanceOf(ContentPlacement::class)->and($target?->getAttribute('owner_id'))->toBe($owner->id);
+        } else {
+            throw new RuntimeException('Unexpected Media ability in placement attachment.');
+        }
+        $checkedAbilities[] = $ability;
 
         return true;
     });
     app()->instance(MediaAuthorization::class, $authorization);
+    app()->forgetInstance(MediaAccessService::class);
     $original = app(ContentFieldTypeRegistry::class);
     $registry = new ContentFieldTypeRegistry;
     foreach ($original->aliases() as $alias) {
-        $registry->register($alias === 'media' ? new MediaFieldTypeAdapter(false, $authorization) : $original->get($alias));
+        $registry->register($alias === 'media' ? new MediaFieldTypeAdapter(false) : $original->get($alias));
     }
     app()->instance(ContentFieldTypeRegistry::class, $registry);
     app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'media', 'region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => ['image' => $media->id]], SystemActor::Background);
+    expect($checkedAbilities)->toContain(MediaAbility::Reuse, MediaAbility::Associate);
 });
+
+it('rolls back placement overrides when domain reuse or technical association is denied', function (MediaAbility $denied, string $exception): void {
+    $media = placementMediaImage();
+    $block = placementMediaBlock('denied-owner-policy');
+    $owner = TestContentOwner::query()->create(['name' => 'Protected page']);
+    $authorization = Mockery::mock(MediaAuthorization::class);
+    $authorization->shouldReceive('allows')->atLeast()->once()->andReturnUsing(static fn (Authenticatable|SystemActor $actor, MediaAbility $ability, ?Media $asset, ?Model $target): bool => $ability !== $denied);
+    app()->instance(MediaAuthorization::class, $authorization);
+    app()->forgetInstance(MediaAccessService::class);
+
+    expect(fn () => app(ContentPlacements::class)->place($block, $owner, 'default', ['key' => 'denied', 'overrides' => ['image' => $media->id]], SystemActor::Background))
+        ->toThrow($exception)
+        ->and(ContentPlacement::query()->count())->toBe(0)
+        ->and(MediaAssociation::query()->count())->toBe(0);
+})->with([
+    'domain reuse' => [MediaAbility::Reuse, InvalidArgumentException::class],
+    'technical association' => [MediaAbility::Associate, AuthorizationException::class],
+]);
 it('fails closed when owner cleanup cannot share the Content connection', function (): void {
     $media = placementMediaImage();
     $block = placementMediaBlock('cross-connection-owner');

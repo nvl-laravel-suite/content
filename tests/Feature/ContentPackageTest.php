@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use Illuminate\Auth\GenericUser;
+use Illuminate\Config\Repository;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -30,6 +31,8 @@ use Nvl\Content\Services\ContentBlocks;
 use Nvl\Content\Services\ContentDefinitionLoader;
 use Nvl\Content\Services\ContentDefinitionRegistry;
 use Nvl\Content\Services\ContentDefinitions;
+use Nvl\Content\Services\ContentDoctor;
+use Nvl\Content\Services\ContentModelRegistry;
 use Nvl\Content\Services\ContentPayloadGuard;
 use Nvl\Content\Services\ContentPlacements;
 use Nvl\Content\Services\ContentReader;
@@ -38,6 +41,7 @@ use Nvl\Content\Services\ContentRenderer;
 use Nvl\Content\Services\ContentSnapshotService;
 use Nvl\Content\Tests\Fixtures\Consumer\ContentRouteConfiguration;
 use Nvl\Content\Tests\Fixtures\Consumer\Http\ContentResponseData;
+use Nvl\Content\Tests\Fixtures\DoctorSourceContentBlock;
 use Nvl\Content\Tests\Fixtures\TestContentMember;
 use Nvl\Content\Tests\Fixtures\TestContentOwner;
 use Nvl\Content\Tests\Fixtures\UnsafeReferenceResolver;
@@ -49,6 +53,7 @@ use Nvl\Media\Models\Media;
 use Nvl\Media\Models\MediaAssociation;
 use Nvl\Media\Services\MediaPathResolver;
 use Nvl\Support\Enums\SystemActor;
+use Nvl\Support\OwnerRegistry;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 
 beforeEach(function (): void {
@@ -132,6 +137,33 @@ it('enforces private media uploader ownership', function (): void {
 it('keeps routes disabled by default and reports a healthy installation', function (): void {
     expect(config('nvl-content.routes.management.enabled'))->toBeFalse()->and(config('nvl-content.routes.public.enabled'))->toBeFalse();
     $this->artisan('nvl:content:doctor', ['--strict' => true, '--format' => 'json'])->assertSuccessful()->expectsOutputToContain('"healthy": true');
+});
+it('does not probe optional Media storage while the integration is disabled', function (): void {
+    config(['nvl-content.media.enabled' => false, 'nvl-media.connection' => 'unavailable_optional_media']);
+
+    $checks = app(ContentDoctor::class)->inspect();
+    expect($checks['media.atomic_connection'])->toBeTrue()
+        ->and($checks)->not->toHaveKey('media.connection_error');
+
+    config(['nvl-content.media.enabled' => true]);
+    expect(app(ContentDoctor::class)->inspect()['media.atomic_connection'])->toBeFalse();
+});
+it('diagnoses Media atomicity against the configured block source', function (): void {
+    $morphMap = Relation::morphMap();
+    $configuration = new Repository(config()->all());
+    $configuration->set('nvl-content.models.block', DoctorSourceContentBlock::class);
+    config(['database.connections.content_doctor_source' => config('database.connections.'.config('database.default'))]);
+    app()->instance(ContentModelRegistry::class, new ContentModelRegistry($configuration, new OwnerRegistry($configuration)));
+
+    try {
+        expect(ContentModelRegistry::newInstance()->getConnection()->getName())->toBe('content_doctor_source')
+            ->and(app(ContentDoctor::class)->inspect()['media.atomic_connection'])->toBeFalse();
+
+        config(['nvl-media.connection' => 'content_doctor_source']);
+        expect(app(ContentDoctor::class)->inspect()['media.atomic_connection'])->toBeTrue();
+    } finally {
+        Relation::morphMap($morphMap, false);
+    }
 });
 it('lists reads archives and deletes blocks through revision-safe actions', function (): void {
     Event::fake([ContentBlockChanged::class]);

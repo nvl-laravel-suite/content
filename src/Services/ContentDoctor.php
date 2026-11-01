@@ -132,11 +132,14 @@ final class ContentDoctor
             $checks['definitions.pending_migrations'] = null;
             $checks['placements.declared_groups'] = false;
         }
-        try {
-            $checks['media.atomic_connection'] = $database->connection(ContentConfiguration::connection())->getName() === $database->connection((new MediaAssociation)->getConnectionName())->getName();
-        } catch (Throwable $exception) {
-            $checks['media.atomic_connection'] = false;
-            $checks['media.connection_error'] = $exception->getMessage();
+        $checks['media.atomic_connection'] = true;
+        if ((bool) config('nvl-content.media.enabled', false)) {
+            try {
+                $checks['media.atomic_connection'] = ContentModelRegistry::newInstance()->getConnection()->getName() === $database->connection((new MediaAssociation)->getConnectionName())->getName();
+            } catch (Throwable $exception) {
+                $checks['media.atomic_connection'] = false;
+                $checks['media.connection_error'] = $exception->getMessage();
+            }
         }
         $healthChecks = ['definitions.compilation', 'binding.authorization', 'view.default', 'locks.configuration', 'table.definitions', 'table.blocks', 'table.blocks_i18n', 'table.placements', 'table.revisions', 'schema.columns', 'schema.indexes', 'schema.foreign_keys', 'definitions.synchronized', 'definitions.block_versions_current', 'definitions.migration_paths', 'placements.declared_groups', 'media.atomic_connection', 'cache.placement_locks', 'cache.definition_sync_locks'];
         $healthy = collect($healthChecks)->every(static fn (string $key): bool => ($checks[$key] ?? false) === true);

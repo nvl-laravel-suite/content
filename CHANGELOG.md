@@ -5,6 +5,11 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- Align NVL peers and consumer contracts on the coordinated 7.x line. Review [UPGRADING.md](UPGRADING.md) for adoption and application-owned integration requirements.
+- Require patched HTML Sanitizer versions in lowest-dependency installations.
+
 ## [6.0.1] - 2026-10-21
 
 ### Changed

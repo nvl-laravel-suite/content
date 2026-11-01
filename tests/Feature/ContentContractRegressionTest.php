@@ -153,7 +153,8 @@ it('loads the editor bootstrap in a constant query count', function (): void {
             $tables = [(new ContentPlacement)->getTable(), (new ContentBlock)->getTable(), (new ContentBlockTranslation)->getTable(), (new ContentDefinition)->getTable(), $owner->getTable()];
             $dataQueries = collect(DB::getQueryLog())->filter(static function (array $query) use ($tables): bool {
                 foreach ($tables as $table) {
-                    if (str_contains($query['query'], 'from "'.$table.'"') || str_contains($query['query'], 'join "'.$table.'"')) {
+                    $table = DB::connection()->getQueryGrammar()->wrapTable($table);
+                    if (str_contains($query['query'], 'from '.$table) || str_contains($query['query'], 'join '.$table)) {
                         return true;
                     }
                 }

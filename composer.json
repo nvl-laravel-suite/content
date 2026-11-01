@@ -22,7 +22,7 @@
         "opis/json-schema": "^2.6",
         "php": "^8.4",
         "symfony/console": "^7.0 || ^8.0",
-        "symfony/html-sanitizer": "^7.4 || ^8.0"
+        "symfony/html-sanitizer": "^7.4.13 || ^8.0.13"
     },
     "require-dev": {
         "larastan/larastan": "^3.10",

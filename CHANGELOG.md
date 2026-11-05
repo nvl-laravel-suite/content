@@ -5,6 +5,10 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Require HTML Sanitizer `^7.4.23 || ^8.1.11` so new and lowest-dependency installations exclude the affected URL and media sanitization releases disclosed on November 4, 2026.
+
 ## [7.0.0] - 2026-11-03
 
 - Adopt the reviewed NVL 7 family for PHP 8.4+ and Laravel 13, with compatible required and optional NVL peers. Review the package upgrade guide before deployment.

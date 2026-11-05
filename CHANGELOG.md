@@ -5,9 +5,17 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [7.0.1] - 2026-11-05
+
 ### Fixed
 
 - Require HTML Sanitizer `^7.4.23 || ^8.1.11` so new and lowest-dependency installations exclude the affected URL and media sanitization releases disclosed on November 4, 2026.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- require patched HTML Sanitizer releases
+<!-- NVL GENERATED CHANGES END -->
 
 ## [7.0.0] - 2026-11-03
 

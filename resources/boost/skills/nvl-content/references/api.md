@@ -689,7 +689,9 @@ public static function allowsCentralCatalog(): bool
 public function definition(): Illuminate\Database\Eloquent\Relations\BelongsTo
 @return BelongsTo<ContentDefinition, $this>
 resolved @return Illuminate\Database\Eloquent\Relations\BelongsTo<Nvl\Content\Models\ContentDefinition, $this>
-public function delete(): ?bool
+public function delete(): mixed
+@return ($this is Pivot ? (bool | int | null) : (bool | null))
+resolved @return ($this is Illuminate\Database\Eloquent\Relations\Pivot ? (bool | int | null) : (bool | null))
 public function fresh(mixed $with=[]): ?static
 @param (array<array-key, mixed> | string) $with
 public function getAllTranslations(): Illuminate\Database\Eloquent\Collection
@@ -830,7 +832,9 @@ public const string OWNERSHIP_RESOURCE="content.translations"
 public function block(): Illuminate\Database\Eloquent\Relations\BelongsTo
 @return BelongsTo<ContentBlock, $this>
 resolved @return Illuminate\Database\Eloquent\Relations\BelongsTo<Nvl\Content\Models\ContentBlock, $this>
-public function delete(): ?bool
+public function delete(): mixed
+@return ($this is Pivot ? (bool | int | null) : (bool | null))
+resolved @return ($this is Illuminate\Database\Eloquent\Relations\Pivot ? (bool | int | null) : (bool | null))
 public function fresh(mixed $with=[]): ?static
 @param (array<array-key, mixed> | string) $with
 public function getConnectionName(): ?string
@@ -896,7 +900,9 @@ resolved @return Illuminate\Database\Eloquent\Relations\BelongsTo<Nvl\Content\Mo
 public function children(): Illuminate\Database\Eloquent\Relations\HasMany
 @return HasMany<ContentPlacement, $this>
 resolved @return Illuminate\Database\Eloquent\Relations\HasMany<Nvl\Content\Models\ContentPlacement, $this>
-public function delete(): ?bool
+public function delete(): mixed
+@return ($this is Pivot ? (bool | int | null) : (bool | null))
+resolved @return ($this is Illuminate\Database\Eloquent\Relations\Pivot ? (bool | int | null) : (bool | null))
 public function fresh(mixed $with=[]): ?static
 @param (array<array-key, mixed> | string) $with
 public function getConnectionName(): ?string
@@ -946,7 +952,9 @@ public const string OWNERSHIP_RESOURCE="content.revisions"
 public function block(): Illuminate\Database\Eloquent\Relations\BelongsTo
 @return BelongsTo<ContentBlock, $this>
 resolved @return Illuminate\Database\Eloquent\Relations\BelongsTo<Nvl\Content\Models\ContentBlock, $this>
-public function delete(): ?bool
+public function delete(): mixed
+@return ($this is Pivot ? (bool | int | null) : (bool | null))
+resolved @return ($this is Illuminate\Database\Eloquent\Relations\Pivot ? (bool | int | null) : (bool | null))
 public function fresh(mixed $with=[]): ?static
 @param (array<array-key, mixed> | string) $with
 public function getConnectionName(): ?string

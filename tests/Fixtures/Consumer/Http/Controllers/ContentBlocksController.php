@@ -7,8 +7,6 @@ namespace Nvl\Content\Tests\Fixtures\Consumer\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Nvl\Content\Enums\ContentMutationMode;
-use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Services\ContentBlocks;
@@ -16,6 +14,7 @@ use Nvl\Content\Services\ContentDefinitions;
 use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacements;
 use Nvl\Content\Services\ContentReader;
+use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Tests\Fixtures\Consumer\ContentActorFactory;
 use Nvl\Content\Tests\Fixtures\Consumer\Data\ContentBlockData;
 use Nvl\Content\Tests\Fixtures\Consumer\Data\ContentPlacementData;
@@ -86,8 +85,26 @@ final class ContentBlocksController extends ContentController
 
     public function store(Request $request, ContentActorFactory $actors): JsonResponse
     {
-        /** @var array{definition:string,key:string,scope:string,scopeKey:string,visibility:ContentVisibility|string,values:array<string, mixed>,translations:array<string, array<string, mixed>>,metadata:array<string, mixed>} $data */
-        $data = CreateContentBlockData::validateAndCreate($request->all())->toArray();
+        $request->validate(CreateContentBlockData::rules());
+        $data = ['definition' => $request->string('definition')->toString(), 'key' => $request->string('key')->toString()];
+        if ($request->has('scope')) {
+            $data['scope'] = $request->string('scope')->toString();
+        }
+        if ($request->has('scopeKey')) {
+            $data['scopeKey'] = $request->string('scopeKey')->toString();
+        }
+        if ($request->has('visibility')) {
+            $data['visibility'] = $request->string('visibility')->toString();
+        }
+        if ($request->has('values')) {
+            $data['values'] = ContentArrays::stringMap($request->array('values'), 'content block values');
+        }
+        if ($request->has('translations')) {
+            $data['translations'] = ContentArrays::translations($request->array('translations'), 'content block translations');
+        }
+        if ($request->has('metadata')) {
+            $data['metadata'] = ContentArrays::stringMap($request->array('metadata'), 'content block metadata');
+        }
         $actor = $actors->fromRequest($request);
         $block = $this->content(fn () => app(ContentBlocks::class)->create($data, $actor));
 
@@ -101,8 +118,23 @@ final class ContentBlocksController extends ContentController
 
     public function update(Request $request, string $block, ContentActorFactory $actors): JsonResponse
     {
-        /** @var array{expected_revision:int,mode:ContentMutationMode|string,visibility:ContentVisibility|string|null,values:array<string, mixed>,translations:array<string, array<string, mixed>>,metadata:array<string, mixed>} $data */
-        $data = UpdateContentBlockData::validateAndCreate($request->all())->toArray();
+        $request->validate(UpdateContentBlockData::rules());
+        $data = ['expected_revision' => $request->integer('expected_revision')];
+        if ($request->has('mode')) {
+            $data['mode'] = $request->string('mode')->toString();
+        }
+        if ($request->has('visibility')) {
+            $data['visibility'] = $request->input('visibility') === null ? null : $request->string('visibility')->toString();
+        }
+        if ($request->has('values')) {
+            $data['values'] = ContentArrays::stringMap($request->array('values'), 'content block values');
+        }
+        if ($request->has('translations')) {
+            $data['translations'] = ContentArrays::translations($request->array('translations'), 'content block translations');
+        }
+        if ($request->has('metadata')) {
+            $data['metadata'] = ContentArrays::stringMap($request->array('metadata'), 'content block metadata');
+        }
         $actor = $actors->fromRequest($request);
         $updated = $this->content(fn () => app(ContentBlocks::class)->update($block, $data, $actor));
 
@@ -111,8 +143,8 @@ final class ContentBlocksController extends ContentController
 
     public function publish(Request $request, string $block, ContentActorFactory $actors): JsonResponse
     {
-        $data = ExpectedRevisionData::validateAndCreate($request->all());
-        $expectedRevision = $data->expectedRevision;
+        $request->validate(ExpectedRevisionData::rules());
+        $expectedRevision = $request->integer('expected_revision');
         $actor = $actors->fromRequest($request);
         $published = $this->content(fn () => app(ContentBlocks::class)->publish($block, $expectedRevision, $actor));
 
@@ -121,8 +153,8 @@ final class ContentBlocksController extends ContentController
 
     public function archive(Request $request, string $block, ContentActorFactory $actors): JsonResponse
     {
-        $data = ExpectedRevisionData::validateAndCreate($request->all());
-        $expectedRevision = $data->expectedRevision;
+        $request->validate(ExpectedRevisionData::rules());
+        $expectedRevision = $request->integer('expected_revision');
         $actor = $actors->fromRequest($request);
         $archived = $this->content(fn () => app(ContentBlocks::class)->archive($block, $expectedRevision, $actor));
 
@@ -131,8 +163,8 @@ final class ContentBlocksController extends ContentController
 
     public function destroy(Request $request, string $block, ContentActorFactory $actors): JsonResponse
     {
-        $data = ExpectedRevisionData::validateAndCreate($request->all());
-        $expectedRevision = $data->expectedRevision;
+        $request->validate(ExpectedRevisionData::rules());
+        $expectedRevision = $request->integer('expected_revision');
         $actor = $actors->fromRequest($request);
         $this->content(function () use ($actor, $block, $expectedRevision): bool {
             app(ContentBlocks::class)->delete($block, $expectedRevision, $actor);
@@ -145,8 +177,8 @@ final class ContentBlocksController extends ContentController
 
     public function restore(Request $request, string $block, ContentActorFactory $actors): JsonResponse
     {
-        $data = ExpectedRevisionData::validateAndCreate($request->all());
-        $expectedRevision = $data->expectedRevision;
+        $request->validate(ExpectedRevisionData::rules());
+        $expectedRevision = $request->integer('expected_revision');
         $actor = $actors->fromRequest($request);
         $restored = $this->content(fn () => app(ContentBlocks::class)->restore($block, $expectedRevision, $actor));
 
@@ -155,8 +187,23 @@ final class ContentBlocksController extends ContentController
 
     public function place(Request $request, string $ownerType, string $ownerId, string $group, string $block, ContentActorFactory $actors, ContentOwnerRegistry $owners): JsonResponse
     {
-        /** @var array{key:string,region:string,parentId:string|null,sortOrder:int,isVisible:bool,overrides:array<string, mixed>} $data */
-        $data = PlaceContentBlockData::validateAndCreate($request->all())->toArray();
+        $request->validate(PlaceContentBlockData::rules());
+        $data = ['key' => $request->string('key')->toString()];
+        if ($request->has('region')) {
+            $data['region'] = $request->string('region')->toString();
+        }
+        if ($request->has('parentId')) {
+            $data['parentId'] = $request->input('parentId') === null ? null : $request->string('parentId')->toString();
+        }
+        if ($request->has('sortOrder')) {
+            $data['sortOrder'] = $request->integer('sortOrder');
+        }
+        if ($request->has('isVisible')) {
+            $data['isVisible'] = $request->boolean('isVisible');
+        }
+        if ($request->has('overrides')) {
+            $data['overrides'] = ContentArrays::stringMap($request->array('overrides'), 'content placement overrides');
+        }
         $actor = $actors->fromRequest($request);
         $owner = $this->content(fn () => $owners->resolve($ownerType, $ownerId));
         $placement = $this->content(fn () => app(ContentPlacements::class)->place($block, $owner, $group, $data, $actor));
@@ -166,8 +213,14 @@ final class ContentBlocksController extends ContentController
 
     public function updatePlacement(Request $request, string $placement, ContentActorFactory $actors): JsonResponse
     {
-        /** @var array{expected_revision:int,region:string,parentId:string|null,sortOrder:int,isVisible:bool,overrides:array<string, mixed>} $data */
-        $data = UpdateContentPlacementData::validateAndCreate($request->all())->toArray();
+        $request->validate(UpdateContentPlacementData::rules());
+        $data = ['expected_revision' => $request->integer('expected_revision'), 'region' => $request->string('region')->toString(), 'sortOrder' => $request->integer('sortOrder'), 'isVisible' => $request->boolean('isVisible')];
+        if ($request->has('parentId')) {
+            $data['parentId'] = $request->input('parentId') === null ? null : $request->string('parentId')->toString();
+        }
+        if ($request->has('overrides')) {
+            $data['overrides'] = ContentArrays::stringMap($request->array('overrides'), 'content placement overrides');
+        }
         $actor = $actors->fromRequest($request);
         $updated = $this->content(fn () => app(ContentPlacements::class)->update($placement, $data, $actor));
 
@@ -176,8 +229,8 @@ final class ContentBlocksController extends ContentController
 
     public function destroyPlacement(Request $request, string $placement, ContentActorFactory $actors): JsonResponse
     {
-        $data = ExpectedRevisionData::validateAndCreate($request->all());
-        $expectedRevision = $data->expectedRevision;
+        $request->validate(ExpectedRevisionData::rules());
+        $expectedRevision = $request->integer('expected_revision');
         $actor = $actors->fromRequest($request);
         $this->content(function () use ($actor, $expectedRevision, $placement): bool {
             app(ContentPlacements::class)->delete($placement, $expectedRevision, $actor);

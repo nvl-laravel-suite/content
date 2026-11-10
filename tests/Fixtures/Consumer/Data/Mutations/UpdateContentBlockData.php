@@ -8,29 +8,16 @@ use Illuminate\Validation\Rule;
 use Nvl\Content\Enums\ContentMutationMode;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Support\ContentConfiguration;
-use Nvl\Content\Tests\Fixtures\Consumer\DataTransform;
 use Nvl\Content\Validation\ContentObjectRule;
 use Nvl\Translatable\Rules\SupportedLocaleMapRule;
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
 
 /**
  * Revision-safe patch or explicit replacement contract for editable content.
  *
  * @api
  */
-final class UpdateContentBlockData extends Data
+final class UpdateContentBlockData
 {
-    use DataTransform;
-
-    /**
-     * @param  array<string, mixed>  $values
-     * @param  array<string, array<string, mixed>>  $translations
-     * @param  array<string, mixed>  $metadata
-     */
-    public function __construct(#[MapInputName('expected_revision')] #[MapOutputName('expected_revision')] public readonly int $expectedRevision, public readonly ContentMutationMode $mode = ContentMutationMode::Patch, public readonly ?ContentVisibility $visibility = null, public readonly array $values = [], public readonly array $translations = [], public readonly array $metadata = []) {}
-
     /**
      * @return array<string, mixed>
      */

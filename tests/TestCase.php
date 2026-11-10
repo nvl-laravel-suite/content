@@ -22,7 +22,6 @@ use Nvl\Support\Providers\LocaleServiceProvider;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Spatie\LaravelData\LaravelDataServiceProvider;
 
 /**
  * Boots Content with only its declared NVL foundation dependencies.
@@ -47,7 +46,7 @@ abstract class TestCase extends Orchestra
      */
     protected function getPackageProviders($app): array
     {
-        return [LaravelDataServiceProvider::class, SupportServiceProvider::class, LocaleServiceProvider::class, TranslatableServiceProvider::class, MediaServiceProvider::class, ContentServiceProvider::class];
+        return [SupportServiceProvider::class, LocaleServiceProvider::class, TranslatableServiceProvider::class, MediaServiceProvider::class, ContentServiceProvider::class];
     }
 
     protected function defineEnvironment($app): void

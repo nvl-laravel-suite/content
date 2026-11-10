@@ -5,19 +5,14 @@ declare(strict_types=1);
 namespace Nvl\Content\Tests\Fixtures\Consumer\Data;
 
 use Nvl\Content\Schema\ContentFieldDefinition;
-use Nvl\Content\Tests\Fixtures\Consumer\DataTransform;
-use Spatie\LaravelData\Attributes\DataCollectionOf;
-use Spatie\LaravelData\Data;
 
 /**
  * Generated-client contract for one recursive Content schema field.
  *
  * @api
  */
-final class ContentFieldDefinitionData extends Data
+final class ContentFieldDefinitionData
 {
-    use DataTransform;
-
     /**
      * @param  list<ContentFieldDefinitionData>  $fields
      * @param  array<string, mixed>  $settings
@@ -29,7 +24,6 @@ final class ContentFieldDefinitionData extends Data
         public readonly bool $required,
         public readonly bool $localized,
         public readonly mixed $default,
-        #[DataCollectionOf(self::class)]
         public readonly array $fields = [],
         public readonly ?self $item = null,
         public readonly array $settings = [],
@@ -50,5 +44,22 @@ final class ContentFieldDefinitionData extends Data
     public function toDefinition(): ContentFieldDefinition
     {
         return new ContentFieldDefinition(key: $this->key, type: $this->type, label: $this->label, required: $this->required, localized: $this->localized, default: $this->default, fields: array_map(static fn (self $field): ContentFieldDefinition => $field->toDefinition(), $this->fields), item: $this->item?->toDefinition(), settings: $this->settings, preset: $this->preset);
+    }
+
+    /** @return array<string, mixed> Consumer-owned response fields. */
+    public function toArray(): array
+    {
+        return [
+            'key' => $this->key,
+            'type' => $this->type,
+            'label' => $this->label,
+            'required' => $this->required,
+            'localized' => $this->localized,
+            'default' => $this->default,
+            'fields' => array_map(static fn (ContentFieldDefinitionData $field): array => $field->toArray(), $this->fields),
+            'item' => $this->item?->toArray(),
+            'settings' => $this->settings,
+            'preset' => $this->preset,
+        ];
     }
 }

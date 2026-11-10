@@ -5,24 +5,18 @@ declare(strict_types=1);
 namespace Nvl\Content\Tests\Fixtures\Consumer\Data;
 
 use Nvl\Content\Schema\ContentSchema;
-use Nvl\Content\Tests\Fixtures\Consumer\DataTransform;
-use Spatie\LaravelData\Attributes\DataCollectionOf;
-use Spatie\LaravelData\Data;
 
 /**
  * Generated-client contract for a compiled Content schema.
  *
  * @api
  */
-final class ContentSchemaData extends Data
+final class ContentSchemaData
 {
-    use DataTransform;
-
     /**
      * @param  list<ContentFieldDefinitionData>  $fields
      */
     public function __construct(
-        #[DataCollectionOf(ContentFieldDefinitionData::class)]
         public readonly array $fields
     ) {}
 
@@ -40,5 +34,13 @@ final class ContentSchemaData extends Data
     public function toSchema(): ContentSchema
     {
         return new ContentSchema(array_map(static fn (ContentFieldDefinitionData $field) => $field->toDefinition(), $this->fields));
+    }
+
+    /** @return array<string, mixed> Consumer-owned response fields. */
+    public function toArray(): array
+    {
+        return [
+            'fields' => array_map(static fn (ContentFieldDefinitionData $field): array => $field->toArray(), $this->fields),
+        ];
     }
 }

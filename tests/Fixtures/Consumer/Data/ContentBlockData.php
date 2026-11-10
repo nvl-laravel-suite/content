@@ -11,18 +11,14 @@ use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentBlockTranslation;
 use Nvl\Content\Support\ContentArrays;
-use Nvl\Content\Tests\Fixtures\Consumer\DataTransform;
-use Spatie\LaravelData\Data;
 
 /**
  * Privileged editable block representation.
  *
  * @api
  */
-final class ContentBlockData extends Data
+final class ContentBlockData
 {
-    use DataTransform;
-
     /**
      * Retain the canonical services and immutable inputs for this workflow.
      *
@@ -87,5 +83,25 @@ final class ContentBlockData extends Data
     private static function project(ContentBlock $block, array $translations): self
     {
         return new self(id: $block->id, definition: $block->definition->key, key: $block->key, scope: $block->scope, scopeKey: $block->scope_key, status: $block->status, visibility: $block->visibility, values: is_array($block->values) ? $block->values : [], translations: $translations, metadata: is_array($block->metadata) ? $block->metadata : [], definitionVersion: $block->definition_version, revision: $block->revision, publishedAt: $block->published_at?->toAtomString());
+    }
+
+    /** @return array<string, mixed> Consumer-owned response fields. */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'definition' => $this->definition,
+            'key' => $this->key,
+            'scope' => $this->scope,
+            'scopeKey' => $this->scopeKey,
+            'status' => $this->status->value,
+            'visibility' => $this->visibility->value,
+            'values' => $this->values,
+            'translations' => $this->translations,
+            'metadata' => $this->metadata,
+            'definitionVersion' => $this->definitionVersion,
+            'revision' => $this->revision,
+            'publishedAt' => $this->publishedAt,
+        ];
     }
 }

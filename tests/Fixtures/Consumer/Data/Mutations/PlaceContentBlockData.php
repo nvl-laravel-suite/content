@@ -4,24 +4,15 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Tests\Fixtures\Consumer\Data\Mutations;
 
-use Nvl\Content\Tests\Fixtures\Consumer\DataTransform;
 use Nvl\Content\Validation\ContentObjectRule;
-use Spatie\LaravelData\Data;
 
 /**
  * Validated contract for placing a reusable block on one registered owner.
  *
  * @api
  */
-final class PlaceContentBlockData extends Data
+final class PlaceContentBlockData
 {
-    use DataTransform;
-
-    /**
-     * @param  array<string, mixed>  $overrides
-     */
-    public function __construct(public readonly string $key, public readonly string $region = 'main', public readonly ?string $parentId = null, public readonly int $sortOrder = 0, public readonly bool $isVisible = true, public readonly array $overrides = []) {}
-
     /**
      * @return array<string, mixed>
      */

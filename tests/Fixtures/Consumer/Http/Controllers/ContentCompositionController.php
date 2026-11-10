@@ -20,8 +20,8 @@ final class ContentCompositionController extends ContentController
 {
     public function show(Request $request, string $ownerType, string $ownerId, string $group, ContentActorFactory $actors, ContentOwnerRegistry $owners, ContentLocalePolicy $locales): JsonResponse
     {
-        $data = ContentLocaleQueryData::validateAndCreate($request->all());
-        $locale = $data->locale ?? $locales->current();
+        $request->validate(ContentLocaleQueryData::rules());
+        $locale = $request->input('locale') === null ? $locales->current() : $request->string('locale')->toString();
         $owner = $this->content(fn () => $owners->resolve($ownerType, $ownerId));
         $composition = $this->content(fn () => app(ContentRenderer::class)->render($owner, ['group' => $group, 'locale' => $locale, 'actor' => $actors->fromRequest($request, true), 'publicOnly' => true]));
 
@@ -30,8 +30,8 @@ final class ContentCompositionController extends ContentController
 
     public function preview(Request $request, string $ownerType, string $ownerId, string $group, ContentActorFactory $actors, ContentOwnerRegistry $owners, ContentLocalePolicy $locales): JsonResponse
     {
-        $data = ContentLocaleQueryData::validateAndCreate($request->all());
-        $locale = $data->locale ?? $locales->current();
+        $request->validate(ContentLocaleQueryData::rules());
+        $locale = $request->input('locale') === null ? $locales->current() : $request->string('locale')->toString();
         $owner = $this->content(fn () => $owners->resolve($ownerType, $ownerId));
         $composition = $this->content(fn () => app(ContentRenderer::class)->render($owner, ['group' => $group, 'locale' => $locale, 'actor' => $actors->fromRequest($request, true), 'publicOnly' => false]));
 

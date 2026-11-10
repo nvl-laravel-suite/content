@@ -257,7 +257,7 @@ it('exposes independently configurable authorized management and public APIs', f
     $this->postJson("/api/internal/content-manager/blocks/{$blockId}/publish", ['expected_revision' => 2])->assertOk()->assertJsonPath('data.status', 'published')->assertJsonPath('data.revision', 3);
     $this->putJson("/api/internal/content-manager/blocks/{$blockId}", ['expected_revision' => 1])->assertConflict()->assertJsonPath('error.code', 'stale_content')->assertJsonPath('error.context.expected_revision', 1)->assertJsonPath('error.context.actual_revision', 3);
     $owner = TestContentOwner::query()->create(['name' => 'API page']);
-    $placement = $this->postJson("/api/internal/content-manager/owners/page/{$owner->id}/groups/main/blocks/{$blockId}/placements", ['key' => 'hero', 'region' => 'main'])->assertCreated()->assertJsonPath('data.ownerType', TestContentOwner::class)->assertJsonPath('data.ownerId', $owner->id)->assertJsonPath('data.group', 'main');
+    $placement = $this->postJson("/api/internal/content-manager/owners/page/{$owner->id}/groups/main/blocks/{$blockId}/placements", ['key' => 'hero', 'region' => 'main', 'sortOrder' => '0', 'isVisible' => '1'])->assertCreated()->assertJsonPath('data.ownerType', TestContentOwner::class)->assertJsonPath('data.ownerId', $owner->id)->assertJsonPath('data.group', 'main')->assertJsonPath('data.sortOrder', 0)->assertJsonPath('data.isVisible', true);
     $placementId = $placement->json('data.id');
     $this->getJson("/api/internal/content-manager/owners/page/{$owner->id}/groups")->assertOk()->assertJsonPath('data', ['default', 'homepage', 'main', 'primary', 'secondary']);
     $this->getJson("/api/internal/content-manager/owners/page/{$owner->id}/groups/main/placements")->assertOk()->assertJsonPath('data.0.id', $placementId)->assertJsonPath('data.0.revision', 1);
@@ -265,11 +265,39 @@ it('exposes independently configurable authorized management and public APIs', f
     $this->getJson("/api/internal/content-manager/owners/page/{$owner->id}/groups/main/preview?locale=en")->assertOk()->assertJsonPath('data.blocks.0.key', 'hero');
     $this->getJson("/api/site-content/owners/page/{$owner->id}/groups/main/composition?locale=en")->assertOk()->assertJsonPath('data.group', 'main')->assertJsonPath('data.blocks.0.key', 'hero')->assertJsonPath('data.blocks.0.values.title', 'API title');
     expect($placementId)->toBeString();
-    $this->putJson("/api/internal/content-manager/placements/{$placementId}", ['expected_revision' => 1, 'region' => 'main', 'parentId' => null, 'sortOrder' => 10, 'isVisible' => false])->assertOk()->assertJsonPath('data.revision', 2)->assertJsonPath('data.sortOrder', 10)->assertJsonPath('data.isVisible', false);
+    $this->putJson("/api/internal/content-manager/placements/{$placementId}", ['expected_revision' => '1', 'region' => 'main', 'parentId' => null, 'sortOrder' => '10', 'isVisible' => '0'])->assertOk()->assertJsonPath('data.revision', 2)->assertJsonPath('data.sortOrder', 10)->assertJsonPath('data.isVisible', false);
     $this->deleteJson("/api/internal/content-manager/placements/{$placementId}", ['expected_revision' => 2])->assertOk()->assertJsonPath('data.deleted', true);
     $this->postJson("/api/internal/content-manager/blocks/{$blockId}/archive", ['expected_revision' => 3])->assertOk()->assertJsonPath('data.status', 'archived')->assertJsonPath('data.revision', 4);
     $this->deleteJson("/api/internal/content-manager/blocks/{$blockId}", ['expected_revision' => 4])->assertOk()->assertJsonPath('data.deleted', true);
     $this->postJson("/api/internal/content-manager/blocks/{$blockId}/restore", ['expected_revision' => 5])->assertOk()->assertJsonPath('data.status', 'draft')->assertJsonPath('data.revision', 6);
+});
+
+it('validates native HTTP mutations while preserving omitted maps and explicit nested nulls', function (): void {
+    $this->actingAs(new GenericUser(['id' => 'content-http-editor']));
+    config()->set(['nvl-content.routes.management.enabled' => true, 'nvl-content.routes.management.prefix' => 'api/native-content', 'nvl-content.routes.management.name' => 'native.content.', 'nvl-content.routes.management.middleware' => []]);
+    require __DIR__.'/../Fixtures/Consumer/routes/api.php';
+    app('router')->getRoutes()->refreshNameLookups();
+
+    $created = $this->postJson('/api/native-content/blocks', [
+        'definition' => 'hero',
+        'key' => 'native-sparse',
+        'scope' => 'site',
+        'scopeKey' => 'main-site',
+        'visibility' => 'private',
+        'values' => ['enabled' => false],
+        'translations' => ['en' => ['title' => 'Retained title', 'body' => '<p>Clear me</p>']],
+        'metadata' => ['consumerField' => ['orderCode' => null, 'isReviewed' => false]],
+    ])->assertCreated();
+    $blockId = $created->json('data.id');
+
+    $updated = $this->putJson("/api/native-content/blocks/{$blockId}", ['expected_revision' => '1', 'translations' => ['en' => ['body' => null]]])
+        ->assertOk()->assertJsonPath('data.revision', 2)->assertJsonPath('data.visibility', 'private')
+        ->assertJsonPath('data.values.enabled', false)->assertJsonPath('data.translations.en.title', 'Retained title')
+        ->assertJsonPath('data.translations.en.body', null);
+    expect($updated->json('data.metadata'))->toBe(['consumerField' => ['orderCode' => null, 'isReviewed' => false]]);
+
+    $this->putJson("/api/native-content/blocks/{$blockId}", ['expected_revision' => 'invalid'])
+        ->assertUnprocessable()->assertJsonValidationErrors(['expected_revision']);
 });
 it('keeps patch updates non-destructive by default and resolves nested block values', function (): void {
     $actor = TestContentMember::query()->create(['id' => (string) Str::uuid(), 'name' => 'Member']);

@@ -6,18 +6,14 @@ namespace Nvl\Content\Tests\Fixtures\Consumer\Data;
 
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
-use Nvl\Content\Tests\Fixtures\Consumer\DataTransform;
-use Spatie\LaravelData\Data;
 
 /**
  * Privileged editable placement representation for headless management.
  *
  * @api
  */
-final class ContentPlacementData extends Data
+final class ContentPlacementData
 {
-    use DataTransform;
-
     /**
      * Retain the canonical services and immutable inputs for this workflow.
      *
@@ -55,5 +51,25 @@ final class ContentPlacementData extends Data
     private static function project(ContentPlacement $placement, ?ContentBlockData $block): self
     {
         return new self(id: $placement->id, blockId: $placement->content_block_id, ownerType: $placement->owner_type, ownerId: $placement->owner_id, group: $placement->group, key: $placement->key, parentId: $placement->parent_id, region: $placement->region, sortOrder: $placement->sort_order, isVisible: $placement->is_visible, overrides: is_array($placement->overrides) ? $placement->overrides : [], revision: $placement->revision, block: $block);
+    }
+
+    /** @return array<string, mixed> Consumer-owned response fields. */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'blockId' => $this->blockId,
+            'ownerType' => $this->ownerType,
+            'ownerId' => $this->ownerId,
+            'group' => $this->group,
+            'key' => $this->key,
+            'parentId' => $this->parentId,
+            'region' => $this->region,
+            'sortOrder' => $this->sortOrder,
+            'isVisible' => $this->isVisible,
+            'overrides' => $this->overrides,
+            'revision' => $this->revision,
+            'block' => $this->block?->toArray(),
+        ];
     }
 }

@@ -5,6 +5,10 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- Remove the obsolete Spatie Laravel Data development dependency. Content regression fixtures now use native validation, arrays and explicit projections without TypeScript transformer attributes.
+
 ## [7.0.2] - 2026-11-09
 
 ### Changed

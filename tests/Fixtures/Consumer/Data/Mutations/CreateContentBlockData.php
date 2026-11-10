@@ -7,27 +7,16 @@ namespace Nvl\Content\Tests\Fixtures\Consumer\Data\Mutations;
 use Illuminate\Validation\Rule;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Support\ContentConfiguration;
-use Nvl\Content\Tests\Fixtures\Consumer\DataTransform;
 use Nvl\Content\Validation\ContentObjectRule;
 use Nvl\Translatable\Rules\SupportedLocaleMapRule;
-use Spatie\LaravelData\Data;
 
 /**
  * Validated contract for creating a reusable draft content block.
  *
  * @api
  */
-final class CreateContentBlockData extends Data
+final class CreateContentBlockData
 {
-    use DataTransform;
-
-    /**
-     * @param  array<string, mixed>  $values
-     * @param  array<string, array<string, mixed>>  $translations
-     * @param  array<string, mixed>  $metadata
-     */
-    public function __construct(public readonly string $definition, public readonly string $key, public readonly string $scope = 'global', public readonly string $scopeKey = '*', public readonly ContentVisibility $visibility = ContentVisibility::Public, public readonly array $values = [], public readonly array $translations = [], public readonly array $metadata = []) {}
-
     /**
      * @return array<string, mixed>
      */

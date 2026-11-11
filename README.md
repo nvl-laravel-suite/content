@@ -30,6 +30,6 @@ Private Media projections pass the explicit actor into native signed-link issuan
 
 Native Ownership is opt-in through declared model resources. Retired Tenancy bridge configuration and implicit schema conversion are not supported. Existing consumer storage is never deleted by this migration.
 
-HTTP, editor bootstrap, DTO and Blade examples are active consumer-owned fixtures under `tests/Fixtures/Consumer`. Spatie Data is a development dependency for those fixtures only. See [event delivery](docs/events.md).
+HTTP, editor bootstrap, DTO and Blade examples are active consumer-owned fixtures under `tests/Fixtures/Consumer`. They use native Laravel validation and explicit array projections; the package has no Spatie Data dependency. See [event delivery](docs/events.md).
 
 Shared [service contracts, model extensions and composition](https://github.com/nvl-laravel-suite/laravel-suite/blob/main/docs/consumer-api.md) apply alongside the package-specific rules above.

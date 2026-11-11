@@ -60,7 +60,7 @@ final class ReferenceFieldTypeAdapter extends AbstractFieldTypeAdapter implement
         }
         $normalized = [];
         foreach ($ids as $id) {
-            if (! is_string($id) || preg_match('/^[^\x00-\x1F\x7F]{1,191}$/u', $id) !== 1) {
+            if (! is_string($id) || preg_match('/^[^\x00-\x1F\x7F]{1,191}$/Du', $id) !== 1) {
                 throw new InvalidArgumentException("Content field [{$context->path}] contains an invalid reference ID.");
             }
             if ($context->resolveExternal) {

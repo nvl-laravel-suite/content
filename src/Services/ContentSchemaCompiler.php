@@ -72,7 +72,7 @@ final readonly class ContentSchemaCompiler
         }
         $presetAlias = $field['preset'] ?? null;
         if ($presetAlias !== null) {
-            if (! is_string($presetAlias) || preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $presetAlias) !== 1) {
+            if (! is_string($presetAlias) || preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $presetAlias) !== 1) {
                 throw new InvalidArgumentException('Content field preset must be a valid alias.');
             }
             if (in_array($presetAlias, $presetStack, true)) {

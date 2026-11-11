@@ -21,7 +21,7 @@ final class ContentFieldTypeRegistry
     public function register(ContentFieldTypeAdapter $adapter): void
     {
         $alias = $adapter->alias();
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $alias) !== 1) {
             throw new InvalidArgumentException("Content field type alias [{$alias}] is invalid.");
         }
         if (isset($this->adapters[$alias])) {

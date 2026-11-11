@@ -23,13 +23,13 @@ final readonly class ContentFieldDefinition
      */
     public function __construct(public string $key, public string $type, public string $label, public bool $required = false, public bool $localized = false, public mixed $default = null, public array $fields = [], public ?self $item = null, public array $settings = [], public ?string $preset = null)
     {
-        if (preg_match('/^[A-Za-z][A-Za-z0-9_-]{0,99}$/', $key) !== 1) {
+        if (preg_match('/^[A-Za-z][A-Za-z0-9_-]{0,99}$/D', $key) !== 1) {
             throw new InvalidArgumentException("Content field key [{$key}] is invalid.");
         }
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $type) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $type) !== 1) {
             throw new InvalidArgumentException("Content field type [{$type}] is invalid.");
         }
-        if ($preset !== null && preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $preset) !== 1) {
+        if ($preset !== null && preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $preset) !== 1) {
             throw new InvalidArgumentException("Content field preset [{$preset}] is invalid.");
         }
         if (trim($label) === '') {

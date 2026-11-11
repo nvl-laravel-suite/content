@@ -226,7 +226,7 @@ final readonly class ContentValueValidator
             $baseRow = is_string($key) && isset($baseRowsByKey[$key]) ? $baseRowsByKey[$key]['row'] : $baseRows[$index] ?? [];
             $normalized = $this->normalizeChildren($field, ContentArrays::stringMap($row, "content row {$context->path}.{$index}"), $context->nested((string) $index), $depth, $localized, $effectiveLocalized, is_array($baseRow) && ! array_is_list($baseRow) ? ContentArrays::stringMap($baseRow, "content row {$context->path}.{$index} base") : []);
             if ($field->type === 'repeater') {
-                $key = is_string($key) && preg_match('/^[A-Za-z0-9_-]{1,100}$/', $key) === 1 ? $key : ($localizedStructure ? null : (string) Str::uuid());
+                $key = is_string($key) && preg_match('/^[A-Za-z0-9_-]{1,100}$/D', $key) === 1 ? $key : ($localizedStructure ? null : (string) Str::uuid());
                 if ($key === null) {
                     throw new InvalidArgumentException("Localized content repeater [{$context->path}] row [{$index}] has no matching base row key.");
                 }

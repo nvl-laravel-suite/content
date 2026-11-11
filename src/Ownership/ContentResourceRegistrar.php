@@ -27,7 +27,7 @@ final readonly class ContentResourceRegistrar
     /** Register the canonical capabilities without capturing current admission. */
     public function register(OwnershipResourceRegistry $resources): void
     {
-        $class = $this->models->blockClass();
+        $class = $this->models->prepare();
         $owned = $class::ownershipDefinition()->strategy !== 'unscoped';
         $central = $owned && $class::allowsCentralCatalog();
         $parents = config('nvl-content.ownership.owner_resources', []);

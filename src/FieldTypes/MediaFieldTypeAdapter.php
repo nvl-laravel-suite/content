@@ -115,7 +115,7 @@ final class MediaFieldTypeAdapter extends AbstractFieldTypeAdapter
 
                 continue;
             }
-            if ($context->actor instanceof PublicActor || ! app(MediaAuthorization::class)->allows($context->actor, MediaAbility::Download, $item, $context->owner)) {
+            if ($context->publicOnly || $context->actor instanceof PublicActor || ! app(MediaAuthorization::class)->allows($context->actor, MediaAbility::Download, $item, $context->owner)) {
                 continue;
             }
             $minutes = ContentConfiguration::positiveInteger('nvl-content.media.private_url_ttl_minutes', 15);

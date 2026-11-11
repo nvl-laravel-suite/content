@@ -39,7 +39,7 @@ final class ContentOwnerRegistry implements ContentOwnerRegistrar
      */
     public function register(string $alias, string $model, ?array $groups = null): void
     {
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1 && ! is_a($alias, Model::class, true)) {
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $alias) !== 1 && ! is_a($alias, Model::class, true)) {
             throw new InvalidArgumentException("Content owner alias [{$alias}] is invalid.");
         }
         if (isset($this->models[$alias])) {

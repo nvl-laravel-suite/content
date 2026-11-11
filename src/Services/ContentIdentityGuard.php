@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Services;
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 /**
@@ -21,6 +24,20 @@ final class ContentIdentityGuard
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,190}$/D', $key) !== 1) {
             throw new InvalidArgumentException("Content block key [{$key}] is invalid.");
         }
+    }
+
+    /**
+     * Treat a malformed identifier as absent; PostgreSQL rejects a non-UUID value compared with a UUID key.
+     *
+     * @param  class-string<Model>  $model
+     */
+    public function uuid(string $id, string $model): string
+    {
+        if (! Str::isUuid($id)) {
+            throw (new ModelNotFoundException)->setModel($model, [$id]);
+        }
+
+        return $id;
     }
 
     /**

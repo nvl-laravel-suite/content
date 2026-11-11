@@ -124,7 +124,7 @@ final class ContentServiceProvider extends ServiceProvider implements OwnershipI
     }
 
     /** Compile the package capabilities and register framework integration. */
-    public function boot(TranslationResourceRegistry $translationResources, ContentDefinitionLoader $loader, ContentDefinitionRegistry $definitions, ContentDefinitionMigrationRegistry $definitionMigrations, ContentFieldPresetRegistry $presets, ContentFieldTypeRegistry $fieldTypes, ContentOwnerRegistry $owners, ContentReferenceRegistry $references, ContentOwnerDeletion $ownerDeletion): void
+    public function boot(TranslationResourceRegistry $translationResources, ContentDefinitionRegistry $definitions, ContentDefinitionMigrationRegistry $definitionMigrations, ContentFieldPresetRegistry $presets, ContentFieldTypeRegistry $fieldTypes, ContentOwnerRegistry $owners, ContentReferenceRegistry $references, ContentOwnerDeletion $ownerDeletion): void
     {
         $this->app->make(OwnershipContentResourceRegistrar::class)->register($this->app->make(OwnershipResourceRegistry::class));
         if ($this->app->bound(OwnershipAdoptionRegistry::class)) {
@@ -139,32 +139,13 @@ final class ContentServiceProvider extends ServiceProvider implements OwnershipI
         $this->registerOwners($owners);
         $this->registerPlacementMorphAlias();
         ContentOwnerDeletionBridge::use($ownerDeletion);
-        $this->app->booted(function () use ($loader, $definitions): void {
-            if ($this->isDefinitionMaintenanceCommand()) {
-                return;
-            }
-            $enabled = config('nvl-content.compiled_cache.enabled', false);
-            $required = config('nvl-content.compiled_cache.required', false);
-            if (! is_bool($enabled) || ! is_bool($required) || $required && ! $enabled) {
-                throw ContentDefinitionCacheException::invalid('enabled and required must be booleans and required mode must also be enabled');
-            }
-            if ($enabled) {
-                try {
-                    $this->app->make(CompiledContentDefinitionCache::class)->restore($definitions);
-
-                    return;
-                } catch (ContentDefinitionCacheException $exception) {
-                    if ($required) {
-                        throw $exception;
-                    }
-                }
-            }
-            $this->registerDefinitions($loader, $definitions);
-        });
+        if (! $this->isDefinitionMaintenanceCommand()) {
+            $definitions->loadUsing($this->loadDefinitions(...));
+        }
         if ((bool) config('nvl-content.migrations.enabled', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
         }
-        $translationResources->register(key: 'content.blocks', modelClass: ContentModelRegistry::modelClass(), label: 'Content blocks', searchableColumns: ['key', 'scope', 'scope_key', 'status'], displayColumns: ['key', 'scope', 'scope_key', 'status', 'revision'], orderColumn: 'updated_at');
+        $translationResources->register(key: 'content.blocks', modelClass: $this->app->make(ContentModelRegistry::class)->prepare(), label: 'Content blocks', searchableColumns: ['key', 'scope', 'scope_key', 'status'], displayColumns: ['key', 'scope', 'scope_key', 'status', 'revision'], orderColumn: 'updated_at');
         if ($this->app->runningInConsole()) {
             $this->commands([CacheContentDefinitionsCommand::class, ClearContentDefinitionsCommand::class, ContentDoctorCommand::class, MigrateContentDefinitionsCommand::class, SyncContentDefinitionsCommand::class]);
         }
@@ -268,10 +249,26 @@ final class ContentServiceProvider extends ServiceProvider implements OwnershipI
         return in_array((new ArgvInput)->getFirstArgument(), ['nvl:content:cache', 'nvl:content:clear', 'nvl:install', 'nvl:doctor', 'nvl:content:doctor', 'package:discover', 'config:cache', 'config:clear', 'optimize', 'optimize:clear'], true);
     }
 
-    /** Native Content operation. */
-    private function registerDefinitions(ContentDefinitionLoader $loader, ContentDefinitionRegistry $registry): void
+    /** Restore the compiled cache or compile the declared sources on first use of the registry. */
+    private function loadDefinitions(ContentDefinitionRegistry $registry): void
     {
-        foreach ($loader->load() as $definition) {
+        $enabled = config('nvl-content.compiled_cache.enabled', false);
+        $required = config('nvl-content.compiled_cache.required', false);
+        if (! is_bool($enabled) || ! is_bool($required) || $required && ! $enabled) {
+            throw ContentDefinitionCacheException::invalid('enabled and required must be booleans and required mode must also be enabled');
+        }
+        if ($enabled) {
+            try {
+                $this->app->make(CompiledContentDefinitionCache::class)->restore($registry);
+
+                return;
+            } catch (ContentDefinitionCacheException $exception) {
+                if ($required) {
+                    throw $exception;
+                }
+            }
+        }
+        foreach ($this->app->make(ContentDefinitionLoader::class)->load() as $definition) {
             $registry->register($definition);
         }
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Services;
 
+use Closure;
 use InvalidArgumentException;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Schema\ContentDefinitionSource;
@@ -12,6 +13,7 @@ use Nvl\Content\Support\ContentArrays;
 use Nvl\Content\Validation\ContentSchemaValidator;
 use Nvl\Content\Validation\ContentValueValidator;
 use Nvl\Support\Enums\SystemActor;
+use Throwable;
 
 /**
  * In-memory source of truth for available block definitions.
@@ -23,13 +25,48 @@ final class ContentDefinitionRegistry
     /** @var array<string, array{key:string,name:string,description:string|null,category:string,version:int,view:string|null,schema:ContentSchema,defaults:array<string, mixed>,allowedScopes:list<string>,allowedRegions:list<string>,isActive:bool,sortOrder:int,jsonSchema:array<string, mixed>}> */
     private array $definitions = [];
 
+    /** @var (Closure(self): void)|null */
+    private ?Closure $pendingSource = null;
+
     /** Native Content operation. */
     public function __construct(private readonly ContentSchemaValidator $validator, private readonly ContentScopeRegistry $scopes, private readonly ContentSchemaCompiler $compiler, private readonly ContentJsonSchemaBuilder $jsonSchemas, private readonly ContentValueValidator $values) {}
+
+    /**
+     * Defer the deployment's definition sources until the registry is first read or changed.
+     *
+     * @internal
+     *
+     * @param  Closure(self): void  $source
+     */
+    public function loadUsing(Closure $source): void
+    {
+        $this->pendingSource = $source;
+    }
+
+    /** Run the deferred source once; a failing source stays pending so every later use reports it again. */
+    private function loadPendingSource(): void
+    {
+        $source = $this->pendingSource;
+        if ($source === null) {
+            return;
+        }
+        $this->pendingSource = null;
+        $definitions = $this->definitions;
+        try {
+            $source($this);
+        } catch (Throwable $exception) {
+            $this->definitions = $definitions;
+            $this->pendingSource = $source;
+
+            throw $exception;
+        }
+    }
 
     /** Native Content operation. */
     public function register(ContentDefinitionSource $source): void
     {
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,190}$/', $source->key) !== 1) {
+        $this->loadPendingSource();
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,190}$/D', $source->key) !== 1) {
             throw new InvalidArgumentException("Content definition key [{$source->key}] is invalid.");
         }
         if (isset($this->definitions[$source->key])) {
@@ -57,6 +94,8 @@ final class ContentDefinitionRegistry
      */
     public function get(string $key): array
     {
+        $this->loadPendingSource();
+
         return $this->definitions[$key] ?? throw new InvalidArgumentException("Content definition [{$key}] is not registered.");
     }
 
@@ -65,6 +104,8 @@ final class ContentDefinitionRegistry
      */
     public function all(): array
     {
+        $this->loadPendingSource();
+
         return array_values($this->definitions);
     }
 
@@ -75,6 +116,7 @@ final class ContentDefinitionRegistry
      */
     public function restoreCompiled(array $definitions): void
     {
+        $this->loadPendingSource();
         (new ContentPayloadGuard)->json($definitions, 'Compiled Content definitions', 16777216, 64);
         if (! array_is_list($definitions) || count($definitions) > 500) {
             throw new InvalidArgumentException('Compiled Content definitions must be a bounded list.');
@@ -103,7 +145,7 @@ final class ContentDefinitionRegistry
                     throw new InvalidArgumentException('Compiled Content definition arrays are invalid.');
                 }
             }
-            if (! is_int($data['version']) || $data['version'] < 1 || ! is_int($data['sortOrder']) || $data['sortOrder'] < 0 || ! is_bool($data['isActive']) || preg_match('/^[a-z][a-z0-9_.-]{0,190}$/', $data['key']) !== 1) {
+            if (! is_int($data['version']) || $data['version'] < 1 || ! is_int($data['sortOrder']) || $data['sortOrder'] < 0 || ! is_bool($data['isActive']) || preg_match('/^[a-z][a-z0-9_.-]{0,190}$/D', $data['key']) !== 1) {
                 throw new InvalidArgumentException('Compiled Content definition identity or version is invalid.');
             }
             if (isset($restored[$data['key']]) || isset($this->definitions[$data['key']])) {
@@ -154,7 +196,7 @@ final class ContentDefinitionRegistry
             throw new InvalidArgumentException("Content definition [{$definition}] requires at least one {$kind}.");
         }
         foreach ($aliases as $alias) {
-            if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
+            if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $alias) !== 1) {
                 throw new InvalidArgumentException("Content definition [{$definition}] contains invalid {$kind} [{$alias}].");
             }
         }
@@ -171,13 +213,13 @@ final class ContentDefinitionRegistry
         if (trim($definition['name']) === '' || mb_strlen($definition['name']) > 191) {
             throw new InvalidArgumentException("Content definition [{$definition['key']}] has an invalid name.");
         }
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $definition['category']) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $definition['category']) !== 1) {
             throw new InvalidArgumentException("Content definition [{$definition['key']}] has an invalid category.");
         }
         if ($definition['description'] !== null && strlen($definition['description']) > 65000) {
             throw new InvalidArgumentException("Content definition [{$definition['key']}] description is too large.");
         }
-        if ($definition['view'] !== null && (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.:\/-]{0,254}$/', $definition['view']) !== 1 || str_contains($definition['view'], '..') || str_contains($definition['view'], '//'))) {
+        if ($definition['view'] !== null && (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.:\/-]{0,254}$/D', $definition['view']) !== 1 || str_contains($definition['view'], '..') || str_contains($definition['view'], '//'))) {
             throw new InvalidArgumentException("Content definition [{$definition['key']}] has an invalid view name.");
         }
     }

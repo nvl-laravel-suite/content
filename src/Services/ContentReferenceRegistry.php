@@ -30,7 +30,7 @@ final class ContentReferenceRegistry
     /** Register one stable reference alias and compatible resolver class. */
     public function register(string $alias, string $resolver): void
     {
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $alias) !== 1) {
             throw new InvalidArgumentException("Content reference alias [{$alias}] is invalid.");
         }
         if (isset($this->resolvers[$alias])) {

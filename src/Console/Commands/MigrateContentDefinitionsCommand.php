@@ -36,7 +36,7 @@ final class MigrateContentDefinitionsCommand extends Command
         if ($definition !== null && $definition === '') {
             throw new InvalidArgumentException('The content definition migration key must be a non-empty string.');
         }
-        if ($limit !== null && preg_match('/^[1-9][0-9]*$/', $limit) !== 1) {
+        if ($limit !== null && preg_match('/^[1-9][0-9]*$/D', $limit) !== 1) {
             throw new InvalidArgumentException('The content definition migration limit must be a positive integer.');
         }
         $actor = SystemActor::Background;

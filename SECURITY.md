@@ -5,7 +5,7 @@ Submit reports through [this package's private vulnerability reporting form](htt
 Report vulnerabilities privately to the package maintainers. Do not open a
 public issue until a fix is available.
 
-Management and public routes are disabled by default. Applications must bind a
+The package registers no HTTP routes; host endpoints own delivery. Applications must bind a
 real authorization policy, register only safe owner/reference aliases, keep
 private media delivery behind Media authorization, and review published Blade
 views. Rich text is sanitized on mutation, JSON Schema remote references are
@@ -17,8 +17,7 @@ Snapshot hashes include owner identity and detect corruption, but are not
 cryptographic authentication for untrusted input. Sign externally supplied
 snapshots at the application boundary. Rich text is sanitized again at render
 time, private Media uses a distinct typed projection, URL fields use allowlisted
-schemes, always deny script/data/file schemes, reject credentials, and invalid
-route middleware fails closed. Signed private Media routes retain the Media
+schemes, always deny script/data/file schemes and reject credentials. Signed private Media routes retain the Media
 uploader identity independently of the actor rendering Content.
 Content and Media association writes must share a named database connection so
 authorization failures and transaction rollbacks cannot leave partial links.

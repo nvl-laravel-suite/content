@@ -57,7 +57,7 @@ final class ContentScopeRegistry
         }
         $scopes = [];
         foreach ($configured as $alias => $settings) {
-            if (! is_string($alias) || preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1 || ! is_array($settings)) {
+            if (! is_string($alias) || preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $alias) !== 1 || ! is_array($settings)) {
                 throw new InvalidArgumentException('Every configured content scope is invalid.');
             }
             $pattern = $settings['key_pattern'] ?? null;

@@ -23,7 +23,7 @@ final class ContentDefinitionMigrationRegistry
         $definition = $migration->definitionKey();
         $from = $migration->fromVersion();
         $to = $migration->toVersion();
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,190}$/', $definition) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,190}$/D', $definition) !== 1) {
             throw new InvalidArgumentException("Content definition migration key [{$definition}] is invalid.");
         }
         if ($from < 1 || $to !== $from + 1) {

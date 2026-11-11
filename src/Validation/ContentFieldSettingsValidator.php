@@ -145,7 +145,7 @@ final class ContentFieldSettingsValidator
             return;
         }
         $alias = $field->setting('reference_type');
-        if (! is_string($alias) || preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
+        if (! is_string($alias) || preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $alias) !== 1) {
             throw new InvalidArgumentException("Content reference field [{$field->key}] has an invalid reference_type.");
         }
     }

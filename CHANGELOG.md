@@ -5,6 +5,16 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Definition sources (or the compiled cache) are loaded on first use of the definition registry instead of on every boot, so requests that never touch Content read no definition file. Invalid sources and a missing required cache are now reported on first use and by `nvl:content:doctor`.
+- The configured block model's capabilities are validated on first use of the model registry instead of on every boot.
+- A public-only render never returns a signed URL for private Media, including when a privileged actor requests it.
+- A reused block or placement key is reported as invalid input instead of a database constraint error.
+- Numeric strings for `expected_revision` and `sortOrder`, and malformed reorder items, are rejected by validation instead of raising a type error or a false stale-revision conflict.
+- Block, placement, region and scope identities and hex colors ending in a line break are rejected.
+- A malformed block or placement identifier is treated as not found on every database driver.
+
 ## [7.0.3] - 2026-11-10
 
 ### Changed

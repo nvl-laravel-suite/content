@@ -46,7 +46,7 @@ final class ContentPlacements
         }
         Validator::make($data, self::placeRules())->validate();
         $data += ['region' => 'main', 'parentId' => null, 'sortOrder' => 0, 'isVisible' => true, 'overrides' => []];
-        $model = $block instanceof ContentBlock ? $block->loadMissing(['definition', 'translations']) : ContentModelRegistry::query()->with(['definition', 'translations'])->findOrFail($block);
+        $model = $block instanceof ContentBlock ? $block->loadMissing(['definition', 'translations']) : ContentModelRegistry::query()->with(['definition', 'translations'])->findOrFail($this->identities->uuid($block, ContentBlock::class));
         $owner = $this->owners->canonical($owner);
         $ownerType = $this->owners->type($owner);
         $ownerId = $this->owners->id($owner);
@@ -63,6 +63,9 @@ final class ContentPlacements
             $locked = ContentPlacement::query()->where('owner_type', $ownerType)->where('owner_id', $ownerId)->where('group', $group)->limit($maximum + 1)->lockForUpdate()->get(['id']);
             if ($locked->count() >= $maximum) {
                 throw new InvalidArgumentException("Content owner already has the maximum {$maximum} placements.");
+            }
+            if (ContentPlacement::query()->where('owner_type', $ownerType)->where('owner_id', $ownerId)->where('group', $group)->where('key', $data['key'])->exists()) {
+                throw new InvalidArgumentException("Content placement key [{$data['key']}] already exists in this owner group.");
             }
             $overrides = $this->validator->validate($lockedBlock, $owner, $ownerType, $ownerId, $group, $data['region'], $data['parentId'], $data['overrides'], $actor);
             $placement = ContentPlacement::query()->create(['content_block_id' => $lockedBlock->id, 'owner_type' => $ownerType, 'owner_id' => $ownerId, 'group' => $group, 'key' => $data['key'], 'parent_id' => $data['parentId'], 'region' => $data['region'], 'sort_order' => $data['sortOrder'], 'is_visible' => $data['isVisible'], 'overrides' => $overrides === [] ? null : $overrides]);
@@ -84,7 +87,7 @@ final class ContentPlacements
             $actor = $this->actors->resolve($actor);
         }
         Validator::make($data, self::updateRules())->validate();
-        $placementId = $placement instanceof ContentPlacement ? $placement->id : $placement;
+        $placementId = $placement instanceof ContentPlacement ? $placement->id : $this->identities->uuid($placement, ContentPlacement::class);
         $this->identities->region($data['region']);
         $this->identities->sortOrder($data['sortOrder']);
         $identity = ContentPlacement::query()->findOrFail($placementId, ['owner_type', 'owner_id', 'group']);
@@ -257,7 +260,7 @@ final class ContentPlacements
         if ($actor instanceof Authenticatable) {
             $actor = $this->actors->resolve($actor);
         }
-        $placementId = $placement instanceof ContentPlacement ? $placement->id : $placement;
+        $placementId = $placement instanceof ContentPlacement ? $placement->id : $this->identities->uuid($placement, ContentPlacement::class);
         $identity = ContentPlacement::query()->findOrFail($placementId, ['owner_type', 'owner_id', 'group']);
         $this->ownerLocks->run($identity->owner_type, $identity->owner_id, $identity->group, function () use ($actor, $expectedRevision, $placementId): void {
             DB::connection((new ContentPlacement)->getConnectionName())->transaction(function () use ($actor, $expectedRevision, $placementId): void {
@@ -286,7 +289,7 @@ final class ContentPlacements
      */
     private static function placeRules(): array
     {
-        return ['key' => ['required', 'string', 'max:191', 'regex:/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/'], 'region' => ['sometimes', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_.-]*$/'], 'parentId' => ['nullable', 'uuid'], 'sortOrder' => ['sometimes', 'integer', 'min:0'], 'isVisible' => ['sometimes', 'boolean'], 'overrides' => ['array', new ContentObjectRule]];
+        return ['key' => ['required', 'string', 'max:191', 'regex:/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/D'], 'region' => ['sometimes', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_.-]*$/D'], 'parentId' => ['nullable', 'uuid'], 'sortOrder' => ['sometimes', 'integer:strict', 'min:0'], 'isVisible' => ['sometimes', 'boolean'], 'overrides' => ['array', new ContentObjectRule]];
     }
 
     /**
@@ -294,7 +297,7 @@ final class ContentPlacements
      */
     private static function updateRules(): array
     {
-        return ['expected_revision' => ['required', 'integer', 'min:1'], 'region' => ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_.-]*$/'], 'parentId' => ['nullable', 'uuid'], 'sortOrder' => ['required', 'integer', 'min:0'], 'isVisible' => ['required', 'boolean'], 'overrides' => ['array', new ContentObjectRule]];
+        return ['expected_revision' => ['required', 'integer:strict', 'min:1'], 'region' => ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_.-]*$/D'], 'parentId' => ['nullable', 'uuid'], 'sortOrder' => ['required', 'integer:strict', 'min:0'], 'isVisible' => ['required', 'boolean'], 'overrides' => ['array', new ContentObjectRule]];
     }
 
     /**
@@ -304,6 +307,6 @@ final class ContentPlacements
     {
         $maximum = ContentConfiguration::positiveInteger('nvl-content.placements.maximum_per_group', 1000);
 
-        return ['placements' => ['present', 'array', "max:{$maximum}"]];
+        return ['placements' => ['present', 'array', "max:{$maximum}"], 'placements.*' => ['array'], 'placements.*.id' => ['required', 'uuid'], 'placements.*.expected_revision' => ['required', 'integer:strict', 'min:1'], 'placements.*.region' => ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_.-]*$/D'], 'placements.*.parentId' => ['nullable', 'uuid'], 'placements.*.sortOrder' => ['required', 'integer:strict', 'min:0']];
     }
 }

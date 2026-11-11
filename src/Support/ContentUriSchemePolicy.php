@@ -72,6 +72,6 @@ final class ContentUriSchemePolicy
     /** Native Content operation. */
     private static function isValid(string $scheme): bool
     {
-        return preg_match('/^[a-z][a-z0-9+.-]*$/', $scheme) === 1;
+        return preg_match('/^[a-z][a-z0-9+.-]*$/D', $scheme) === 1;
     }
 }

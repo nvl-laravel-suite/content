@@ -62,19 +62,20 @@ final class ContentDoctor
         $cacheEnabled = config('nvl-content.compiled_cache.enabled', false) === true;
         $cacheRequired = config('nvl-content.compiled_cache.required', false) === true;
         $compiled = $cacheEnabled || $cacheRequired ? $this->compiledCache->inspect() : null;
-        $definitionList = $definitions->all();
+        $definitionList = [];
         $definitionError = null;
-        if ($definitionList === []) {
-            try {
+        try {
+            $definitionList = $definitions->all();
+            if ($definitionList === []) {
                 if ($compiled !== null && $compiled['valid']) {
                     $this->compiledCache->restore($definitions);
                     $definitionList = $definitions->all();
                 } elseif (! $cacheRequired) {
                     $definitionList = $this->compilation->compile();
                 }
-            } catch (Throwable $exception) {
-                $definitionError = $exception->getMessage();
             }
+        } catch (Throwable $exception) {
+            $definitionError = $exception->getMessage();
         }
         $checks = ['binding.authorization' => $container->bound(ContentAuthorization::class), 'definitions' => array_map(static fn (array $definition): string => $definition['key'], $definitionList), 'definition_migrations' => $definitionMigrations->identifiers(), 'presets' => $presets->aliases(), 'field_types' => $fieldTypes->aliases(), 'owners' => $owners->aliases(), 'references' => $references->aliases(), 'view.default' => $this->defaultViewExists($views), 'cache.placement_locks' => $cacheSupportsLocks, 'cache.definition_sync_locks' => $cacheSupportsLocks];
         $checks['definitions.compilation'] = $definitionError === null;

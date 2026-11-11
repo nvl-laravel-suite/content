@@ -68,7 +68,7 @@ final class ContentReader
         if ($actor instanceof Authenticatable) {
             $actor = $this->actors->resolve($actor);
         }
-        $blockId = $block instanceof ContentBlock ? $block->id : $block;
+        $blockId = $block instanceof ContentBlock ? $block->id : $this->identities->uuid($block, ContentBlock::class);
         $model = ContentModelRegistry::query()->with(['definition', 'translations'])->findOrFail($blockId);
         $this->authorization->authorize(ContentAbility::View, $actor, $model);
 

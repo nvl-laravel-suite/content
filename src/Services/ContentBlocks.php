@@ -80,6 +80,9 @@ final class ContentBlocks
             if (! hash_equals($lockedDefinition->source_hash, $definitionHash)) {
                 throw new InvalidArgumentException("Content definition [{$definition['key']}] is stale; synchronize definitions first.");
             }
+            if (ContentModelRegistry::query()->withTrashed()->where('scope', $data['scope'])->where('scope_key', $data['scopeKey'])->where('key', $data['key'])->exists()) {
+                throw new InvalidArgumentException("Content block key [{$data['key']}] already exists in scope [{$data['scope']}:{$data['scopeKey']}].");
+            }
             $block = ContentModelRegistry::create(['definition_id' => $lockedDefinition->id, 'key' => $data['key'], 'scope' => $data['scope'], 'scope_key' => $data['scopeKey'], 'visibility' => $data['visibility'], 'values' => $validated->values, 'metadata' => $metadata === [] ? null : $metadata, 'definition_version' => $definition['version'], 'definition_hash' => $definitionHash, 'definition_schema' => $schema, 'definition_view' => $definition['view'], 'created_by_type' => $actor instanceof SystemActor ? 'system' : ($actor instanceof Model ? $actor->getMorphClass() : $actor::class), 'created_by_id' => $actor instanceof SystemActor ? null : $actor->getAuthIdentifier(), 'updated_by_type' => $actor instanceof SystemActor ? 'system' : ($actor instanceof Model ? $actor->getMorphClass() : $actor::class), 'updated_by_id' => $actor instanceof SystemActor ? null : $actor->getAuthIdentifier()]);
             $translationRows = $this->createContentBlockTranslationPayloads($validated->translations);
             $translationDefinition = $block->translationDefinition();
@@ -133,7 +136,7 @@ final class ContentBlocks
         if (is_string($data['visibility'])) {
             $data['visibility'] = ContentVisibility::from($data['visibility']);
         }
-        $blockId = $block instanceof ContentBlock ? $block->id : $block;
+        $blockId = $block instanceof ContentBlock ? $block->id : $this->identities->uuid($block, ContentBlock::class);
         $connection = ContentModelRegistry::newInstance()->getConnectionName();
         $inputValues = ContentArrays::stringMap($data['values'], 'content block values');
         $inputTranslations = ContentArrays::translations($data['translations'], 'content block translations');
@@ -231,7 +234,7 @@ final class ContentBlocks
         if ($actor instanceof Authenticatable) {
             $actor = $this->actors->resolve($actor);
         }
-        $blockId = $block instanceof ContentBlock ? $block->id : $block;
+        $blockId = $block instanceof ContentBlock ? $block->id : $this->identities->uuid($block, ContentBlock::class);
 
         return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())->transaction(function () use ($actor, $blockId, $expectedRevision): ContentBlock {
             $model = ContentModelRegistry::query()->with(['definition', 'translations'])->lockForUpdate()->findOrFail($blockId);
@@ -271,7 +274,7 @@ final class ContentBlocks
         if ($actor instanceof Authenticatable) {
             $actor = $this->actors->resolve($actor);
         }
-        $blockId = $block instanceof ContentBlock ? $block->id : $block;
+        $blockId = $block instanceof ContentBlock ? $block->id : $this->identities->uuid($block, ContentBlock::class);
 
         return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())->transaction(function () use ($actor, $blockId, $expectedRevision): ContentBlock {
             $model = ContentModelRegistry::query()->lockForUpdate()->findOrFail($blockId);
@@ -293,7 +296,7 @@ final class ContentBlocks
         if ($actor instanceof Authenticatable) {
             $actor = $this->actors->resolve($actor);
         }
-        $blockId = $block instanceof ContentBlock ? $block->id : $block;
+        $blockId = $block instanceof ContentBlock ? $block->id : $this->identities->uuid($block, ContentBlock::class);
 
         return DB::connection(ContentModelRegistry::newInstance()->getConnectionName())->transaction(function () use ($actor, $blockId, $expectedRevision): ContentBlock {
             $model = ContentModelRegistry::query()->withTrashed()->with(['definition', 'translations'])->lockForUpdate()->findOrFail($blockId);
@@ -327,7 +330,7 @@ final class ContentBlocks
         if ($actor instanceof Authenticatable) {
             $actor = $this->actors->resolve($actor);
         }
-        $blockId = $block instanceof ContentBlock ? $block->id : $block;
+        $blockId = $block instanceof ContentBlock ? $block->id : $this->identities->uuid($block, ContentBlock::class);
         DB::connection(ContentModelRegistry::newInstance()->getConnectionName())->transaction(function () use ($actor, $blockId, $expectedRevision): void {
             $model = ContentModelRegistry::query()->lockForUpdate()->findOrFail($blockId);
             $this->authorization->authorize(ContentAbility::Delete, $actor, $model);
@@ -350,7 +353,7 @@ final class ContentBlocks
      */
     private static function createRules(): array
     {
-        return ['definition' => ['required', 'string', 'max:191', 'regex:/^[a-z][a-z0-9_.-]*$/'], 'key' => ['required', 'string', 'max:191', 'regex:/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/'], 'scope' => ['sometimes', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_.-]*$/'], 'scopeKey' => ['sometimes', 'string', 'max:191'], 'visibility' => ['sometimes', Rule::enum(ContentVisibility::class)], 'values' => ['array', new ContentObjectRule], 'translations' => ['array', new ContentObjectRule, new SupportedLocaleMapRule(self::createContentLocales())], 'translations.*' => ['array', new ContentObjectRule], 'metadata' => ['array', new ContentObjectRule]];
+        return ['definition' => ['required', 'string', 'max:191', 'regex:/^[a-z][a-z0-9_.-]*$/D'], 'key' => ['required', 'string', 'max:191', 'regex:/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/D'], 'scope' => ['sometimes', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_.-]*$/D'], 'scopeKey' => ['sometimes', 'string', 'max:191'], 'visibility' => ['sometimes', Rule::enum(ContentVisibility::class)], 'values' => ['array', new ContentObjectRule], 'translations' => ['array', new ContentObjectRule, new SupportedLocaleMapRule(self::createContentLocales())], 'translations.*' => ['array', new ContentObjectRule], 'metadata' => ['array', new ContentObjectRule]];
     }
 
     /**
@@ -368,7 +371,7 @@ final class ContentBlocks
      */
     private static function updateRules(): array
     {
-        return ['expected_revision' => ['required', 'integer', 'min:1'], 'mode' => ['sometimes', Rule::enum(ContentMutationMode::class)], 'visibility' => ['nullable', Rule::enum(ContentVisibility::class)], 'values' => ['array', new ContentObjectRule], 'translations' => ['array', new ContentObjectRule, new SupportedLocaleMapRule(self::updateContentLocales())], 'translations.*' => ['array', new ContentObjectRule], 'metadata' => ['array', new ContentObjectRule]];
+        return ['expected_revision' => ['required', 'integer:strict', 'min:1'], 'mode' => ['sometimes', Rule::enum(ContentMutationMode::class)], 'visibility' => ['nullable', Rule::enum(ContentVisibility::class)], 'values' => ['array', new ContentObjectRule], 'translations' => ['array', new ContentObjectRule, new SupportedLocaleMapRule(self::updateContentLocales())], 'translations.*' => ['array', new ContentObjectRule], 'metadata' => ['array', new ContentObjectRule]];
     }
 
     /**

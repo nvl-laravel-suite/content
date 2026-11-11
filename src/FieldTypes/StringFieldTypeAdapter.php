@@ -51,7 +51,7 @@ final class StringFieldTypeAdapter extends AbstractFieldTypeAdapter
         if ($this->type === 'uri') {
             $this->assertUri($value, $field, $context);
         }
-        if ($this->type === 'color' && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $value) !== 1) {
+        if ($this->type === 'color' && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/D', $value) !== 1) {
             throw new InvalidArgumentException("Content field [{$context->path}] is not a hex color.");
         }
         if ($this->type === 'date' && ! $this->validDate($value, 'Y-m-d')) {
@@ -152,7 +152,7 @@ final class StringFieldTypeAdapter extends AbstractFieldTypeAdapter
 
             return;
         }
-        if ($scheme === 'tel' && preg_match('/^tel:\+?[0-9(). -]{3,40}$/', $value) !== 1) {
+        if ($scheme === 'tel' && preg_match('/^tel:\+?[0-9(). -]{3,40}$/D', $value) !== 1) {
             throw new InvalidArgumentException("Content field [{$context->path}] is not a valid telephone URI.");
         }
     }

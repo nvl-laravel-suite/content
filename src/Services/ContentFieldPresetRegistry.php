@@ -23,7 +23,7 @@ final class ContentFieldPresetRegistry
     public function register(ContentFieldPreset $preset): void
     {
         $alias = $preset->alias();
-        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/', $alias) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9_.-]{0,99}$/D', $alias) !== 1) {
             throw new InvalidArgumentException("Content field preset alias [{$alias}] is invalid.");
         }
         if (isset($this->presets[$alias])) {

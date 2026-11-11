@@ -5,6 +5,8 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [7.0.4] - 2026-11-11
+
 ### Fixed
 
 - Definition sources (or the compiled cache) are loaded on first use of the definition registry instead of on every boot, so requests that never touch Content read no definition file. Invalid sources and a missing required cache are now reported on first use and by `nvl:content:doctor`.
@@ -14,6 +16,12 @@ All notable changes to `nvl/content` are documented here.
 - Numeric strings for `expected_revision` and `sortOrder`, and malformed reorder items, are rejected by validation instead of raising a type error or a false stale-revision conflict.
 - Block, placement, region and scope identities and hex colors ending in a line break are rejected.
 - A malformed block or placement identifier is treated as not found on every database driver.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- harden block casting, boot and definition handling
+<!-- NVL GENERATED CHANGES END -->
 
 ## [7.0.3] - 2026-11-10
 

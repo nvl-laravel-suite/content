@@ -5,9 +5,17 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [7.0.5] - 2026-11-13
+
 ### Fixed
 
 - Harden owner deletion bridge cleanup and `ContentDoctor` definition migration diagnostics under configured database connections.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- harden package runtime safety, PostgreSQL portability and test performance
+<!-- NVL GENERATED CHANGES END -->
 
 ## [7.0.4] - 2026-11-11
 

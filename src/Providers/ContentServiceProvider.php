@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Content\Providers;
 
+use Illuminate\Container\Container;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Content\Console\Commands\CacheContentDefinitionsCommand;
@@ -138,7 +139,7 @@ final class ContentServiceProvider extends ServiceProvider implements OwnershipI
         $this->registerDefinitionMigrations($definitionMigrations);
         $this->registerOwners($owners);
         $this->registerPlacementMorphAlias();
-        ContentOwnerDeletionBridge::use($ownerDeletion);
+        ContentOwnerDeletionBridge::useResolver(static fn (): ContentOwnerDeletion => Container::getInstance()->make(ContentOwnerDeletion::class));
         if (! $this->isDefinitionMaintenanceCommand()) {
             $definitions->loadUsing($this->loadDefinitions(...));
         }

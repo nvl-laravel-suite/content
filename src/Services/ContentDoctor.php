@@ -8,12 +8,12 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\View\Factory;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Schema\Builder;
 use InvalidArgumentException;
 use Nvl\Content\Contracts\ContentAuthorization;
 use Nvl\Content\Models\ContentDefinition;
-use Nvl\Content\Models\ContentPlacement;
 use Nvl\Content\Ownership\ContentOwnership;
 use Nvl\Content\Schema\ContentSchema;
 use Nvl\Content\Support\ContentConfiguration;
@@ -100,25 +100,41 @@ final class ContentDoctor
             $checks['locks.error'] = $exception->getMessage();
         }
         try {
-            $schema = ContentModelRegistry::newInstance()->getConnection()->getSchemaBuilder();
+            $connection = ContentModelRegistry::newInstance()->getConnection();
+            $schema = $connection->getSchemaBuilder();
+            $allTablesExist = true;
             foreach (['definitions', 'blocks', 'blocks_i18n', 'placements', 'revisions'] as $key) {
-                $checks["table.{$key}"] = $schema->hasTable(ContentConfiguration::table($key));
+                $tableExists = $this->probe($connection, static fn (): bool => $schema->hasTable(ContentConfiguration::table($key)));
+                $checks["table.{$key}"] = $tableExists;
+                $allTablesExist = $allTablesExist && $tableExists;
             }
-            $checks['schema.columns'] = $this->requiredColumnsExist($schema);
-            $checks['schema.indexes'] = $this->requiredIndexesExist($schema);
-            $checks['schema.foreign_keys'] = $this->requiredForeignKeysExist($schema);
+            $columnsExist = $allTablesExist && $this->probe($connection, fn (): bool => $this->requiredColumnsExist($schema));
+            $checks['schema.columns'] = $columnsExist;
+            $checks['schema.indexes'] = $allTablesExist && $this->probe($connection, fn (): bool => $this->requiredIndexesExist($schema));
+            $checks['schema.foreign_keys'] = $allTablesExist && $this->probe($connection, fn (): bool => $this->requiredForeignKeysExist($schema));
             if (ContentOwnership::declared()) {
-                foreach (['content.blocks', 'content.translations', 'content.revisions', 'content.placements'] as $key) {
-                    $this->ownershipReadiness->assertActive($key);
+                if ($columnsExist) {
+                    foreach (['content.blocks', 'content.translations', 'content.revisions', 'content.placements'] as $key) {
+                        $this->probe($connection, fn () => $this->ownershipReadiness->assertActive($key));
+                    }
+                    $checks['schema.ownership'] = true;
+                } else {
+                    $checks['schema.ownership'] = false;
                 }
-                $checks['schema.ownership'] = true;
             }
-            $checks['definitions.synchronized'] = $this->definitionsSynchronized($definitionList, $json);
-            $migrationHealth = $this->definitionMigrationHealth($definitionList, $definitionMigrations);
-            $checks['definitions.block_versions_current'] = $migrationHealth['current'];
-            $checks['definitions.migration_paths'] = $migrationHealth['paths'];
-            $checks['definitions.pending_migrations'] = $migrationHealth['pending'];
-            $checks['placements.declared_groups'] = $this->placementsUseDeclaredGroups($owners);
+            $checks['definitions.synchronized'] = $columnsExist && $this->probe($connection, fn (): bool => $this->definitionsSynchronized($definitionList, $json));
+            if ($columnsExist) {
+                $migrationHealth = $this->probe($connection, fn (): array => $this->definitionMigrationHealth($connection, $definitionList, $definitionMigrations));
+                $checks['definitions.block_versions_current'] = $migrationHealth['current'];
+                $checks['definitions.migration_paths'] = $migrationHealth['paths'];
+                $checks['definitions.pending_migrations'] = $migrationHealth['pending'];
+                $checks['placements.declared_groups'] = $this->probe($connection, fn (): bool => $this->placementsUseDeclaredGroups($connection, $owners));
+            } else {
+                $checks['definitions.block_versions_current'] = false;
+                $checks['definitions.migration_paths'] = false;
+                $checks['definitions.pending_migrations'] = null;
+                $checks['placements.declared_groups'] = false;
+            }
         } catch (Throwable $exception) {
             $checks['database.error'] = $exception->getMessage();
             foreach (['definitions', 'blocks', 'blocks_i18n', 'placements', 'revisions'] as $key) {
@@ -308,10 +324,15 @@ final class ContentDoctor
     {
         /** @var array<string, list<array{columns: list<string>, foreign_table: string, foreign_columns: list<string>, on_delete: string}>> $requirements */
         $requirements = ['blocks' => [['columns' => ['definition_id'], 'foreign_table' => ContentConfiguration::table('definitions'), 'foreign_columns' => ['id'], 'on_delete' => 'restrict']], 'blocks_i18n' => [['columns' => ['content_block_id'], 'foreign_table' => ContentConfiguration::table('blocks'), 'foreign_columns' => ['id'], 'on_delete' => 'cascade']], 'placements' => [['columns' => ['content_block_id'], 'foreign_table' => ContentConfiguration::table('blocks'), 'foreign_columns' => ['id'], 'on_delete' => 'cascade'], ['columns' => ['parent_id'], 'foreign_table' => ContentConfiguration::table('placements'), 'foreign_columns' => ['id'], 'on_delete' => 'set null']], 'revisions' => [['columns' => ['content_block_id'], 'foreign_table' => ContentConfiguration::table('blocks'), 'foreign_columns' => ['id'], 'on_delete' => 'cascade']]];
+        $prefix = $schema->getConnection()->getTablePrefix();
         foreach ($requirements as $tableKey => $expectedForeignKeys) {
             $foreignKeys = $schema->getForeignKeys(ContentConfiguration::table($tableKey));
             foreach ($expectedForeignKeys as $expected) {
-                $exists = collect($foreignKeys)->contains(function (array $foreignKey) use ($expected): bool {
+                $expectedForeignTables = array_values(array_unique([
+                    $expected['foreign_table'],
+                    $prefix.$expected['foreign_table'],
+                ]));
+                $exists = collect($foreignKeys)->contains(function (array $foreignKey) use ($expected, $expectedForeignTables): bool {
                     $onDelete = $foreignKey['on_delete'];
                     if (! is_string($onDelete)) {
                         return false;
@@ -321,7 +342,7 @@ final class ContentDoctor
                         $onDelete = 'restrict';
                     }
 
-                    return $foreignKey['columns'] === $expected['columns'] && $foreignKey['foreign_table'] === $expected['foreign_table'] && $foreignKey['foreign_columns'] === $expected['foreign_columns'] && ($onDelete === $expected['on_delete'] || ContentOwnership::declared() && $expected['on_delete'] === 'cascade' && in_array($onDelete, ['restrict', 'no action'], true));
+                    return $foreignKey['columns'] === $expected['columns'] && in_array($foreignKey['foreign_table'], $expectedForeignTables, true) && $foreignKey['foreign_columns'] === $expected['foreign_columns'] && ($onDelete === $expected['on_delete'] || ContentOwnership::declared() && $expected['on_delete'] === 'cascade' && in_array($onDelete, ['restrict', 'no action'], true));
                 });
                 if (! $exists) {
                     return false;
@@ -362,31 +383,47 @@ final class ContentDoctor
      * @param  list<array{key:string,name:string,description:string|null,category:string,version:int,view:string|null,schema:ContentSchema,defaults:array<string, mixed>,allowedScopes:list<string>,allowedRegions:list<string>,isActive:bool,sortOrder:int,jsonSchema:array<string, mixed>}>  $definitions
      * @return array{current: bool, paths: bool, pending: int}
      */
-    private function definitionMigrationHealth(array $definitions, ContentDefinitionMigrationRegistry $migrations): array
+    private function definitionMigrationHealth(ConnectionInterface $connection, array $definitions, ContentDefinitionMigrationRegistry $migrations): array
     {
         $sourceVersions = [];
         foreach ($definitions as $definition) {
             $sourceVersions[$definition['key']] = $definition['version'];
         }
         $mirrors = ContentDefinition::query()->whereIn('key', array_keys($sourceVersions))->get()->keyBy('id');
-        $storedVersions = ContentModelRegistry::query()->withTrashed()->select(['definition_id', 'definition_version'])->selectRaw('COUNT(*) as pending_count')->groupBy(['definition_id', 'definition_version'])->get();
+        $storedVersions = $connection->table(ContentConfiguration::table('blocks'))
+            ->select(['definition_id', 'definition_version'])
+            ->selectRaw('COUNT(*) as pending_count')
+            ->groupBy(['definition_id', 'definition_version'])
+            ->get();
         $pending = 0;
         $paths = true;
         foreach ($storedVersions as $stored) {
-            $mirror = $mirrors->get($stored->definition_id);
+            $definitionId = $stored->definition_id ?? null;
+            if (! is_string($definitionId) && ! is_int($definitionId)) {
+                continue;
+            }
+            $mirror = $mirrors->get($definitionId);
             if (! $mirror instanceof ContentDefinition) {
                 continue;
             }
             $targetVersion = $sourceVersions[$mirror->key] ?? null;
-            if (! is_int($targetVersion) || $stored->definition_version === $targetVersion) {
+            $rawVersion = $stored->definition_version ?? null;
+            if (is_int($rawVersion)) {
+                $storedVersion = $rawVersion;
+            } elseif (is_string($rawVersion) && preg_match('/^\d+$/D', $rawVersion) === 1) {
+                $storedVersion = (int) $rawVersion;
+            } else {
                 continue;
             }
-            $pendingCount = $stored->getAttribute('pending_count');
+            if (! is_int($targetVersion) || $storedVersion === $targetVersion) {
+                continue;
+            }
+            $pendingCount = $stored->pending_count ?? null;
             if (! is_int($pendingCount) && (! is_string($pendingCount) || preg_match('/^\d+$/D', $pendingCount) !== 1)) {
                 throw new InvalidArgumentException('Content definition migration diagnostics returned an invalid block count.');
             }
             $pending += (int) $pendingCount;
-            if (! $migrations->hasPath($mirror->key, $stored->definition_version, $targetVersion)) {
+            if (! $migrations->hasPath($mirror->key, $storedVersion, $targetVersion)) {
                 $paths = false;
             }
         }
@@ -395,12 +432,12 @@ final class ContentDoctor
     }
 
     /** Native Content operation. */
-    private function placementsUseDeclaredGroups(ContentOwnerRegistry $owners): bool
+    private function placementsUseDeclaredGroups(ConnectionInterface $connection, ContentOwnerRegistry $owners): bool
     {
-        $identities = ContentPlacement::query()->select(['owner_type', 'group'])->distinct()->get();
+        $identities = $connection->table(ContentConfiguration::table('placements'))->select(['owner_type', 'group'])->distinct()->get();
         foreach ($identities as $identity) {
-            $ownerType = $identity->getAttribute('owner_type');
-            $group = $identity->getAttribute('group');
+            $ownerType = $identity->owner_type ?? null;
+            $group = $identity->group ?? null;
             if (! is_string($ownerType) || ! is_string($group)) {
                 return false;
             }
@@ -411,5 +448,18 @@ final class ContentDoctor
         }
 
         return true;
+    }
+
+    /**
+     * @template TResult
+     *
+     * @param  callable(): TResult  $operation
+     * @return TResult
+     */
+    private function probe(ConnectionInterface $connection, callable $operation): mixed
+    {
+        return $connection->transactionLevel() > 0
+            ? $connection->transaction(static fn () => $operation())
+            : $operation();
     }
 }

@@ -18,12 +18,13 @@ use Nvl\Content\Tests\Fixtures\OwnershipContentOwner;
 use Nvl\Content\Tests\Fixtures\UnsafeQueryContentBlock;
 use Nvl\Content\Tests\OwnershipTestCase;
 use Nvl\Ownership\Services\OwnershipRunner;
+use Nvl\Ownership\Tests\Fixtures\OptsIntoAdoptedSchemaReuse;
 use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\OwnerRegistry;
 use Nvl\Support\Ownership\Contracts\OwnershipWriter;
 use Nvl\Support\Ownership\Exceptions\OwnershipConfigurationInvalid;
 
-uses(OwnershipTestCase::class);
+uses(OwnershipTestCase::class, OptsIntoAdoptedSchemaReuse::class);
 it('uses the configured block root and canonical dependent ownership', function (): void {
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function (): void {
         $block = app(ContentBlocks::class)->create(['definition' => 'copy', 'key' => 'copy', 'translations' => ['en' => ['text' => 'Private copy']]], SystemActor::Background);

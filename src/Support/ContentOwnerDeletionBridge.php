@@ -14,14 +14,25 @@ use Nvl\Content\Services\ContentOwnerDeletion;
  */
 final class ContentOwnerDeletionBridge
 {
-    private static ?ContentOwnerDeletion $runtime = null;
+    /** @var (Closure(): ContentOwnerDeletion)|null */
+    private static ?Closure $resolver = null;
 
     /**
      * Attach the deletion runtime supplied by the current Content provider.
      */
     public static function use(ContentOwnerDeletion $runtime): void
     {
-        self::$runtime = $runtime;
+        self::$resolver = static fn (): ContentOwnerDeletion => $runtime;
+    }
+
+    /**
+     * Attach a lazy resolver so each Octane request resolves the active sandbox runtime.
+     *
+     * @param  Closure(): ContentOwnerDeletion  $resolver
+     */
+    public static function useResolver(Closure $resolver): void
+    {
+        self::$resolver = $resolver;
     }
 
     /**
@@ -29,18 +40,18 @@ final class ContentOwnerDeletionBridge
      */
     public static function clear(): void
     {
-        self::$runtime = null;
+        self::$resolver = null;
     }
 
     /**
-     * Delete one owner through the runtime without resolving container dependencies.
+     * Delete one owner through the runtime without retaining a stale container instance.
      *
      * @param  Closure(): (bool|null)  $delete
      */
     public static function delete(Model $owner, Closure $delete): ?bool
     {
-        $runtime = self::$runtime ?? throw new LogicException('Content owner deletion requires the booted Content provider.');
+        $resolver = self::$resolver ?? throw new LogicException('Content owner deletion requires the booted Content provider.');
 
-        return $runtime->execute($owner, $delete);
+        return $resolver()->execute($owner, $delete);
     }
 }

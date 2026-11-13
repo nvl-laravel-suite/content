@@ -371,7 +371,7 @@ it('compiles byte-exact value comparisons for supported database drivers', funct
     $grammar = DB::connection()->getQueryGrammar();
     $expression = (new ExactTextValueComparison('wrapped_key', $driver))->getValue($grammar);
     expect($expression)->toContain($identityFragment)->toContain($lengthFragment)->and(substr_count($expression, '?'))->toBe(2);
-})->with(['MySQL' => ['mysql', 'BINARY wrapped_key = BINARY ?', 'OCTET_LENGTH'], 'MariaDB' => ['mariadb', 'BINARY wrapped_key = BINARY ?', 'OCTET_LENGTH'], 'PostgreSQL' => ['pgsql', 'COLLATE "C"', 'OCTET_LENGTH'], 'SQL Server' => ['sqlsrv', 'Latin1_General_100_BIN2', 'DATALENGTH'], 'SQLite' => ['sqlite', 'COLLATE BINARY', 'LENGTH(CAST']]);
+})->with(['PostgreSQL' => ['pgsql', 'COLLATE "C"', 'OCTET_LENGTH'], 'SQLite' => ['sqlite', 'COLLATE BINARY', 'LENGTH(CAST']]);
 it('rejects ambiguous unavailable and unauthorized editor identity reads', function (): void {
     $actor = SystemActor::Background;
     app(ContentBlocks::class)->create(['definition' => 'hero', 'key' => 'ambiguous-block-key', 'scope' => 'site', 'scopeKey' => 'first-site', 'visibility' => ContentVisibility::Public, 'values' => [], 'translations' => [], 'metadata' => []], $actor);

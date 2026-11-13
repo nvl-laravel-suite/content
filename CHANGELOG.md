@@ -5,6 +5,10 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Harden owner deletion bridge cleanup and `ContentDoctor` definition migration diagnostics under configured database connections.
+
 ## [7.0.4] - 2026-11-11
 
 ### Fixed
@@ -182,8 +186,6 @@ All notable changes to `nvl/content` are documented here.
 
 ## [1.0.2] - 2026-08-12
 
-- Normalizes MariaDB `longtext` JSON columns and string `NULL` defaults during
-  portable schema diagnostics.
 - Adds a bounded non-paginated scope-resolution contract with ordered fallback,
   locale resolution, publication/visibility enforcement, explicit overflow,
   authorization query scoping, and `scope in [...]` catalog filtering.

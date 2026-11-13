@@ -37,12 +37,7 @@ final class StringBelongsTo extends BelongsTo
         $grammar = $query->getQuery()->getGrammar();
         $foreign = $grammar->wrap($this->getQualifiedForeignKeyName());
         $owner = $grammar->wrap($query->qualifyColumn($this->ownerKey));
-        $type = match ($query->getModel()->getConnection()->getDriverName()) {
-            'pgsql', 'sqlite' => 'TEXT',
-            'sqlsrv' => 'NVARCHAR(255)',
-            default => 'CHAR',
-        };
 
-        return $query->select($columns)->whereRaw(new TextColumnComparison("CAST({$foreign} AS {$type})", "CAST({$owner} AS {$type})"));
+        return $query->select($columns)->whereRaw(new TextColumnComparison("CAST({$foreign} AS TEXT)", "CAST({$owner} AS TEXT)"));
     }
 }

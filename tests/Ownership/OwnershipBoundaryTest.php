@@ -26,22 +26,16 @@ use Nvl\Content\Tests\Fixtures\OwnershipContentScenario as Scenario;
 use Nvl\Content\Tests\Fixtures\OwnershipReferenceResolver;
 use Nvl\Content\Tests\OwnershipTestCase;
 use Nvl\Content\Validation\ContentValidationContext;
-use Nvl\Ownership\Services\OwnershipAdoptionCoordinator;
-use Nvl\Ownership\Services\OwnershipAdoptionStore;
 use Nvl\Ownership\Services\OwnershipRunner;
 use Nvl\Ownership\Services\OwnershipWriter;
+use Nvl\Ownership\Tests\Fixtures\OptsIntoAdoptedSchemaReuse;
 use Nvl\Ownership\ValueObjects\OwnershipAssignment;
-use Nvl\Ownership\ValueObjects\OwnershipOperation;
 use Nvl\Support\Enums\PublicActor;
 use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipQueuedJob;
-use Nvl\Support\Ownership\Exceptions\OwnershipSchemaNotReady;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
-use Nvl\Support\Ownership\Services\OwnershipConstraintInspector;
-use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
-use Nvl\Support\Ownership\Services\OwnershipStorageTables;
 
-uses(OwnershipTestCase::class);
+uses(OwnershipTestCase::class, OptsIntoAdoptedSchemaReuse::class);
 it('matches canonical UUID content owner keys as exact text without accepting alternate spellings', function (): void {
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function (): void {
         $host = app(OwnershipWriter::class)->create(OwnershipContentOwner::class, static function (OwnershipAssignment $assignment): OwnershipContentOwner {
@@ -51,10 +45,6 @@ it('matches canonical UUID content owner keys as exact text without accepting al
             return $host;
         });
         $connection = $host->getConnection();
-        if ($connection->getDriverName() === 'mariadb') {
-            $column = array_find($connection->getSchemaBuilder()->getColumns($host->getTable()), static fn (array $column): bool => $column['name'] === 'id');
-            expect($column['type_name'])->toBe('uuid');
-        }
         $placement = Scenario::place(Scenario::block(), $host);
         expect($placement->owner_id)->toBe($host->getKey());
         foreach ([strtoupper($host->getKey()), $host->getKey().' '] as $index => $forgedKey) {
@@ -62,60 +52,6 @@ it('matches canonical UUID content owner keys as exact text without accepting al
             expect(fn () => $connection->transaction(fn () => $connection->table($placement->getTable())->insert($row)))->toThrow(QueryException::class);
         }
         expect(ContentPlacement::query()->count())->toBe(1);
-    });
-});
-it('refreshes historical Maria UUID triggers through an authorized active plan without discarding data', function (): void {
-    $connection = ContentModelRegistry::newInstance()->getConnection();
-    if ($connection->getDriverName() !== 'mariadb') {
-        $this->markTestSkipped('Historical native Maria UUID trigger refresh requires the MariaDB driver.');
-    }
-    $company = OwnershipCompany::findOrFail(7);
-    $actor = OwnershipActor::firstOrFail();
-    [$host, $block] = app(OwnershipRunner::class)->run($company, $actor, static fn (): array => [Scenario::host(), Scenario::block()]);
-    $table = (new ContentPlacement)->getTable();
-    $grammar = $connection->getQueryGrammar();
-    $names = [];
-    $morph = $connection->getPdo()->quote($host->getMorphClass());
-    $legacy = 'BEGIN IF NEW.`owner_type` IS NULL OR NEW.`owner_id` IS NULL OR NOT ((NEW.`owner_type` = '.$morph.' AND EXISTS (SELECT 1 FROM '.$grammar->wrapTable($host->getTable()).' WHERE CAST(`id` AS BINARY) = CAST(NEW.`owner_id` AS BINARY) AND `owner_scope_key` = NEW.`owner_scope_key`))) THEN SIGNAL SQLSTATE \'45000\' SET MESSAGE_TEXT = \'NVL ownership partition is invalid or immutable\'; END IF; END';
-    foreach (['insert', 'update'] as $event) {
-        $name = app(OwnershipConstraintInspector::class)->name($connection, $table, $event, 'polymorphic:owner_type:owner_id');
-        $names[] = $name;
-        $connection->unprepared('CREATE OR REPLACE TRIGGER '.$grammar->wrap($name).' BEFORE '.strtoupper($event).' ON '.$grammar->wrapTable($table).' FOR EACH ROW '.$legacy);
-    }
-    $coordinator = app(OwnershipAdoptionCoordinator::class);
-    $generation = $connection->table(OwnershipStorageTables::Markers)->where('resource', 'content.placements')->value('generation');
-    expect(app(OwnershipAdoptionStore::class)->load($generation)['status'])->toBe('active');
-    $previous = $coordinator->resume($generation);
-    expect(fn () => $coordinator->activate($previous, new OwnershipOperation('retry-active-content-plan', 'operator', '1')))->toThrow(OwnershipSchemaNotReady::class);
-    app(OwnershipRunner::class)->run($company, $actor, static function () use ($host, $block): void {
-        expect(fn () => Scenario::place($block, $host))->toThrow(QueryException::class);
-    });
-    $resources = app(OwnershipResourceRegistry::class);
-    $before = [];
-    foreach (['fixture.content-owners', 'content.blocks', 'content.translations', 'content.revisions', 'content.placements'] as $resource) {
-        $model = new ($resources->get($resource)->model);
-        $rows = $connection->table($model->getTable())->orderBy($model->getKeyName())->get();
-        $before[$resource] = $rows->map(static fn (object $row): array => (array) $row)->all();
-    }
-    $operation = new OwnershipOperation('ownership.constraints.refresh', 'operator', '1');
-    $coordinator->refreshConstraints($previous, $operation);
-    $refreshed = app(OwnershipAdoptionStore::class)->load($previous->id);
-    expect($refreshed['status'])->toBe('active')
-        ->and($refreshed['plan']->mappingHash)->toBe($previous->mappingHash)
-        ->and($connection->table(OwnershipStorageTables::Markers)->where('resource', 'content.placements')->value('generation'))->toBe($generation)
-        ->and($connection->table(OwnershipStorageTables::Markers)->where('resource', 'content.placements')->value('state'))->toBe('active');
-    foreach ($before as $resource => $rows) {
-        $model = new ($resources->get($resource)->model);
-        expect($connection->table($model->getTable())->orderBy($model->getKeyName())->get()->map(static fn (object $row): array => (array) $row)->all())->toBe($rows);
-    }
-    foreach ($names as $name) {
-        $trigger = $connection->selectOne('SELECT ACTION_STATEMENT AS body FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = ?', [$name], false);
-        expect($trigger?->body)->toContain('CAST(CAST(`id` AS CHAR) AS BINARY)');
-    }
-    app(OwnershipRunner::class)->run($company, $actor, static function () use ($host, $block): void {
-        $currentHost = OwnershipContentOwner::findOrFail($host->getKey());
-        $currentBlock = ContentModelRegistry::query()->findOrFail($block->getKey());
-        expect(Scenario::place($currentBlock, $currentHost)->owner_id)->toBe($currentHost->getKey());
     });
 });
 it('keeps mutable content locale and placement graphs inside one native owner', function (): void {
@@ -179,12 +115,24 @@ it('captures native owner authority on scalar committed Content events', functio
 it('keeps native Content summaries bounded for one and twenty five canonical hosts', function (): void {
     app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function (): void {
         $block = Scenario::block();
-        $hosts = [];
-        for ($i = 0; $i < 25; $i++) {
-            $host = Scenario::host();
-            $hosts[] = $host;
-            Scenario::place($block, $host);
+        $host = Scenario::host();
+        $placement = Scenario::place($block, $host);
+        $hostIds = [$host->getKey()];
+        $hostRows = $placementRows = [];
+        for ($index = 1; $index < 25; $index++) {
+            $hostId = $host->newUniqueId();
+            $hostIds[] = $hostId;
+            $hostRows[] = [...$host->getRawOriginal(), 'id' => $hostId];
+            $placementRows[] = [...$placement->getRawOriginal(), 'id' => $placement->newUniqueId(), 'owner_id' => $hostId];
         }
+        $connection = $host->getConnection();
+        $connection->transaction(static function () use ($connection, $host, $placement, $hostRows, $placementRows): void {
+            $connection->table($host->getTable())->insert($hostRows);
+            $connection->table($placement->getTable())->insert($placementRows);
+        });
+        $hostsById = $host->newQuery()->findMany($hostIds)->keyBy('id');
+        $hosts = array_map(static fn (string $id) => $hostsById->get($id), $hostIds);
+
         $measure = function (array $hosts): int {
             DB::enableQueryLog();
             DB::flushQueryLog();

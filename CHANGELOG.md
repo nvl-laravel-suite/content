@@ -5,9 +5,17 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [7.1.0] - 2026-11-16
+
 ### Changed
 
 - The Boost API reference lists the `withJoinedTranslation` scope inherited from `nvl/translatable` 7.1.0.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- adoption flow, PostgreSQL proof, release health and 7.2 floors
+<!-- NVL GENERATED CHANGES END -->
 
 ## [7.0.5] - 2026-11-13
 

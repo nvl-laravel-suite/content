@@ -5,6 +5,8 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+## [7.3.0] - 2026-11-17
+
 ### Fixed
 
 - `date_time` string fields accept RFC 3339 fractional seconds of any precision (`2026-01-01T10:00:00.123Z`, as produced by JavaScript `toISOString()`, and seven- or nine-digit values such as `2026-01-01T10:00:00.123456789Z`) and reject offsets without a colon such as `+0000`, matching the published JSON Schema `date-time` format. The stored string keeps every digit.
@@ -16,6 +18,12 @@ All notable changes to `nvl/content` are documented here.
 ### Changed
 
 - `rich_text.maximum_input_length` counts characters instead of bytes, so the runtime agrees with the generated JSON Schema `maxLength`. Multibyte text up to the limit is now accepted; the sanitizer input bound is four bytes per allowed character. The limit also applies to the sanitized value that is stored, so input that sanitizing lengthens past the limit (`&` becomes `&amp;`) is rejected instead of storing a value the schema rejects.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- consumer-audit fixes across the suite, UTC timestamps, core/forms release ordering
+<!-- NVL GENERATED CHANGES END -->
 
 ## [7.2.0] - 2026-11-17
 

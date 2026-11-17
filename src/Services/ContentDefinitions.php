@@ -58,7 +58,7 @@ final class ContentDefinitions
                 $this->syncContentDefinitionsPersist($source['definition'], $source['hash']);
             }
             if ($plan['orphan'] !== []) {
-                ContentDefinition::query()->whereIn('key', $plan['orphan'])->update(['is_active' => false, 'orphaned_at' => now()]);
+                ContentDefinition::query()->whereIn('key', $plan['orphan'])->whereNull('orphaned_at')->update(['is_active' => false, 'orphaned_at' => now()]);
             }
 
             return $plan;

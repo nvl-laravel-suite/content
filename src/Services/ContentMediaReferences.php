@@ -34,6 +34,24 @@ final class ContentMediaReferences
     }
 
     /**
+     * Replace Media identifiers in Media fields only, leaving equal strings in text, JSON and row keys untouched.
+     *
+     * @param  array<string, mixed>  $values
+     * @param  array<string, string>  $mediaMap
+     * @return array<string, mixed>
+     */
+    public function replace(ContentSchema $schema, array $values, array $mediaMap): array
+    {
+        foreach ($schema->fields as $field) {
+            if (array_key_exists($field->key, $values)) {
+                $values[$field->key] = $this->replaceField($field, $values[$field->key], $mediaMap);
+            }
+        }
+
+        return $values;
+    }
+
+    /**
      * @param  list<array{id: string, path: string, locale: string|null, order: int}>  $references
      */
     private function walk(ContentFieldDefinition $field, mixed $value, string $path, ?string $locale, array &$references): void
@@ -86,5 +104,45 @@ final class ContentMediaReferences
                 $this->walk($field, $values[$field->key], "{$path}.{$field->key}", $locale, $references);
             }
         }
+    }
+
+    /** @param  array<string, string>  $mediaMap */
+    private function replaceField(ContentFieldDefinition $field, mixed $value, array $mediaMap): mixed
+    {
+        if ($field->type === 'media' && is_string($value)) {
+            return $mediaMap[$value] ?? $value;
+        }
+        if ($field->type === 'media_collection' && is_array($value)) {
+            return array_map(static fn (mixed $id): mixed => is_string($id) ? $mediaMap[$id] ?? $id : $id, $value);
+        }
+        if ($field->type === 'object' && is_array($value)) {
+            return $this->replaceChildren($field, $value, $mediaMap);
+        }
+        if (in_array($field->type, ['repeater', 'table'], true) && is_array($value)) {
+            return array_map(fn (mixed $row): mixed => is_array($row) ? $this->replaceChildren($field, $row, $mediaMap) : $row, $value);
+        }
+        if ($field->type === 'list' && $field->item !== null && is_array($value)) {
+            $item = $field->item;
+
+            return array_map(fn (mixed $entry): mixed => $this->replaceField($item, $entry, $mediaMap), $value);
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $values
+     * @param  array<string, string>  $mediaMap
+     * @return array<array-key, mixed>
+     */
+    private function replaceChildren(ContentFieldDefinition $parent, array $values, array $mediaMap): array
+    {
+        foreach ($parent->fields as $field) {
+            if (array_key_exists($field->key, $values)) {
+                $values[$field->key] = $this->replaceField($field, $values[$field->key], $mediaMap);
+            }
+        }
+
+        return $values;
     }
 }

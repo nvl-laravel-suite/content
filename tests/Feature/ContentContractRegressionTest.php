@@ -717,6 +717,16 @@ it('reports unsynchronized orphan definitions in doctor diagnostics', function (
     app(ContentDefinitions::class)->sync(SystemActor::Background);
     $this->artisan('nvl:content:doctor', ['--strict' => true, '--format' => 'json'])->assertSuccessful()->expectsOutputToContain('"definitions.synchronized": true');
 });
+it('keeps the first orphaned timestamp across later definition syncs', function (): void {
+    $removed = ContentDefinition::query()->create(['key' => 'removed-definition', 'name' => 'Removed definition', 'category' => 'testing', 'version' => 1, 'schema' => ['fields' => []], 'allowed_scopes' => ['site'], 'allowed_regions' => ['main'], 'is_active' => true, 'source_hash' => str_repeat('a', 64), 'synced_at' => now()]);
+    $this->travelTo('2026-01-01 10:00:00');
+    expect(app(ContentDefinitions::class)->sync(SystemActor::Background)['orphan'])->toBe(['removed-definition']);
+    $this->travelTo('2026-01-02 10:00:00');
+    expect(app(ContentDefinitions::class)->sync(SystemActor::Background, dryRun: true)['orphan'])->toBe(['removed-definition']);
+    app(ContentDefinitions::class)->sync(SystemActor::Background);
+    expect($removed->refresh()->orphaned_at?->toDateTimeString())->toBe('2026-01-01 10:00:00')
+        ->and($removed->is_active)->toBeFalse();
+});
 it('exposes the registered reference aliases without resolving them', function (): void {
     $registry = new ContentReferenceRegistry(app(), app(ContentPayloadGuard::class), app(OwnershipBoundary::class));
     expect($registry->has('missing'))->toBeFalse();

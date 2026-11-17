@@ -9,23 +9,33 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Nvl\Content\Contracts\ContentAuthorization;
+use Nvl\Content\Contracts\ContentCatalogCopyAccess;
 use Nvl\Content\Enums\ContentAbility;
 use Nvl\Content\Enums\ContentVisibility;
 use Nvl\Content\Events\ContentBlockChanged;
 use Nvl\Content\Models\ContentBlock;
 use Nvl\Content\Models\ContentPlacement;
+use Nvl\Content\Services\ContentCatalogCopyRegistry;
 use Nvl\Content\Services\ContentModelRegistry;
+use Nvl\Content\Services\ContentOwnerRegistry;
 use Nvl\Content\Services\ContentPlacements;
 use Nvl\Content\Services\ContentReader;
 use Nvl\Content\Services\ContentReferenceRegistry;
+use Nvl\Content\Services\ContentSnapshotIntegrity;
 use Nvl\Content\Services\ContentSnapshotService;
 use Nvl\Content\Tests\Fixtures\OwnershipActor;
 use Nvl\Content\Tests\Fixtures\OwnershipCompany;
 use Nvl\Content\Tests\Fixtures\OwnershipContentOwner;
 use Nvl\Content\Tests\Fixtures\OwnershipContentScenario as Scenario;
+use Nvl\Content\Tests\Fixtures\OwnershipMedia;
 use Nvl\Content\Tests\Fixtures\OwnershipReferenceResolver;
+use Nvl\Content\Tests\Fixtures\TestIntegerContentOwner;
 use Nvl\Content\Tests\OwnershipTestCase;
 use Nvl\Content\Validation\ContentValidationContext;
+use Nvl\Media\Enums\MediaLifecycleStatus;
+use Nvl\Media\Enums\MediaType;
+use Nvl\Media\Enums\MediaVisibility;
+use Nvl\Media\Models\Media;
 use Nvl\Ownership\Services\OwnershipRunner;
 use Nvl\Ownership\Services\OwnershipWriter;
 use Nvl\Ownership\Tests\Fixtures\OptsIntoAdoptedSchemaReuse;
@@ -52,6 +62,93 @@ it('matches canonical UUID content owner keys as exact text without accepting al
             expect(fn () => $connection->transaction(fn () => $connection->table($placement->getTable())->insert($row)))->toThrow(QueryException::class);
         }
         expect(ContentPlacement::query()->count())->toBe(1);
+    });
+});
+it('exports and imports catalog snapshots from integer-keyed central owners', function (): void {
+    $snapshot = ['ownerType' => (new TestIntegerContentOwner)->getMorphClass(), 'ownerId' => '42', 'group' => 'main', 'blocks' => [['placementId' => (string) Str::uuid(), 'parentId' => null, 'key' => 'intro', 'region' => 'main', 'sortOrder' => 0, 'blockId' => (string) Str::uuid(), 'definitionKey' => 'copy', 'definitionSchema' => ['fields' => [['key' => 'text', 'type' => 'text', 'label' => 'Text', 'localized' => true]]], 'definitionView' => null, 'visibility' => 'public', 'values' => [], 'translations' => ['en' => ['text' => 'Catalog copy']], 'overrides' => [], 'blockRevision' => 1, 'placementRevision' => 1]], 'version' => 'pending', 'tenantId' => null, 'formatVersion' => 3, 'ownershipContext' => ['mode' => 'central', 'owner' => null]];
+    $snapshot['version'] = app(ContentSnapshotIntegrity::class)->digest($snapshot);
+    $catalog = (new TestIntegerContentOwner)->setRawAttributes(['id' => 42, 'content_snapshot' => $snapshot, 'revision' => 3], true);
+    $catalog->exists = true;
+    $access = new class($catalog) implements ContentCatalogCopyAccess
+    {
+        public function __construct(private readonly Model $catalog) {}
+
+        public function canonicalSource(string $ownerId, string $group, string $grantId, bool $lock = false): Model
+        {
+            return $this->catalog;
+        }
+    };
+    app()->instance($access::class, $access);
+    app(ContentOwnerRegistry::class)->register('catalog', TestIntegerContentOwner::class);
+    app(ContentCatalogCopyRegistry::class)->register('catalog', $access::class);
+
+    $export = app(ContentReader::class)->exportForCopy('catalog', '42', 'main', 'grant-1');
+    expect($export['ownerId'])->toBe('42')->and($export['sourceRevision'])->toBe(3)->and($export['mediaIds'])->toBe([]);
+
+    app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function () use ($export): void {
+        $target = app(OwnershipWriter::class)->create(OwnershipContentOwner::class, static function (OwnershipAssignment $assignment): OwnershipContentOwner {
+            $target = new OwnershipContentOwner;
+            $target->forceFill([...$assignment->attributes(), 'name' => 'Catalog copy target'])->save();
+
+            return $target;
+        });
+        $imported = app(ContentReader::class)->importSnapshot($target, $export, [], OwnershipActor::firstOrFail());
+
+        expect($imported['ownerId'])->toBe($target->getKey())
+            ->and($imported['blocks'][0]['translations'])->toBe(['en' => ['text' => 'Catalog copy']])
+            ->and($imported['blocks'][0]['placementId'])->not->toBe($export['snapshot']['blocks'][0]['placementId']);
+    });
+});
+it('remaps only Media fields when copying a catalog snapshot', function (): void {
+    $source = (string) Str::uuid();
+    $schema = ['fields' => [
+        ['key' => 'hero', 'type' => 'media', 'label' => 'Hero'],
+        ['key' => 'gallery', 'type' => 'media_collection', 'label' => 'Gallery'],
+        ['key' => 'body', 'type' => 'text', 'label' => 'Body', 'localized' => true],
+        ['key' => 'payload', 'type' => 'json', 'label' => 'Payload'],
+        ['key' => 'rows', 'type' => 'repeater', 'label' => 'Rows', 'fields' => [['key' => 'caption', 'type' => 'text', 'label' => 'Caption'], ['key' => 'image', 'type' => 'media', 'label' => 'Image']]],
+    ]];
+    $values = ['hero' => $source, 'gallery' => [$source], 'payload' => ['ref' => $source, 'list' => [$source]], 'rows' => [['_key' => $source, 'caption' => $source, 'image' => $source]]];
+    $snapshot = ['ownerType' => (new TestIntegerContentOwner)->getMorphClass(), 'ownerId' => '42', 'group' => 'main', 'blocks' => [['placementId' => (string) Str::uuid(), 'parentId' => null, 'key' => 'intro', 'region' => 'main', 'sortOrder' => 0, 'blockId' => (string) Str::uuid(), 'definitionKey' => 'copy', 'definitionSchema' => $schema, 'definitionView' => null, 'visibility' => 'public', 'values' => $values, 'translations' => ['en' => ['body' => $source]], 'overrides' => ['hero' => $source, 'payload' => ['ref' => $source]], 'blockRevision' => 1, 'placementRevision' => 1]], 'version' => 'pending', 'tenantId' => null, 'formatVersion' => 3, 'ownershipContext' => ['mode' => 'central', 'owner' => null]];
+    $snapshot['version'] = app(ContentSnapshotIntegrity::class)->digest($snapshot);
+    $catalog = (new TestIntegerContentOwner)->setRawAttributes(['id' => 42, 'content_snapshot' => $snapshot, 'revision' => 3], true);
+    $catalog->exists = true;
+    $access = new class($catalog) implements ContentCatalogCopyAccess
+    {
+        public function __construct(private readonly Model $catalog) {}
+
+        public function canonicalSource(string $ownerId, string $group, string $grantId, bool $lock = false): Model
+        {
+            return $this->catalog;
+        }
+    };
+    app()->instance($access::class, $access);
+    app(ContentOwnerRegistry::class)->register('catalog', TestIntegerContentOwner::class);
+    app(ContentCatalogCopyRegistry::class)->register('catalog', $access::class);
+    $export = app(ContentReader::class)->exportForCopy('catalog', '42', 'main', 'grant-1');
+    expect($export['mediaIds'])->toBe([$source]);
+
+    app(OwnershipRunner::class)->run(OwnershipCompany::findOrFail(7), OwnershipActor::firstOrFail(), function () use ($export, $source): void {
+        $writer = app(OwnershipWriter::class);
+        $destination = $writer->create(OwnershipMedia::class, static function (OwnershipAssignment $assignment): OwnershipMedia {
+            $media = new OwnershipMedia;
+            $media->forceFill([...Media::factory()->raw(['mime_type' => 'image/jpeg', 'extension' => 'jpg', 'type' => MediaType::IMAGE, 'is_public' => true, 'visibility' => MediaVisibility::Public, 'status' => MediaLifecycleStatus::Available]), ...$assignment->attributes()])->save();
+
+            return $media;
+        });
+        $target = $writer->create(OwnershipContentOwner::class, static function (OwnershipAssignment $assignment): OwnershipContentOwner {
+            $target = new OwnershipContentOwner;
+            $target->forceFill([...$assignment->attributes(), 'name' => 'Catalog copy target'])->save();
+
+            return $target;
+        });
+        $copied = (string) $destination->getKey();
+
+        $block = app(ContentReader::class)->importSnapshot($target, $export, [$source => $copied], OwnershipActor::firstOrFail())['blocks'][0];
+
+        expect($block['values'])->toBe(['hero' => $copied, 'gallery' => [$copied], 'payload' => ['ref' => $source, 'list' => [$source]], 'rows' => [['_key' => $source, 'caption' => $source, 'image' => $copied]]])
+            ->and($block['translations'])->toBe(['en' => ['body' => $source]])
+            ->and($block['overrides'])->toBe(['hero' => $copied, 'payload' => ['ref' => $source]]);
     });
 });
 it('keeps mutable content locale and placement graphs inside one native owner', function (): void {

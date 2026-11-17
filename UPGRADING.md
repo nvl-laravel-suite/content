@@ -13,3 +13,9 @@ Rendered compositions and snapshots are native arrays. Snapshot records preserve
 Move HTTP routes/controllers, editor bootstrap, API DTOs and Blade views into your application. Optional Spatie Data projection belongs to that consumer. The package no longer registers routes, TypeScript metadata or bundled views. View validation remains available for host-supplied views.
 
 Enable Media explicitly and supply its authorization policy when using Media fields. Register plain owners with explicit groups and wrap hard deletion with the existing Content cleanup service. Existing `ContentOwner` consumers remain supported. Replace retired Tenancy declarations through reviewed native Ownership adoption; no consumer data is deleted automatically.
+
+`date_time` fields now require RFC 3339 offsets with a colon (`Z` or `+02:00`); values such as `2026-01-01T10:00:00+0000` are rejected. Fractional seconds of any precision are accepted.
+
+`rich_text.maximum_input_length` now counts characters, not bytes, matching the generated JSON Schema `maxLength`. Multibyte rich text that used to be rejected below the limit is accepted; lower the setting if you relied on it as a byte cap. `validation.maximum_payload_bytes` still bounds the total payload in bytes. The limit applies to the sanitized value that is stored. Rich text near the limit that sanitizing lengthens, for example by escaping `&` to `&amp;`, is now rejected; raise the setting if editors hit it.
+
+Publishing now rejects empty items (`null`, `''` or whitespace) in lists whose item definition is `required`. Fix such stored drafts before publishing them.

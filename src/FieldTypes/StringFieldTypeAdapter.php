@@ -79,10 +79,18 @@ final class StringFieldTypeAdapter extends AbstractFieldTypeAdapter
         return $date !== false && $date->format($format) === $value;
     }
 
-    /** Native Content operation. */
+    /**
+     * Accept only timezone-qualified RFC 3339 date-times, with fractional seconds of any precision, that name a real
+     * calendar instant. PHP keeps microseconds, so only the first six fraction digits reach the calendar check; the
+     * caller keeps the original string.
+     */
     private function validDateTime(string $value): bool
     {
-        $date = DateTimeImmutable::createFromFormat(DateTimeImmutable::ATOM, $value);
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})[Tt](\d{2}:\d{2}:\d{2})(?:\.(\d+))?([Zz]|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/D', $value, $matches) !== 1) {
+            return false;
+        }
+        $timezone = strtoupper($matches[4]) === 'Z' ? '+00:00' : $matches[4];
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s.uP', "{$matches[1]}T{$matches[2]}.".str_pad(substr($matches[3], 0, 6), 6, '0').$timezone);
         $errors = DateTimeImmutable::getLastErrors();
 
         return $date !== false && ($errors === false || $errors['warning_count'] === 0 && $errors['error_count'] === 0);

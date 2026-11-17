@@ -559,7 +559,8 @@ final class ContentReader
     {
         $access = $this->copies->resolve($ownerAlias);
         $owner = $access->canonicalSource($ownerId, $group, $grantId);
-        if ($owner::class !== $this->owners->model($ownerAlias) || $owner->getKey() !== $ownerId) {
+        $ownerKey = $owner->getKey();
+        if ($owner::class !== $this->owners->model($ownerAlias) || (! is_int($ownerKey) && ! is_string($ownerKey)) || (string) $ownerKey !== $ownerId) {
             throw new OwnershipViolation('The catalog authorizer returned another source identity.');
         }
         $snapshot = $owner->getAttribute('content_snapshot');
@@ -626,10 +627,11 @@ final class ContentReader
         }
         $blocks = array_map(function (array $block) use ($placementIds, $blockIds, $mediaMap): array {
             $data = $block;
+            $schema = ContentSchema::fromArray($block['definitionSchema']);
             foreach (['values', 'overrides'] as $key) {
-                $data[$key] = ContentArrays::stringMap($this->importContentSnapshotReplaceMedia($block[$key], $mediaMap), 'copied Content values');
+                $data[$key] = $this->media->replace($schema, $block[$key], $mediaMap);
             }
-            $data['translations'] = ContentArrays::translations($this->importContentSnapshotReplaceMedia($block['translations'], $mediaMap), 'copied Content translations');
+            $data['translations'] = array_map(fn (array $values): array => $this->media->replace($schema, $values, $mediaMap), $block['translations']);
             $data['placementId'] = $placementIds[$block['placementId']];
             $data['parentId'] = $block['parentId'] === null ? null : $placementIds[$block['parentId']] ?? throw new OwnershipViolation('Content snapshot parent is missing.');
             $data['blockId'] = $blockIds[$block['blockId']];
@@ -652,23 +654,5 @@ final class ContentReader
                 $this->importContentSnapshotAssertPortable([$field->item]);
             }
         }
-    }
-
-    /**
-     * @param  array<array-key, mixed>  $value
-     * @param  array<string, string>  $mediaMap
-     * @return array<array-key, mixed>
-     */
-    private function importContentSnapshotReplaceMedia(array $value, array $mediaMap): array
-    {
-        foreach ($value as $key => $item) {
-            if (is_array($item)) {
-                $value[$key] = $this->importContentSnapshotReplaceMedia($item, $mediaMap);
-            } elseif (is_string($item)) {
-                $value[$key] = $mediaMap[$item] ?? $item;
-            }
-        }
-
-        return $value;
     }
 }

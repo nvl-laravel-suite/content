@@ -73,3 +73,53 @@ it('exports collection bounds and uniqueness for Media and reference fields', fu
     $empty = json_decode('{"attachments":[],"related":[]}');
     expect($validator->validate($valid, $schemaObject)->isValid())->toBeTrue()->and($validator->validate($duplicate, $schemaObject)->isValid())->toBeFalse()->and($validator->validate($empty, $schemaObject)->isValid())->toBeFalse();
 });
+it('rejects empty required list items at publication exactly as the generated schema does', function (mixed $item): void {
+    $schema = app(ContentSchemaCompiler::class)->compile(['fields' => [['key' => 'items', 'type' => 'list', 'item' => ['type' => 'text', 'required' => true]], ['key' => 'notes', 'type' => 'list', 'item' => ['type' => 'text']]]]);
+    $generated = json_decode(json_encode(app(ContentJsonSchemaBuilder::class)->definition('required-items', 1, $schema), JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR);
+    $runtime = app(ContentValueValidator::class);
+    $values = static fn (bool $publishing, array $values) => $runtime->validate(schema: $schema, values: $values, translations: [], actor: SystemActor::Background, visibility: ContentVisibility::Private, publishing: $publishing)->values;
+    $stored = json_decode(json_encode(['items' => [$item]], JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR);
+
+    expect(app(Validator::class)->validate($stored, $generated)->isValid())->toBeFalse()
+        ->and(fn () => $values(true, ['items' => [$item]]))->toThrow(InvalidArgumentException::class, 'Required content field [items.0] is empty.')
+        ->and($values(false, ['items' => [$item]])['items'])->toBe([$item])
+        ->and($values(true, ['items' => ['one'], 'notes' => [$item]])['notes'])->toBe([$item]);
+})->with(['null' => [null], 'empty' => [''], 'blank' => ['   ']]);
+it('measures rich-text limits in characters in both the generated schema and the runtime', function (string $body, bool $accepted): void {
+    config()->set('nvl-content.rich_text.maximum_input_length', 5);
+    $schema = app(ContentSchemaCompiler::class)->compile(['fields' => [['key' => 'body', 'type' => 'rich_text']]]);
+    $generated = json_decode(json_encode(app(ContentJsonSchemaBuilder::class)->definition('rich-text-length', 1, $schema), JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR);
+    $stored = json_decode(json_encode(['body' => $body], JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR);
+    $runtime = static fn (): mixed => app(ContentValueValidator::class)->validate(schema: $schema, values: ['body' => $body], translations: [], actor: SystemActor::Background, visibility: ContentVisibility::Private)->values['body'];
+
+    expect(app(Validator::class)->validate($stored, $generated)->isValid())->toBe($accepted);
+    if ($accepted) {
+        expect($runtime())->toBe($body);
+    } else {
+        expect($runtime)->toThrow(InvalidArgumentException::class, 'exceeds the rich-text limit');
+    }
+})->with([
+    'ASCII at the limit' => ['12345', true],
+    'ASCII over the limit' => ['123456', false],
+    'multibyte under the limit' => ['ééé', true],
+    'multibyte at the limit' => ['ééééé', true],
+    'multibyte over the limit' => ['éééééé', false],
+]);
+it('keeps sanitized rich text within the generated schema length', function (int $maximum, bool $accepted): void {
+    config()->set('nvl-content.rich_text.maximum_input_length', $maximum);
+    $schema = app(ContentSchemaCompiler::class)->compile(['fields' => [['key' => 'body', 'type' => 'rich_text']]]);
+    $generated = json_decode(json_encode(app(ContentJsonSchemaBuilder::class)->definition('rich-text-stored', 1, $schema), JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR);
+    $runtime = static fn (): mixed => app(ContentValueValidator::class)->validate(schema: $schema, values: ['body' => 'a&b'], translations: [], actor: SystemActor::Background, visibility: ContentVisibility::Private)->values['body'];
+
+    if (! $accepted) {
+        expect($runtime)->toThrow(InvalidArgumentException::class, 'exceeds the rich-text limit');
+
+        return;
+    }
+    $stored = $runtime();
+    expect($stored)->toBe('a&amp;b')
+        ->and(app(Validator::class)->validate(json_decode(json_encode(['body' => $stored], JSON_THROW_ON_ERROR), false, flags: JSON_THROW_ON_ERROR), $generated)->isValid())->toBeTrue();
+})->with([
+    'input fits but the escaped value does not' => [5, false],
+    'escaped value fits' => [7, true],
+]);

@@ -22,9 +22,11 @@ final class RichTextFieldTypeAdapter extends AbstractFieldTypeAdapter
     /** Native Content operation. */
     public function __construct()
     {
+        // The limit counts characters like JSON Schema maxLength; the sanitizer bound is in bytes, and a UTF-8 character
+        // takes at most four, so accepted input is never truncated.
         $maximum = ContentConfiguration::positiveInteger('nvl-content.rich_text.maximum_input_length', 250000);
         $schemes = ContentUriSchemePolicy::runtimeAllowedSchemes(ContentConfiguration::stringList('nvl-content.rich_text.allowed_link_schemes'));
-        $configuration = (new HtmlSanitizerConfig)->allowSafeElements()->allowLinkSchemes($schemes)->allowRelativeLinks((bool) config('nvl-content.rich_text.allow_relative_links', true))->allowMediaSchemes([])->allowRelativeMedias(false)->withMaxInputLength($maximum);
+        $configuration = (new HtmlSanitizerConfig)->allowSafeElements()->allowLinkSchemes($schemes)->allowRelativeLinks((bool) config('nvl-content.rich_text.allow_relative_links', true))->allowMediaSchemes([])->allowRelativeMedias(false)->withMaxInputLength(4 * $maximum);
         $this->sanitizer = new HtmlSanitizer($configuration);
     }
 
@@ -44,11 +46,17 @@ final class RichTextFieldTypeAdapter extends AbstractFieldTypeAdapter
             throw new InvalidArgumentException("Content field [{$context->path}] must be HTML.");
         }
         $maximum = ContentConfiguration::positiveInteger('nvl-content.rich_text.maximum_input_length', 250000);
-        if (strlen($value) > $maximum) {
+        if (mb_strlen($value, 'UTF-8') > $maximum) {
             throw new InvalidArgumentException("Content field [{$context->path}] exceeds the rich-text limit.");
         }
 
-        return $this->sanitizer->sanitize($value);
+        // Sanitizing can escape characters (& becomes &amp;), so the stored value is checked against the same limit.
+        $sanitized = $this->sanitizer->sanitize($value);
+        if (mb_strlen($sanitized, 'UTF-8') > $maximum) {
+            throw new InvalidArgumentException("Content field [{$context->path}] exceeds the rich-text limit.");
+        }
+
+        return $sanitized;
     }
 
     /** Native Content operation. */

@@ -73,7 +73,7 @@ per type; `nullable` is not a field property or built-in setting.
 
 | Type alias | Input value and structure | Allowed settings |
 | --- | --- | --- |
-| `text`, `textarea`, `email`, `color`, `date`, `date_time` | String; color is hexadecimal, date is `Y-m-d`, date-time is ISO 8601 with offset | `min_length`, `max_length`, `pattern` |
+| `text`, `textarea`, `email`, `color`, `date`, `date_time` | String; color is hexadecimal, date is `Y-m-d`, date-time is RFC 3339 with a `Z` or `±hh:mm` offset and optional fractional seconds | `min_length`, `max_length`, `pattern` |
 | `url`, `uri` | URL string; URI also permits configured relative links, mail and telephone schemes | String settings above, `allowed_schemes` |
 | `select` | One option value; options are a nonempty string list or value-to-label map | String settings above, required `options` |
 | `multi_select` | List of option strings | Required `options`, `max_items` |

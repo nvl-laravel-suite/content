@@ -5,6 +5,18 @@ All notable changes to `nvl/content` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- `date_time` string fields accept RFC 3339 fractional seconds of any precision (`2026-01-01T10:00:00.123Z`, as produced by JavaScript `toISOString()`, and seven- or nine-digit values such as `2026-01-01T10:00:00.123456789Z`) and reject offsets without a colon such as `+0000`, matching the published JSON Schema `date-time` format. The stored string keeps every digit.
+- `importSnapshot()` replaces copied Media IDs only in `media` and `media_collection` fields, including those nested in objects, repeaters, tables and lists. It used to replace every equal string, so text, JSON values and repeater `_key`s that matched a Media UUID were rewritten too.
+- Publishing a list whose item is `required` rejects `null`, empty and whitespace-only items, as the generated JSON Schema does. Drafts and optional items are unchanged.
+- Definition sync keeps the original `orphaned_at` of rows that were already orphaned instead of restamping them on every sync.
+- `ContentReader::exportForCopy()` and `importSnapshot()` accept catalog owners with integer keys.
+
+### Changed
+
+- `rich_text.maximum_input_length` counts characters instead of bytes, so the runtime agrees with the generated JSON Schema `maxLength`. Multibyte text up to the limit is now accepted; the sanitizer input bound is four bytes per allowed character. The limit also applies to the sanitized value that is stored, so input that sanitizing lengthens past the limit (`&` becomes `&amp;`) is rejected instead of storing a value the schema rejects.
+
 ## [7.2.0] - 2026-11-17
 
 ### Changed

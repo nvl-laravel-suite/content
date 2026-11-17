@@ -259,7 +259,16 @@ final readonly class ContentValueValidator
             throw new InvalidArgumentException("Localized content list [{$context->path}] has items without matching base values.");
         }
 
-        return array_map(fn (mixed $item, int $index): mixed => $this->normalizeField($field->item, $item, $context->nested((string) $index), $depth + 1, $localized, $ancestorLocalized || $field->localized, $baseItems[$index] ?? null), $value, array_keys($value));
+        $item = $field->item;
+        $itemLocalized = $ancestorLocalized || $field->localized || $item->localized;
+
+        return array_map(function (mixed $value, int $index) use ($field, $item, $itemLocalized, $context, $depth, $localized, $ancestorLocalized, $baseItems): mixed {
+            if ($context->publishing && ! $localized && $item->required && ! $itemLocalized && $this->empty($value)) {
+                throw new InvalidArgumentException("Required content field [{$context->path}.{$index}] is empty.");
+            }
+
+            return $this->normalizeField($item, $value, $context->nested((string) $index), $depth + 1, $localized, $ancestorLocalized || $field->localized, $baseItems[$index] ?? null);
+        }, $value, array_keys($value));
     }
 
     /**
